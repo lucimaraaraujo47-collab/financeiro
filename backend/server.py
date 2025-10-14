@@ -379,16 +379,86 @@ async def register(request: Request, user_data: UserCreate):
     return user_obj
 
 @api_router.post("/auth/login", response_model=TokenResponse)
-async def login(credentials: UserLogin):
+@limiter.limit("10/minute")
+async def login(request: Request, credentials: UserLogin):
+    """
+    Login with brute force protection
+    Rate limited to 10 attempts per minute per IP
+    """
+    ip_address = request.client.host if request.client else "unknown"
+    
+    # Check for brute force attempts
+    if check_brute_force(credentials.email):
+        log_security_event(
+            "BRUTE_FORCE_DETECTED",
+            user_id=None,
+            ip_address=ip_address,
+            details=f"Email: {credentials.email}"
+        )
+        raise HTTPException(
+            status_code=429,
+            detail="Muitas tentativas de login. Tente novamente em 15 minutos."
+        )
+    
+    if check_brute_force(ip_address):
+        log_security_event(
+            "BRUTE_FORCE_DETECTED_IP",
+            user_id=None,
+            ip_address=ip_address,
+            details="Too many failed attempts from this IP"
+        )
+        raise HTTPException(
+            status_code=429,
+            detail="Muitas tentativas de login. Tente novamente em 15 minutos."
+        )
+    
+    # Check for SQL injection
+    if check_sql_injection(credentials.email):
+        log_security_event(
+            "SQL_INJECTION_ATTEMPT",
+            user_id=None,
+            ip_address=ip_address,
+            details=f"Suspicious email: {credentials.email}"
+        )
+        raise HTTPException(status_code=400, detail="Entrada inválida")
+    
     user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
     if not user:
+        record_failed_login(credentials.email)
+        record_failed_login(ip_address)
+        log_security_event(
+            "LOGIN_FAILED_USER_NOT_FOUND",
+            user_id=None,
+            ip_address=ip_address,
+            details=f"Email: {credentials.email}"
+        )
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
     
     if not verify_password(credentials.senha, user["senha_hash"]):
+        record_failed_login(credentials.email)
+        record_failed_login(ip_address)
+        log_security_event(
+            "LOGIN_FAILED_WRONG_PASSWORD",
+            user_id=user["id"],
+            ip_address=ip_address,
+            details=f"Email: {credentials.email}"
+        )
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
+    
+    # Clear failed attempts on successful login
+    clear_failed_logins(credentials.email)
+    clear_failed_logins(ip_address)
     
     # Create token
     token = create_access_token({"sub": user["id"], "email": user["email"]})
+    
+    # Log successful login
+    log_security_event(
+        "LOGIN_SUCCESS",
+        user_id=user["id"],
+        ip_address=ip_address,
+        details=f"Email: {credentials.email}"
+    )
     
     # Remove sensitive data
     user_data = {k: v for k, v in user.items() if k != "senha_hash"}
