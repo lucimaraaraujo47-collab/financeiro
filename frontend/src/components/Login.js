@@ -52,51 +52,6 @@ function Login({ onLogin }) {
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>
-          {isRegister && (
-            <>
-              <div className="form-group">
-                <label className="form-label">Nome Completo</label>
-                <input
-                  type="text"
-                  name="nome"
-                  className="form-input"
-                  value={formData.nome}
-                  onChange={handleChange}
-                  required
-                  data-testid="register-name-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Telefone</label>
-                <input
-                  type="tel"
-                  name="telefone"
-                  className="form-input"
-                  value={formData.telefone}
-                  onChange={handleChange}
-                  placeholder="(11) 98765-4321"
-                  data-testid="register-phone-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Perfil de Acesso</label>
-                <select
-                  name="perfil"
-                  className="form-select"
-                  value={formData.perfil}
-                  onChange={handleChange}
-                  data-testid="register-perfil-select"
-                >
-                  <option value="admin">Administrador</option>
-                  <option value="financeiro">Financeiro</option>
-                  <option value="leitura">Apenas Leitura</option>
-                </select>
-              </div>
-            </>
-          )}
-
           <div className="form-group">
             <label className="form-label">E-mail</label>
             <input
