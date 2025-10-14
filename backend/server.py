@@ -197,6 +197,27 @@ class TransacaoCreate(BaseModel):
     parcelas: Optional[Dict[str, Any]] = None
     status: str = "pendente"
     origem: str = "manual"
+    
+    @validator('fornecedor', 'descricao', 'metodo_pagamento', 'conta_origem')
+    def sanitize_text_fields(cls, v):
+        if v:
+            return sanitize_string(v, max_length=500)
+        return v
+    
+    @validator('cnpj_cpf')
+    def validate_document(cls, v):
+        if v:
+            if not (validate_cnpj(v) or validate_cpf(v)):
+                raise ValueError('CNPJ/CPF inválido')
+        return v
+    
+    @validator('valor_total')
+    def validate_valor(cls, v):
+        if v <= 0:
+            raise ValueError('Valor deve ser maior que zero')
+        if v > 999999999.99:
+            raise ValueError('Valor muito alto')
+        return v
 
 class ClassificacaoSugestao(BaseModel):
     categoria_id: str
