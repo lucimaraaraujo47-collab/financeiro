@@ -121,6 +121,16 @@ class EmpresaCreate(BaseModel):
     razao_social: str
     cnpj: str
     contas_bancarias: List[str] = []
+    
+    @validator('razao_social')
+    def sanitize_razao_social(cls, v):
+        return sanitize_string(v, max_length=200)
+    
+    @validator('cnpj')
+    def validate_cnpj_format(cls, v):
+        if not validate_cnpj(v):
+            raise ValueError('CNPJ inválido')
+        return v
 
 class Categoria(BaseModel):
     model_config = ConfigDict(extra="ignore")
