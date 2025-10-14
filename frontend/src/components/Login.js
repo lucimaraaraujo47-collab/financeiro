@@ -72,9 +72,10 @@ function Login({ onLogin }) {
     <div className="auth-container">
       <div className="auth-box">
         <div className="auth-header">
-          <div className="auth-logo">📊</div>
-          <h1 className="auth-title">FinAI</h1>
-          <p className="auth-subtitle">
+          <div className="auth-logo">
+            <img src="/echo-shop-logo.jpg" alt="ECHO SHOP" style={{ maxWidth: '200px', height: 'auto' }} />
+          </div>
+          <p className="auth-subtitle" style={{ marginTop: '1.5rem' }}>
             {isRegister ? 'Crie sua conta' : 'Entre na sua conta'}
           </p>
         </div>
