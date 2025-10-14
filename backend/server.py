@@ -337,7 +337,20 @@ async def root():
 
 # AUTH ROUTES
 @api_router.post("/auth/register", response_model=UserProfile)
-async def register(user_data: UserCreate):
+@limiter.limit("5/hour")
+async def register(request: Request, user_data: UserCreate):
+    """
+    Register new user with strong password validation
+    Rate limited to 5 registrations per hour per IP
+    """
+    # Log registration attempt
+    log_security_event(
+        "USER_REGISTRATION_ATTEMPT",
+        user_id=None,
+        ip_address=request.client.host if request.client else None,
+        details=f"Email: {user_data.email}"
+    )
+    
     # Check if user exists
     existing = await db.users.find_one({"email": user_data.email})
     if existing:
@@ -354,6 +367,15 @@ async def register(user_data: UserCreate):
     doc['created_at'] = doc['created_at'].isoformat()
     
     await db.users.insert_one(doc)
+    
+    # Log successful registration
+    log_security_event(
+        "USER_REGISTERED",
+        user_id=user_obj.id,
+        ip_address=request.client.host if request.client else None,
+        details=f"User created: {user_data.email}"
+    )
+    
     return user_obj
 
 @api_router.post("/auth/login", response_model=TokenResponse)
