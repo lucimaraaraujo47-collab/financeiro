@@ -19,7 +19,9 @@ function WhatsAppReal({ user, token }) {
 
   const checkStatus = async () => {
     try {
-      const response = await axios.get(`${WHATSAPP_SERVICE_URL}/status`);
+      const response = await axios.get(`${API}/whatsapp/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setStatus(response.data.status);
       setPhoneNumber(response.data.phone_number);
 
@@ -36,7 +38,9 @@ function WhatsAppReal({ user, token }) {
 
   const fetchQRCode = async () => {
     try {
-      const response = await axios.get(`${WHATSAPP_SERVICE_URL}/qr`);
+      const response = await axios.get(`${API}/whatsapp/qr`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (response.data.qr) {
         const qrImage = await QRCode.toDataURL(response.data.qr);
         setQrCodeImage(qrImage);
@@ -50,11 +54,13 @@ function WhatsAppReal({ user, token }) {
     setLoading(true);
     setMessage('');
     try {
-      await axios.post(`${WHATSAPP_SERVICE_URL}/reconnect`);
+      await axios.post(`${API}/whatsapp/reconnect`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setMessage('Reconectando... Aguarde o QR Code.');
       setTimeout(checkStatus, 2000);
     } catch (error) {
-      setMessage('Erro ao reconectar: ' + error.message);
+      setMessage('Erro ao reconectar: ' + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }
@@ -66,13 +72,15 @@ function WhatsAppReal({ user, token }) {
     setLoading(true);
     setMessage('');
     try {
-      await axios.post(`${WHATSAPP_SERVICE_URL}/disconnect`);
+      await axios.post(`${API}/whatsapp/disconnect`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setMessage('Desconectado com sucesso!');
       setStatus('disconnected');
       setPhoneNumber(null);
       setQrCodeImage(null);
     } catch (error) {
-      setMessage('Erro ao desconectar: ' + error.message);
+      setMessage('Erro ao desconectar: ' + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }
