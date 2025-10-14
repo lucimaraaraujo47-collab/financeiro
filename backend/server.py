@@ -364,7 +364,7 @@ async def classificar_com_ai(descricao: str, fornecedor: str, valor: float, empr
 
 @api_router.get("/")
 async def root():
-    return {"message": "FinAI API v1.0"}
+    return {"message": "ECHO SHOP Financial API v1.0"}
 
 # AUTH ROUTES
 @api_router.post("/auth/register", response_model=UserProfile)
