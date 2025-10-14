@@ -540,6 +540,55 @@ async def get_dashboard(empresa_id: str, current_user: dict = Depends(get_curren
         transacoes_recentes=transacoes_recentes
     )
 
+# WhatsApp Service Proxy Routes
+@api_router.get("/whatsapp/status")
+async def whatsapp_status(current_user: dict = Depends(get_current_user)):
+    """Proxy to WhatsApp service status"""
+    try:
+        import httpx
+        async with httpx.AsyncClient() as client:
+            response = await client.get("http://localhost:8002/status", timeout=5.0)
+            return response.json()
+    except Exception as e:
+        logging.error(f"Error getting WhatsApp status: {e}")
+        return {"status": "service_offline", "phone_number": None, "has_qr": False}
+
+@api_router.get("/whatsapp/qr")
+async def whatsapp_qr(current_user: dict = Depends(get_current_user)):
+    """Proxy to WhatsApp service QR code"""
+    try:
+        import httpx
+        async with httpx.AsyncClient() as client:
+            response = await client.get("http://localhost:8002/qr", timeout=5.0)
+            return response.json()
+    except Exception as e:
+        logging.error(f"Error getting WhatsApp QR: {e}")
+        raise HTTPException(status_code=404, detail="QR Code não disponível")
+
+@api_router.post("/whatsapp/reconnect")
+async def whatsapp_reconnect(current_user: dict = Depends(get_current_user)):
+    """Proxy to WhatsApp service reconnect"""
+    try:
+        import httpx
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://localhost:8002/reconnect", timeout=10.0)
+            return response.json()
+    except Exception as e:
+        logging.error(f"Error reconnecting WhatsApp: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao reconectar")
+
+@api_router.post("/whatsapp/disconnect")
+async def whatsapp_disconnect(current_user: dict = Depends(get_current_user)):
+    """Proxy to WhatsApp service disconnect"""
+    try:
+        import httpx
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://localhost:8002/disconnect", timeout=10.0)
+            return response.json()
+    except Exception as e:
+        logging.error(f"Error disconnecting WhatsApp: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao desconectar")
+
 # Include router
 app.include_router(api_router)
 
