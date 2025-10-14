@@ -707,7 +707,8 @@ async def get_dashboard(empresa_id: str, current_user: dict = Depends(get_curren
 
 # WhatsApp Service Proxy Routes
 @api_router.get("/whatsapp/status")
-async def whatsapp_status(current_user: dict = Depends(get_current_user)):
+@limiter.limit("30/minute")
+async def whatsapp_status(request: Request, current_user: dict = Depends(get_current_user)):
     """Proxy to WhatsApp service status"""
     try:
         import httpx
