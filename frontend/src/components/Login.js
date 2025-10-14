@@ -35,7 +35,15 @@ function Login({ onLogin }) {
     setLoading(true);
 
     try {
+      // Validate password strength for registration
       if (isRegister) {
+        const validation = validatePasswordStrength(formData.senha);
+        if (!validation.isValid) {
+          setError('Senha fraca. Requisitos: ' + validation.errors.join(', '));
+          setLoading(false);
+          return;
+        }
+        
         // Register
         await axios.post(`${API}/auth/register`, formData);
         // Then login
@@ -53,7 +61,8 @@ function Login({ onLogin }) {
         onLogin(response.data.access_token, response.data.user);
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Erro ao processar solicitação');
+      const errorMsg = err.response?.data?.detail || 'Erro ao processar solicitação';
+      setError(Array.isArray(errorMsg) ? errorMsg[0]?.msg || 'Erro desconhecido' : errorMsg);
     } finally {
       setLoading(false);
     }
