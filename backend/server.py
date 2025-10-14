@@ -1,12 +1,16 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from pydantic import BaseModel, Field, ConfigDict, EmailStr, validator
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -14,6 +18,18 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 import base64
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+from security_utils import (
+    validate_password_strength,
+    sanitize_string,
+    validate_cnpj,
+    validate_cpf,
+    validate_phone_number,
+    log_security_event,
+    check_sql_injection,
+    check_brute_force,
+    record_failed_login,
+    clear_failed_logins
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
