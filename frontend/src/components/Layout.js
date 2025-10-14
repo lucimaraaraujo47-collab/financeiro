@@ -13,8 +13,11 @@ function Layout({ user, onLogout, children }) {
       <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <span className="logo-icon">📊</span>
-            {sidebarOpen && <span className="logo-text">FinAI</span>}
+            {sidebarOpen ? (
+              <img src="/echo-shop-logo.jpg" alt="ECHO SHOP" style={{ maxWidth: '150px', height: 'auto' }} />
+            ) : (
+              <img src="/echo-shop-logo.jpg" alt="ECHO SHOP" style={{ width: '45px', height: 'auto' }} />
+            )}
           </div>
         </div>
 
