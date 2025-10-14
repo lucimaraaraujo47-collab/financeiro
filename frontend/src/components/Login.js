@@ -24,31 +24,11 @@ function Login({ onLogin }) {
     setLoading(true);
 
     try {
-      // Validate password strength for registration
-      if (isRegister) {
-        const validation = validatePasswordStrength(formData.senha);
-        if (!validation.isValid) {
-          setError('Senha fraca. Requisitos: ' + validation.errors.join(', '));
-          setLoading(false);
-          return;
-        }
-        
-        // Register
-        await axios.post(`${API}/auth/register`, formData);
-        // Then login
-        const loginRes = await axios.post(`${API}/auth/login`, {
-          email: formData.email,
-          senha: formData.senha
-        });
-        onLogin(loginRes.data.access_token, loginRes.data.user);
-      } else {
-        // Login
-        const response = await axios.post(`${API}/auth/login`, {
-          email: formData.email,
-          senha: formData.senha
-        });
-        onLogin(response.data.access_token, response.data.user);
-      }
+      const response = await axios.post(`${API}/auth/login`, {
+        email: formData.email,
+        senha: formData.senha
+      });
+      onLogin(response.data.access_token, response.data.user);
     } catch (err) {
       const errorMsg = err.response?.data?.detail || 'Erro ao processar solicitação';
       setError(Array.isArray(errorMsg) ? errorMsg[0]?.msg || 'Erro desconhecido' : errorMsg);
