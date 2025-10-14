@@ -1,0 +1,254 @@
+.whatsapp-real-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.connection-status-card {
+  background: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  margin-bottom: 2rem;
+}
+
+.status-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.status-info {
+  flex: 1;
+}
+
+.status-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.status-description {
+  font-size: 0.95rem;
+  color: #94a3b8;
+}
+
+.qr-code-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.qr-code-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.qr-code-image {
+  width: 280px;
+  height: 280px;
+  display: block;
+}
+
+.qr-instructions {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 100%;
+}
+
+.qr-instructions h3 {
+  color: #60a5fa;
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
+}
+
+.qr-instructions ol {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: #cbd5e1;
+}
+
+.qr-instructions li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.qr-instructions strong {
+  color: #f1f5f9;
+}
+
+.connected-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.connected-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.connected-icon {
+  font-size: 2.5rem;
+}
+
+.connected-label {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin-bottom: 0.25rem;
+}
+
+.connected-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #6ee7b7;
+}
+
+.info-box {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  color: #cbd5e1;
+}
+
+.info-box strong {
+  display: block;
+  color: #6ee7b7;
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
+}
+
+.info-box p {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.example-message-box {
+  background: rgba(30, 41, 59, 0.8);
+  border-left: 3px solid #10b981;
+  padding: 1rem 1.25rem;
+  margin-top: 0.75rem;
+  border-radius: 8px;
+  font-style: italic;
+  color: #f1f5f9;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.action-buttons button {
+  flex: 1;
+}
+
+.info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.info-card {
+  background: rgba(30, 41, 59, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
+}
+
+.info-card h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 1.5rem;
+}
+
+.info-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.info-card li {
+  padding-left: 1.5rem;
+  margin-bottom: 0.875rem;
+  position: relative;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.info-card li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: #10b981;
+  font-weight: bold;
+}
+
+.examples-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.example-item {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.example-item strong {
+  display: block;
+  color: #10b981;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.example-item p {
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  font-style: italic;
+  margin: 0;
+  line-height: 1.5;
+}
+
+@media (max-width: 968px) {
+  .whatsapp-real-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .qr-code-image {
+    width: 220px;
+    height: 220px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+}
