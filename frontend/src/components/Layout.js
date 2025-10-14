@@ -91,7 +91,7 @@ function Layout({ user, onLogout, children }) {
       <main className="main-content">
         <header className="top-bar">
           <div className="top-bar-left">
-            <h2 className="page-title">FinAI - Sistema Financeiro</h2>
+            <h2 className="page-title">Sistema Financeiro</h2>
           </div>
           <div className="top-bar-right">
             <div className="user-info">
