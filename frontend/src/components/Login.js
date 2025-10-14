@@ -17,8 +17,16 @@ function Login({ onLogin }) {
   const [passwordStrength, setPasswordStrength] = useState(null);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    const sanitized = sanitizeInput(value, name === 'senha' ? 100 : 500);
+    setFormData({ ...formData, [name]: sanitized });
     setError('');
+    
+    // Check password strength for registration
+    if (isRegister && name === 'senha') {
+      const validation = validatePasswordStrength(sanitized);
+      setPasswordStrength(validation);
+    }
   };
 
   const handleSubmit = async (e) => {
