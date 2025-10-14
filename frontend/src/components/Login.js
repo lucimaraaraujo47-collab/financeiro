@@ -4,17 +4,12 @@ import { API } from '../App';
 import { validatePasswordStrength, sanitizeInput } from '../utils/validation';
 
 function Login({ onLogin }) {
-  const [isRegister, setIsRegister] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
-    senha: '',
-    nome: '',
-    telefone: '',
-    perfil: 'financeiro'
+    senha: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
