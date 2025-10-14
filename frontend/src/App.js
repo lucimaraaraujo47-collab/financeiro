@@ -10,6 +10,7 @@ import CentrosCusto from './components/CentrosCusto';
 import Transacoes from './components/Transacoes';
 import MockWhatsApp from './components/MockWhatsApp';
 import WhatsAppReal from './components/WhatsAppReal';
+import GerenciarUsuarios from './components/GerenciarUsuarios';
 import Layout from './components/Layout';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
