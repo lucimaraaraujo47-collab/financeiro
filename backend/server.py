@@ -369,11 +369,21 @@ async def root():
 # AUTH ROUTES
 @api_router.post("/auth/register", response_model=UserProfile)
 @limiter.limit("5/hour")
-async def register(request: Request, user_data: UserCreate):
+async def register(request: Request, user_data: UserCreate, current_user: dict = Depends(get_current_user)):
     """
-    Register new user with strong password validation
+    Register new user - ADMIN ONLY
+    Only administrators can create new users
     Rate limited to 5 registrations per hour per IP
     """
+    # Check if current user is admin
+    if current_user.get("perfil") != "admin":
+        log_security_event(
+            "UNAUTHORIZED_USER_CREATION_ATTEMPT",
+            user_id=current_user.get("id"),
+            ip_address=request.client.host if request.client else None,
+            details=f"Non-admin tried to create user: {user_data.email}"
+        )
+        raise HTTPException(status_code=403, detail="Apenas administradores podem cadastrar usuários")
     # Log registration attempt
     log_security_event(
         "USER_REGISTRATION_ATTEMPT",
