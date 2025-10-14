@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { API } from '../App';
+import { validatePasswordStrength, sanitizeInput } from '../utils/validation';
 
 function Login({ onLogin }) {
   const [isRegister, setIsRegister] = useState(false);
