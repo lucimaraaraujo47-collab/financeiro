@@ -59,8 +59,7 @@ JWT_EXPIRATION = int(os.environ.get('JWT_EXPIRATION_MINUTES', 43200))
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 WHATSAPP_SERVICE_KEY = os.environ.get('WHATSAPP_SERVICE_KEY', 'internal-service-key-123')
 
-# Create the main app
-app = FastAPI()
+# API Router
 api_router = APIRouter(prefix="/api")
 
 # ==================== MODELS ====================
