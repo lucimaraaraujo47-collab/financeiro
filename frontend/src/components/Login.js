@@ -76,29 +76,6 @@ function Login({ onLogin }) {
               required
               data-testid="login-password-input"
             />
-            {isRegister && passwordStrength && formData.senha && (
-              <div style={{ marginTop: '0.5rem' }}>
-                <div style={{
-                  fontSize: '0.85rem',
-                  color: passwordStrength.strength.color,
-                  fontWeight: 500
-                }}>
-                  Força da senha: {passwordStrength.strength.level}
-                </div>
-                {passwordStrength.errors.length > 0 && (
-                  <ul style={{
-                    fontSize: '0.8rem',
-                    color: '#fca5a5',
-                    marginTop: '0.25rem',
-                    paddingLeft: '1.25rem'
-                  }}>
-                    {passwordStrength.errors.map((err, idx) => (
-                      <li key={idx}>{err}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
           </div>
 
           <button 
@@ -107,18 +84,12 @@ function Login({ onLogin }) {
             disabled={loading}
             data-testid="login-submit-button"
           >
-            {loading ? 'Processando...' : (isRegister ? 'Criar Conta' : 'Entrar')}
+            {loading ? 'Processando...' : 'Entrar'}
           </button>
         </form>
 
-        <div className="auth-toggle">
-          {isRegister ? 'Já tem uma conta? ' : 'Não tem uma conta? '}
-          <button 
-            onClick={() => setIsRegister(!isRegister)}
-            data-testid="toggle-auth-mode-button"
-          >
-            {isRegister ? 'Faça login' : 'Registre-se'}
-          </button>
+        <div className="auth-footer" style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.85rem', color: '#94a3b8' }}>
+          Apenas usuários autorizados podem acessar este sistema.
         </div>
       </div>
     </div>
