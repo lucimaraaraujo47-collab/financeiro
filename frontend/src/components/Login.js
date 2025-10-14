@@ -42,7 +42,7 @@ function Login({ onLogin }) {
             <img src="/echo-shop-logo.jpg" alt="ECHO SHOP" style={{ maxWidth: '200px', height: 'auto' }} />
           </div>
           <p className="auth-subtitle" style={{ marginTop: '1.5rem' }}>
-            {isRegister ? 'Crie sua conta' : 'Entre na sua conta'}
+            Entre na sua conta
           </p>
         </div>
 
