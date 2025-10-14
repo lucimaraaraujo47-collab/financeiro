@@ -55,7 +55,7 @@ async function connectToWhatsApp() {
         setTimeout(() => connectToWhatsApp(), 3000);
       }
     } else if (connection === 'open') {
-      console.log('✅ Conectado ao WhatsApp!');
+      console.log('✅ ECHO SHOP WhatsApp conectado!');
       connectionStatus = 'connected';
       qrCodeData = null;
       
