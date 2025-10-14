@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { API } from '../App';
-import { validatePasswordStrength, sanitizeInput } from '../utils/validation';
 
 function Login({ onLogin }) {
   const [formData, setFormData] = useState({
@@ -12,9 +11,7 @@ function Login({ onLogin }) {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    const sanitized = sanitizeInput(value, name === 'senha' ? 100 : 500);
-    setFormData({ ...formData, [name]: sanitized });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
     setError('');
   };
 
