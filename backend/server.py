@@ -82,6 +82,23 @@ class UserCreate(BaseModel):
     perfil: str = "financeiro"
     senha: str
     empresa_ids: List[str] = []
+    
+    @validator('nome')
+    def sanitize_nome(cls, v):
+        return sanitize_string(v, max_length=100)
+    
+    @validator('telefone')
+    def validate_telefone(cls, v):
+        if v and not validate_phone_number(v):
+            raise ValueError('Número de telefone inválido')
+        return v
+    
+    @validator('senha')
+    def validate_senha_strength(cls, v):
+        is_valid, error_msg = validate_password_strength(v)
+        if not is_valid:
+            raise ValueError(error_msg)
+        return v
 
 class UserLogin(BaseModel):
     email: EmailStr
