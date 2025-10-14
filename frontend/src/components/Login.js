@@ -16,12 +16,6 @@ function Login({ onLogin }) {
     const sanitized = sanitizeInput(value, name === 'senha' ? 100 : 500);
     setFormData({ ...formData, [name]: sanitized });
     setError('');
-    
-    // Check password strength for registration
-    if (isRegister && name === 'senha') {
-      const validation = validatePasswordStrength(sanitized);
-      setPasswordStrength(validation);
-    }
   };
 
   const handleSubmit = async (e) => {
