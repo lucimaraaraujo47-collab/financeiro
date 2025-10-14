@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import QRCode from 'qrcode';
+import { API } from '../App';
 import './WhatsAppReal.css';
-
-const WHATSAPP_SERVICE_URL = 'http://localhost:8002';
 
 function WhatsAppReal({ user, token }) {
   const [status, setStatus] = useState('disconnected');
