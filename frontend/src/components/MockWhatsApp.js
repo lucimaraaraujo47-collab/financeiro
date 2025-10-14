@@ -171,7 +171,7 @@ function MockWhatsApp({ user, token }) {
           <div className="whatsapp-header-info">
             <div className="whatsapp-avatar">🤖</div>
             <div>
-              <div className="whatsapp-name">FinAI Bot</div>
+              <div className="whatsapp-name">ECHO SHOP Bot</div>
               <div className="whatsapp-status">Online</div>
             </div>
           </div>
