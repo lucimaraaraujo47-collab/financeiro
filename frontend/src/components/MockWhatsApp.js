@@ -15,7 +15,7 @@ function MockWhatsApp({ user, token }) {
 
   useEffect(() => {
     loadData();
-    addSystemMessage('Olá! Eu sou o FinAI. Envie informações sobre suas despesas ou receitas que eu vou processar automaticamente. 🚀');
+    addSystemMessage('Olá! Eu sou o assistente ECHO SHOP. Envie informações sobre suas despesas ou receitas que eu vou processar automaticamente. 🚀');
   }, []);
 
   const loadData = async () => {
