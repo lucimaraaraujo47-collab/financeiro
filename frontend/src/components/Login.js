@@ -151,6 +151,29 @@ function Login({ onLogin }) {
               required
               data-testid="login-password-input"
             />
+            {isRegister && passwordStrength && formData.senha && (
+              <div style={{ marginTop: '0.5rem' }}>
+                <div style={{
+                  fontSize: '0.85rem',
+                  color: passwordStrength.strength.color,
+                  fontWeight: 500
+                }}>
+                  Força da senha: {passwordStrength.strength.level}
+                </div>
+                {passwordStrength.errors.length > 0 && (
+                  <ul style={{
+                    fontSize: '0.8rem',
+                    color: '#fca5a5',
+                    marginTop: '0.25rem',
+                    paddingLeft: '1.25rem'
+                  }}>
+                    {passwordStrength.errors.map((err, idx) => (
+                      <li key={idx}>{err}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
 
           <button 
