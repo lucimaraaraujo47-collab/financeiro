@@ -77,6 +77,7 @@ function App() {
           <Route path="/transacoes" element={<Transacoes user={user} token={token} />} />
           <Route path="/whatsapp" element={<WhatsAppReal user={user} token={token} />} />
           <Route path="/whatsapp-mock" element={<MockWhatsApp user={user} token={token} />} />
+          <Route path="/usuarios" element={<GerenciarUsuarios user={user} token={token} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
