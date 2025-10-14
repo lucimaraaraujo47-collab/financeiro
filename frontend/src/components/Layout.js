@@ -75,6 +75,17 @@ function Layout({ user, onLogout, children }) {
             <span className="nav-icon">📱</span>
             {sidebarOpen && <span className="nav-text">WhatsApp</span>}
           </Link>
+
+          {user.perfil === 'admin' && (
+            <Link 
+              to="/usuarios" 
+              className={`nav-item ${isActive('/usuarios') ? 'active' : ''}`}
+              data-testid="nav-usuarios"
+            >
+              <span className="nav-icon">👥</span>
+              {sidebarOpen && <span className="nav-text">Usuários</span>}
+            </Link>
+          )}
         </nav>
 
         <div className="sidebar-footer">
