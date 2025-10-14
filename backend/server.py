@@ -511,6 +511,17 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     user_data = {k: v for k, v in current_user.items() if k != "senha_hash"}
     return user_data
 
+@api_router.get("/users", response_model=List[UserProfile])
+async def list_users(current_user: dict = Depends(get_current_user)):
+    """
+    List all users - ADMIN ONLY
+    """
+    if current_user.get("perfil") != "admin":
+        raise HTTPException(status_code=403, detail="Apenas administradores podem listar usuários")
+    
+    users = await db.users.find({}, {"_id": 0, "senha_hash": 0}).to_list(1000)
+    return users
+
 # EMPRESA ROUTES
 @api_router.post("/empresas", response_model=Empresa)
 async def create_empresa(empresa_data: EmpresaCreate, current_user: dict = Depends(get_current_user)):
