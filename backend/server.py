@@ -277,41 +277,51 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 async def extrair_dados_com_ai(texto: str, empresa_id: str) -> Dict[str, Any]:
     """Extract financial data from text using AI"""
     try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"extract-{uuid.uuid4()}",
-            system_message="""Você é um assistente financeiro especializado em extrair dados de textos sobre despesas e receitas.
-            Extraia as seguintes informações do texto:
-            - tipo (despesa ou receita)
-            - fornecedor
-            - cnpj_cpf (se mencionado)
-            - descricao
-            - valor_total (apenas número)
-            - data_competencia (formato YYYY-MM-DD, se for 'hoje' use a data atual, se for 'ontem' use data de ontem)
-            - metodo_pagamento
-            
-            Retorne APENAS um JSON válido com esses campos. Se algum campo não estiver presente, use null.
-            Exemplo: {"tipo": "despesa", "fornecedor": "ENEL", "valor_total": 842.35, "data_competencia": "2025-01-15", ...}
-            """
-        ).with_model("openai", "gpt-5")
+        import re
+        from datetime import date
         
-        message = UserMessage(text=texto)
-        response = await chat.send_message(message)
+        # Simple regex extraction as fallback/primary method
+        dados = {
+            "tipo": "despesa",
+            "fornecedor": None,
+            "cnpj_cpf": None,
+            "descricao": texto,
+            "valor_total": None,
+            "data_competencia": date.today().isoformat(),
+            "metodo_pagamento": None
+        }
         
-        # Parse the JSON response
-        import json
-        # Remove markdown code blocks if present
-        response_text = response.strip()
-        if response_text.startswith("```"):
-            lines = response_text.split("\n")
-            response_text = "\n".join(lines[1:-1])
-        if response_text.startswith("json"):
-            response_text = response_text[4:].strip()
+        # Extract valor (R$ 100,00 or R$ 100.00 or 100,00 or 100.00)
+        valor_match = re.search(r'R?\$?\s*(\d+[\.,]\d{2})', texto.replace('.', '').replace(',', '.'))
+        if valor_match:
+            valor_str = valor_match.group(1).replace(',', '.')
+            dados["valor_total"] = float(valor_str)
         
-        dados = json.loads(response_text)
+        # Extract fornecedor (words after "de/da/do/para/no/na")
+        fornecedor_match = re.search(r'(?:de|da|do|para|no|na)\s+([A-Z][A-Za-z\s]+?)(?:\s*[,.]|\s+R\$|\s+\d)', texto, re.IGNORECASE)
+        if fornecedor_match:
+            dados["fornecedor"] = fornecedor_match.group(1).strip()
+        
+        # Detect tipo
+        if any(word in texto.lower() for word in ['recebi', 'recebimento', 'venda', 'pagamento de cliente']):
+            dados["tipo"] = "receita"
+        
+        # Extract date
+        if 'hoje' in texto.lower():
+            dados["data_competencia"] = date.today().isoformat()
+        elif 'ontem' in texto.lower():
+            from datetime import timedelta
+            dados["data_competencia"] = (date.today() - timedelta(days=1)).isoformat()
+        
+        # Extract payment method
+        if any(word in texto.lower() for word in ['pix', 'cartão', 'boleto', 'dinheiro', 'débito', 'crédito']):
+            metodo_match = re.search(r'(pix|cartão|boleto|dinheiro|débito|crédito)', texto, re.IGNORECASE)
+            if metodo_match:
+                dados["metodo_pagamento"] = metodo_match.group(1).capitalize()
+        
         return dados
     except Exception as e:
-        logging.error(f"Error extracting data with AI: {e}")
+        logging.error(f"Error extracting data: {e}")
         return {}
 
 async def classificar_com_ai(descricao: str, fornecedor: str, valor: float, empresa_id: str) -> Optional[ClassificacaoSugestao]:
