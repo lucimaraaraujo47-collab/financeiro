@@ -80,24 +80,60 @@ async function connectToWhatsApp() {
       // Ignore messages from self
       if (msg.key.fromMe) continue;
 
-      // Only process text messages for now
-      if (!msg.message?.conversation && !msg.message?.extendedTextMessage) continue;
-
-      const messageText = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
       const from = msg.key.remoteJid;
       const senderName = msg.pushName || from.split('@')[0];
 
-      console.log('\n📩 Mensagem recebida:');
-      console.log('De:', senderName);
-      console.log('Número:', from);
-      console.log('Mensagem:', messageText);
+      // Process text messages
+      if (msg.message?.conversation || msg.message?.extendedTextMessage) {
+        const messageText = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+        
+        console.log('\n📩 Mensagem de texto recebida:');
+        console.log('De:', senderName);
+        console.log('Número:', from);
+        console.log('Mensagem:', messageText);
 
-      try {
-        // Process with backend AI
-        await processMessageWithAI(from, messageText, senderName);
-      } catch (error) {
-        console.error('Erro ao processar mensagem:', error);
-        await sendWhatsAppMessage(from, '❌ Erro ao processar sua mensagem. Tente novamente.');
+        try {
+          await processMessageWithAI(from, messageText, senderName);
+        } catch (error) {
+          console.error('Erro ao processar mensagem:', error);
+          await sendWhatsAppMessage(from, '❌ Erro ao processar sua mensagem. Tente novamente.');
+        }
+      }
+      // Process audio messages
+      else if (msg.message?.audioMessage) {
+        console.log('\n🎤 Mensagem de áudio recebida:');
+        console.log('De:', senderName);
+        console.log('Número:', from);
+        
+        try {
+          await sendWhatsAppMessage(from, '🎤 Áudio recebido! Processando...');
+          
+          // Download audio
+          const buffer = await downloadMediaMessage(
+            msg,
+            'buffer',
+            {},
+            { 
+              logger: console,
+              reuploadRequest: sock.updateMediaMessage
+            }
+          );
+          
+          // Convert to text (send to backend for transcription)
+          const audioBase64 = buffer.toString('base64');
+          const transcription = await transcribeAudio(audioBase64);
+          
+          if (transcription) {
+            console.log('Transcrição:', transcription);
+            await sendWhatsAppMessage(from, `📝 Entendi: "${transcription}"\n\nProcessando com IA...`);
+            await processMessageWithAI(from, transcription, senderName);
+          } else {
+            await sendWhatsAppMessage(from, '❌ Não consegui entender o áudio. Tente enviar texto ou falar mais claramente.');
+          }
+        } catch (error) {
+          console.error('Erro ao processar áudio:', error);
+          await sendWhatsAppMessage(from, '❌ Erro ao processar áudio. Tente enviar mensagem de texto.');
+        }
       }
     }
   });
