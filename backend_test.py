@@ -34,7 +34,7 @@ class WhatsAppTestRunner:
         
         login_data = {
             "email": ADMIN_EMAIL,
-            "password": ADMIN_PASSWORD
+            "senha": ADMIN_PASSWORD
         }
         
         try:
