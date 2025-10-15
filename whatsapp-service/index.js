@@ -192,6 +192,28 @@ async function sendWhatsAppMessage(to, message) {
   }
 }
 
+async function transcribeAudio(audioBase64) {
+  try {
+    // Send to backend for transcription
+    const response = await axios.post(
+      `${BACKEND_URL}/api/whatsapp/transcribe`,
+      { audio_base64: audioBase64 },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-WhatsApp-Service': 'internal-service-key-123'
+        },
+        timeout: 60000 // 60 seconds for audio processing
+      }
+    );
+    
+    return response.data.transcription;
+  } catch (error) {
+    console.error('Erro ao transcrever áudio:', error.message);
+    return null;
+  }
+}
+
 // API Routes
 app.get('/status', (req, res) => {
   res.json({
