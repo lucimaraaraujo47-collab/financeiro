@@ -950,10 +950,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
-async def process_whatsapp_message(
-    request: WhatsAppMessageRequest,
-    x_whatsapp_service: str = Depends(lambda x: x)
-):
+async def shutdown_db_client():
     # Simple internal service authentication
     service_key = None
     try:
