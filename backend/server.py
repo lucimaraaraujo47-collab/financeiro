@@ -951,15 +951,7 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    # Simple internal service authentication
-    service_key = None
-    try:
-        from fastapi import Header
-        # Get header manually since Depends doesn't work well here
-        # We'll validate it differently
-        pass
-    except:
-        pass
+    client.close()
     
     try:
         # For now, process without strict auth check for internal service
