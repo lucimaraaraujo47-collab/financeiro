@@ -91,11 +91,14 @@ async function connectToWhatsApp() {
         console.log('De:', senderName);
         console.log('Número:', from);
         console.log('Mensagem:', messageText);
+        console.log('🔄 Chamando processMessageWithAI...');
 
         try {
           await processMessageWithAI(from, messageText, senderName);
+          console.log('✅ processMessageWithAI completado');
         } catch (error) {
-          console.error('Erro ao processar mensagem:', error);
+          console.error('❌ Erro ao processar mensagem:', error);
+          console.error('Stack:', error.stack);
           await sendWhatsAppMessage(from, '❌ Erro ao processar sua mensagem. Tente novamente.');
         }
       }
