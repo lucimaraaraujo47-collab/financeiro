@@ -641,6 +641,35 @@ async def delete_transacao(transacao_id: str, current_user: dict = Depends(get_c
         raise HTTPException(status_code=404, detail="Transação não encontrada")
     return {"message": "Transação deletada"}
 
+@api_router.patch("/transacoes/{transacao_id}/status")
+async def update_transacao_status(
+    transacao_id: str, 
+    status: str = Body(..., embed=True),
+    current_user: dict = Depends(get_current_user)
+):
+    """Update transaction status (pendente, concluido, cancelado)"""
+    if status not in ["pendente", "concluido", "cancelado"]:
+        raise HTTPException(status_code=400, detail="Status inválido. Use: pendente, concluido ou cancelado")
+    
+    # Check if transaction exists and user has access
+    transacao = await db.transacoes.find_one({"id": transacao_id}, {"_id": 0})
+    if not transacao:
+        raise HTTPException(status_code=404, detail="Transação não encontrada")
+    
+    if transacao["empresa_id"] not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Update status
+    result = await db.transacoes.update_one(
+        {"id": transacao_id},
+        {"$set": {"status": status}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Não foi possível atualizar o status")
+    
+    return {"message": f"Status atualizado para {status}", "transacao_id": transacao_id, "status": status}
+
 # AI ROUTES
 @api_router.post("/ai/extrair-texto", response_model=ExtrairTextoResponse)
 async def extrair_texto(request: ExtrairTextoRequest, current_user: dict = Depends(get_current_user)):
