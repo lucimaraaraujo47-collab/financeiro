@@ -450,6 +450,16 @@ body {
   color: #fcd34d;
 }
 
+.badge-concluido {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+.badge-cancelado {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
 .badge-conciliada {
   background: rgba(16, 185, 129, 0.2);
   color: #6ee7b7;
