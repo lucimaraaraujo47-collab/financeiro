@@ -132,7 +132,7 @@
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: false
           agent: "user"
@@ -140,6 +140,9 @@
         - working: true
           agent: "main"
           comment: "Fixed by reassigning existing transactions to correct empresa. Admin user (empresa 226b58c1...) should now see TRX-f0c35180 (luz) and TRX-09f9a544 (internet)."
+        - working: true
+          agent: "testing"
+          comment: "VERIFIED: Admin user can successfully retrieve all WhatsApp transactions. Found TRX-f0c35180 (luz, R$ 450), TRX-09f9a544 (internet, R$ 10), and additional test transactions. All transactions have correct empresa_id (226b58c1-4a48-4b66-9537-0dbf9fa65500). Transaction visibility fully working."
 
 ## frontend:
   - task: "Transaction List Display"
