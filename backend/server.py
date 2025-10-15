@@ -949,13 +949,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# WHATSAPP ROUTES (internal service only)
-class WhatsAppMessageRequest(BaseModel):
-    phone_number: str
-    sender_name: str
-    message: str
-
-@api_router.post("/whatsapp/process")
+@app.on_event("shutdown")
 async def process_whatsapp_message(
     request: WhatsAppMessageRequest,
     x_whatsapp_service: str = Depends(lambda x: x)
