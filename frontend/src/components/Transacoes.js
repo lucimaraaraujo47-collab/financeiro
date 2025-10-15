@@ -120,6 +120,21 @@ function Transacoes({ user, token }) {
     }
   };
 
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await axios.patch(`${API}/transacoes/${id}/status`, 
+        { status: newStatus },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      setMessage(`Status atualizado para ${newStatus}!`);
+      loadData();
+    } catch (error) {
+      setMessage('Erro ao atualizar status');
+    }
+  };
+
   if (!empresa) {
     return (
       <div className="dashboard">
