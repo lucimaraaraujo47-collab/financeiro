@@ -762,17 +762,35 @@ async def transcribe_audio(request: WhatsAppAudioRequest):
 async def process_whatsapp_message(request: WhatsAppMessageRequest):
     """Process WhatsApp messages - Internal service endpoint"""
     try:
-        # Try to find user by phone number
-        user = await db.users.find_one({"telefone": request.phone_number}, {"_id": 0})
+        # Normalize phone number for comparison (remove all non-digits)
+        normalized_phone = ''.join(filter(str.isdigit, request.phone_number))
         
-        # If no user found, use first empresa as default
+        # Try to find user by normalized phone number
+        users_cursor = db.users.find({}, {"_id": 0})
+        user = None
+        async for u in users_cursor:
+            u_phone = ''.join(filter(str.isdigit, u.get("telefone", "")))
+            if u_phone == normalized_phone:
+                user = u
+                break
+        
+        # Determine which empresa to use
         empresa = None
         if user and user.get("empresa_ids"):
+            # User found - use their first empresa
             empresa_id = user["empresa_ids"][0]
             empresa = await db.empresas.find_one({"id": empresa_id}, {"_id": 0})
         else:
-            # Get first available empresa
-            empresa = await db.empresas.find_one({}, {"_id": 0})
+            # No user found - try environment variable for default empresa
+            default_empresa_id = os.environ.get("WHATSAPP_DEFAULT_EMPRESA_ID")
+            if default_empresa_id:
+                empresa = await db.empresas.find_one({"id": default_empresa_id}, {"_id": 0})
+            
+            # If still no empresa, use most recently created one (more likely to be active)
+            if not empresa:
+                empresas_list = await db.empresas.find({}, {"_id": 0}).sort("created_at", -1).limit(1).to_list(1)
+                if empresas_list:
+                    empresa = empresas_list[0]
         
         if not empresa:
             return {
