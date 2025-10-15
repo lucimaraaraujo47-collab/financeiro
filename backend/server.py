@@ -726,6 +726,143 @@ async def get_dashboard(empresa_id: str, current_user: dict = Depends(get_curren
         transacoes_recentes=transacoes_recentes
     )
 
+# WHATSAPP MESSAGE PROCESSING (internal service)
+class WhatsAppMessageRequest(BaseModel):
+    phone_number: str
+    sender_name: str
+    message: str
+
+@api_router.post("/whatsapp/process")
+async def process_whatsapp_message(request: WhatsAppMessageRequest):
+    """Process WhatsApp messages - Internal service endpoint"""
+    try:
+        # Try to find user by phone number
+        user = await db.users.find_one({"telefone": request.phone_number}, {"_id": 0})
+        
+        # If no user found, use first empresa as default
+        empresa = None
+        if user and user.get("empresa_ids"):
+            empresa_id = user["empresa_ids"][0]
+            empresa = await db.empresas.find_one({"id": empresa_id}, {"_id": 0})
+        else:
+            # Get first available empresa
+            empresa = await db.empresas.find_one({}, {"_id": 0})
+        
+        if not empresa:
+            return {
+                "dados_extraidos": {},
+                "classificacao_sugerida": None,
+                "response_message": "❌ Nenhuma empresa cadastrada no sistema. Configure uma empresa primeiro."
+            }
+        
+        # Extract data with AI
+        dados = await extrair_dados_com_ai(request.message, empresa["id"])
+        
+        if not dados or not dados.get("valor_total"):
+            return {
+                "dados_extraidos": {},
+                "classificacao_sugerida": None,
+                "response_message": "❌ Não consegui extrair informações financeiras da mensagem. Tente incluir: fornecedor, valor e descrição."
+            }
+        
+        # Classify with AI
+        classificacao = None
+        if dados.get("descricao") and dados.get("fornecedor") and dados.get("valor_total"):
+            classificacao = await classificar_com_ai(
+                dados["descricao"],
+                dados["fornecedor"],
+                dados["valor_total"],
+                empresa["id"]
+            )
+        
+        # Build response message
+        response_text = "✅ Dados extraídos com sucesso!\\n\\n"
+        response_text += f"📊 Tipo: {dados.get('tipo', 'despesa')}\\n"
+        response_text += f"🏢 Fornecedor: {dados.get('fornecedor', 'N/A')}\\n"
+        response_text += f"💵 Valor: R$ {float(dados.get('valor_total', 0)):.2f}\\n"
+        response_text += f"📅 Data: {dados.get('data_competencia', 'N/A')}\\n"
+        response_text += f"📝 Descrição: {dados.get('descricao', 'N/A')}\\n"
+        
+        if classificacao:
+            response_text += f"\\n🎯 Classificação sugerida:\\n"
+            response_text += f"   Categoria: {classificacao.categoria_nome} ({int(classificacao.confidence * 100)}% confiança)\\n"
+            response_text += f"   Centro de Custo: {classificacao.centro_custo_nome}\\n"
+        
+        # Auto-create transaction
+        try:
+            categorias = await db.categorias.find({"empresa_id": empresa["id"]}, {"_id": 0}).to_list(10)
+            centros = await db.centros_custo.find({"empresa_id": empresa["id"]}, {"_id": 0}).to_list(10)
+            
+            if not categorias or not centros:
+                response_text += "\\n⚠️ Configure categorias e centros de custo primeiro."
+            else:
+                # Use classified or first available
+                categoria_id = classificacao.categoria_id if classificacao else categorias[0]["id"]
+                centro_id = classificacao.centro_custo_id if classificacao else centros[0]["id"]
+                
+                # Get or create default user for WhatsApp
+                default_user = await db.users.find_one({"email": "whatsapp@echoshop.com"}, {"_id": 0})
+                if not default_user:
+                    # Create default WhatsApp user
+                    default_user = {
+                        "id": str(uuid.uuid4()),
+                        "nome": "WhatsApp Bot ECHO SHOP",
+                        "email": "whatsapp@echoshop.com",
+                        "telefone": request.phone_number,
+                        "perfil": "financeiro",
+                        "empresa_ids": [empresa["id"]],
+                        "senha_hash": pwd_context.hash("whatsapp-bot-user"),
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.users.insert_one(default_user)
+                
+                # Create transaction
+                transacao = {
+                    "id": str(uuid.uuid4()),
+                    "empresa_id": empresa["id"],
+                    "usuario_id": default_user["id"],
+                    "tipo": dados.get("tipo", "despesa"),
+                    "fornecedor": dados.get("fornecedor", "Desconhecido"),
+                    "cnpj_cpf": dados.get("cnpj_cpf"),
+                    "descricao": dados.get("descricao", "Lançamento via WhatsApp"),
+                    "valor_total": float(dados.get("valor_total", 0)),
+                    "data_competencia": dados.get("data_competencia", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
+                    "data_pagamento": dados.get("data_pagamento"),
+                    "categoria_id": categoria_id,
+                    "centro_custo_id": centro_id,
+                    "metodo_pagamento": dados.get("metodo_pagamento"),
+                    "conta_origem": None,
+                    "impostos": {},
+                    "parcelas": None,
+                    "comprovante_url": None,
+                    "status": "pendente",
+                    "origem": "whatsapp",
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                await db.transacoes.insert_one(transacao)
+                
+                response_text += f"\\n✅ Transação registrada automaticamente!\\nID: TRX-{transacao['id'][:8]}"
+                response_text += f"\\n\\nEnvie mais mensagens para continuar registrando transações! 🚀"
+        
+        except Exception as e:
+            logging.error(f"Error creating transaction: {e}")
+            response_text += f"\\n⚠️ Dados extraídos mas não foi possível criar a transação automaticamente."
+        
+        return {
+            "dados_extraidos": dados,
+            "classificacao_sugerida": classificacao.model_dump() if classificacao else None,
+            "response_message": response_text
+        }
+        
+    except Exception as e:
+        logging.error(f"Error processing WhatsApp message: {e}")
+        return {
+            "dados_extraidos": {},
+            "classificacao_sugerida": None,
+            "response_message": f"❌ Erro ao processar mensagem: {str(e)}"
+        }
+
 # WhatsApp Service Proxy Routes
 @api_router.get("/whatsapp/status")
 @limiter.limit("30/minute")
