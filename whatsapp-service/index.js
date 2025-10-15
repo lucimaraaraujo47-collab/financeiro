@@ -144,12 +144,15 @@ async function connectToWhatsApp() {
 
 async function processMessageWithAI(phoneNumber, messageText, senderName) {
   try {
+    console.log(`\n🔄 processMessageWithAI iniciado para ${phoneNumber}`);
+    console.log(`   Mensagem: "${messageText}"`);
+    console.log(`   Backend URL: ${BACKEND_URL}`);
+    
     // Send initial response
     await sendWhatsAppMessage(phoneNumber, '🤖 Processando sua mensagem com IA...');
 
     // Call backend to extract data
-    // Note: We'll need a special endpoint that doesn't require auth for WhatsApp messages
-    // Or we'll need to create a service token
+    console.log(`📡 Chamando backend: ${BACKEND_URL}/api/whatsapp/process`);
     const extractResponse = await axios.post(
       `${BACKEND_URL}/api/whatsapp/process`,
       {
@@ -166,14 +169,24 @@ async function processMessageWithAI(phoneNumber, messageText, senderName) {
       }
     );
 
+    console.log('✅ Resposta do backend recebida');
+    console.log('   Status:', extractResponse.status);
+    
     const { dados_extraidos, classificacao_sugerida, response_message } = extractResponse.data;
 
     if (response_message) {
+      console.log('📤 Enviando resposta ao usuário...');
       await sendWhatsAppMessage(phoneNumber, response_message);
+      console.log('✅ Resposta enviada');
     }
 
   } catch (error) {
-    console.error('Erro ao processar com IA:', error.message);
+    console.error('❌ Erro ao processar com IA:', error.message);
+    console.error('   Stack completo:', error.stack);
+    if (error.response) {
+      console.error('   Response status:', error.response.status);
+      console.error('   Response data:', JSON.stringify(error.response.data));
+    }
     await sendWhatsAppMessage(
       phoneNumber,
       '❌ Erro ao processar mensagem com IA. Por favor, tente novamente ou entre em contato com o suporte.'
