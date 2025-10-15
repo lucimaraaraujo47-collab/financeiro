@@ -745,6 +745,19 @@ class WhatsAppMessageRequest(BaseModel):
 class WhatsAppAudioRequest(BaseModel):
     audio_base64: str
 
+@api_router.post("/whatsapp/transcribe")
+async def transcribe_audio(request: WhatsAppAudioRequest):
+    """Transcribe audio - placeholder for now"""
+    try:
+        # For MVP, return a message asking to send text
+        # In production, integrate with Whisper API or Speech-to-Text service
+        return {
+            "transcription": "Por favor, envie mensagem de texto com: fornecedor, valor e descrição. Exemplo: Paguei R$ 100 para a empresa ABC hoje"
+        }
+    except Exception as e:
+        logging.error(f"Error transcribing audio: {e}")
+        return {"transcription": None}
+
 @api_router.post("/whatsapp/process")
 async def process_whatsapp_message(request: WhatsAppMessageRequest):
     """Process WhatsApp messages - Internal service endpoint"""
