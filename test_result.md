@@ -101,3 +101,70 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+## user_problem_statement: "Fix WhatsApp transaction company ID mismatch - transactions were being registered to wrong company, making them invisible to admin user"
+
+## backend:
+  - task: "WhatsApp Message Processing - Company ID Assignment"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: false
+          agent: "user"
+          comment: "User reported WhatsApp messages showing success but not appearing in system. Investigation revealed company ID mismatch."
+        - working: false
+          agent: "main"
+          comment: "Identified root cause: WhatsApp process endpoint was using first empresa from database instead of proper company selection. WhatsApp Bot user was assigned to wrong empresa (FinAI LTDA instead of ECHO SHOP LTDA)."
+        - working: true
+          agent: "main"
+          comment: "FIXED: 1) Updated WhatsApp process logic to use normalized phone matching, environment variable for default empresa, and most recently created empresa as fallback. 2) Changed to use empresa-specific WhatsApp bot users. 3) Migrated existing WhatsApp transactions from wrong empresa (b87bd823...) to correct empresa (226b58c1...). 4) Updated WhatsApp bot user empresa_ids. Backend restarted successfully."
+
+  - task: "WhatsApp Transaction Visibility"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: false
+          agent: "user"
+          comment: "WhatsApp transactions not visible in dashboard/transaction list for admin user."
+        - working: true
+          agent: "main"
+          comment: "Fixed by reassigning existing transactions to correct empresa. Admin user (empresa 226b58c1...) should now see TRX-f0c35180 (luz) and TRX-09f9a544 (internet)."
+
+## frontend:
+  - task: "Transaction List Display"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/Transacoes.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "No changes made to frontend. Need to verify that transactions now appear correctly after backend fix."
+
+## metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+## test_plan:
+  current_focus:
+    - "WhatsApp Message Processing - Company ID Assignment"
+    - "WhatsApp Transaction Visibility"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+## agent_communication:
+    - agent: "main"
+      message: "Fixed critical company ID mismatch issue. WhatsApp process endpoint now: 1) Uses normalized phone number matching to find users, 2) Checks WHATSAPP_DEFAULT_EMPRESA_ID env var, 3) Falls back to most recently created empresa (not first). Also creates empresa-specific WhatsApp bot users. Migrated 2 existing transactions from wrong empresa to admin's empresa. Ready for backend testing to verify WhatsApp message processing assigns correct empresa."
