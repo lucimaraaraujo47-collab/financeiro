@@ -348,13 +348,36 @@ function Transacoes({ user, token }) {
                     </td>
                     <td><span className={`badge badge-${t.status}`}>{t.status}</span></td>
                     <td>
-                      <button 
-                        className="btn-danger" 
-                        onClick={() => handleDelete(t.id)}
-                        data-testid={`delete-transacao-${t.id}`}
-                      >
-                        Deletar
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {t.status === 'pendente' && (
+                          <button 
+                            className="btn-success" 
+                            onClick={() => handleStatusChange(t.id, 'concluido')}
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                            data-testid={`complete-transacao-${t.id}`}
+                          >
+                            ✓ Concluir
+                          </button>
+                        )}
+                        {t.status === 'concluido' && (
+                          <button 
+                            className="btn-warning" 
+                            onClick={() => handleStatusChange(t.id, 'pendente')}
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                            data-testid={`reopen-transacao-${t.id}`}
+                          >
+                            ↺ Reabrir
+                          </button>
+                        )}
+                        <button 
+                          className="btn-danger" 
+                          onClick={() => handleDelete(t.id)}
+                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                          data-testid={`delete-transacao-${t.id}`}
+                        >
+                          🗑 Deletar
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
