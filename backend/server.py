@@ -844,14 +844,15 @@ async def process_whatsapp_message(request: WhatsAppMessageRequest):
                 categoria_id = classificacao.categoria_id if classificacao else categorias[0]["id"]
                 centro_id = classificacao.centro_custo_id if classificacao else centros[0]["id"]
                 
-                # Get or create default user for WhatsApp
-                default_user = await db.users.find_one({"email": "whatsapp@echoshop.com"}, {"_id": 0})
+                # Get or create empresa-specific WhatsApp user
+                whatsapp_email = f"whatsapp-{empresa['id'][:8]}@echoshop.com"
+                default_user = await db.users.find_one({"email": whatsapp_email}, {"_id": 0})
                 if not default_user:
-                    # Create default WhatsApp user
+                    # Create empresa-specific WhatsApp user
                     default_user = {
                         "id": str(uuid.uuid4()),
-                        "nome": "WhatsApp Bot ECHO SHOP",
-                        "email": "whatsapp@echoshop.com",
+                        "nome": f"WhatsApp Bot - {empresa.get('razao_social', 'ECHO SHOP')}",
+                        "email": whatsapp_email,
                         "telefone": request.phone_number,
                         "perfil": "financeiro",
                         "empresa_ids": [empresa["id"]],
@@ -859,6 +860,23 @@ async def process_whatsapp_message(request: WhatsAppMessageRequest):
                         "created_at": datetime.now(timezone.utc).isoformat()
                     }
                     await db.users.insert_one(default_user)
+                else:
+                    # Update phone number if changed and ensure empresa is in list
+                    update_needed = False
+                    updates = {}
+                    if default_user.get("telefone") != request.phone_number:
+                        updates["telefone"] = request.phone_number
+                        update_needed = True
+                    if empresa["id"] not in default_user.get("empresa_ids", []):
+                        updates["$addToSet"] = {"empresa_ids": empresa["id"]}
+                        update_needed = True
+                    
+                    if update_needed:
+                        await db.users.update_one(
+                            {"email": whatsapp_email},
+                            {"$set": updates} if "$addToSet" not in updates else {**{"$set": {k: v for k, v in updates.items() if k != "$addToSet"}}, "$addToSet": updates["$addToSet"]}
+                        )
+                        default_user = await db.users.find_one({"email": whatsapp_email}, {"_id": 0})
                 
                 # Create transaction
                 transacao = {
