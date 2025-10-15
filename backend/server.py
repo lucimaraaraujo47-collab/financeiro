@@ -742,6 +742,9 @@ class WhatsAppMessageRequest(BaseModel):
     sender_name: str
     message: str
 
+class WhatsAppAudioRequest(BaseModel):
+    audio_base64: str
+
 @api_router.post("/whatsapp/process")
 async def process_whatsapp_message(request: WhatsAppMessageRequest):
     """Process WhatsApp messages - Internal service endpoint"""
