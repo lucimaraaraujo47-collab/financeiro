@@ -111,7 +111,7 @@
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: false
           agent: "user"
@@ -122,6 +122,9 @@
         - working: true
           agent: "main"
           comment: "FIXED: 1) Updated WhatsApp process logic to use normalized phone matching, environment variable for default empresa, and most recently created empresa as fallback. 2) Changed to use empresa-specific WhatsApp bot users. 3) Migrated existing WhatsApp transactions from wrong empresa (b87bd823...) to correct empresa (226b58c1...). 4) Updated WhatsApp bot user empresa_ids. Backend restarted successfully."
+        - working: true
+          agent: "testing"
+          comment: "VERIFIED: Comprehensive testing completed. Admin login successful, all existing WhatsApp transactions visible with correct empresa_id (226b58c1...), WhatsApp processing creates new transactions with correct company assignment. Set WHATSAPP_DEFAULT_EMPRESA_ID=226b58c1-4a48-4b66-9537-0dbf9fa65500 in backend/.env. Fixed minor Pydantic validation issue with null fornecedor fields. Company ID assignment bug fully resolved."
 
   - task: "WhatsApp Transaction Visibility"
     implemented: true
