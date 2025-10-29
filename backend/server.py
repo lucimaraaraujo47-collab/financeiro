@@ -547,6 +547,10 @@ class DashboardMetrics(BaseModel):
     total_receitas: float
     total_despesas: float
     saldo: float
+    saldo_contas: float = 0.0
+    saldo_cartoes: float = 0.0
+    num_contas: int = 0
+    num_cartoes: int = 0
     despesas_por_categoria: List[Dict[str, Any]]
     despesas_por_centro_custo: List[Dict[str, Any]]
     transacoes_recentes: List[Dict[str, Any]]
