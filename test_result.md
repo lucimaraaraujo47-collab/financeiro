@@ -173,15 +173,18 @@
 
   - task: "Clientes CRUD - Create, Read, Update, Delete"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Backend endpoints implemented for client management: POST/GET /empresas/{empresa_id}/clientes, GET/PUT/DELETE /clientes/{cliente_id}. Model includes: nome, tipo (fisica/juridica), cnpj_cpf, email, telefone, endereco, cidade, estado, cep, status, observacoes."
+        - working: true
+          agent: "testing"
+          comment: "VERIFIED: Complete CRUD testing successful. Created client 'Tech Solutions LTDA' (juridica, CNPJ 12345678000190). All operations working: CREATE (client created with correct fields), LIST (client appears in empresa list), UPDATE (telefone updated from 11987654321 to 11999888777), DELETE (client removed from list). All API endpoints responding correctly with proper status codes and data validation."
 
   - task: "Fornecedores CRUD - Create, Read, Update, Delete"
     implemented: true
