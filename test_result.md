@@ -248,15 +248,18 @@
 
   - task: "Equipamentos Serializados CRUD - Create, Read, Update, Delete"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Backend endpoints implemented for serialized equipment instances: POST/GET /empresas/{empresa_id}/equipamentos-serializados (with filters: status, cliente_id, equipamento_id), GET/PUT/DELETE /equipamentos-serializados/{eq_serial_id}. Model includes: equipamento_id, numero_serie (unique), numero_linha, numero_simcard, historico_simcards, status (disponivel/em_cliente/em_manutencao/vendido/baixado), cliente_id, tipo_vinculo (venda/locacao/comodato), local_id, data_aquisicao, data_garantia. SIM card changes are tracked in history automatically."
+        - working: true
+          agent: "testing"
+          comment: "VERIFIED: Complete CRUD testing successful. Created two serialized equipments: SN123456789 (linha 11987654321, SIM 89551234567890) and SN987654321. All operations working: CREATE (both instances created with correct serial numbers and SIM data), UNIQUE validation (duplicate numero_serie correctly rejected), LIST (both appear in empresa list), FILTER by status='disponivel' (both found), GET specific instance by ID, UPDATE SIM card (old SIM 89551234567890 correctly moved to historico_simcards, new SIM 89551111111111 set), DELETE (instance removed). All API endpoints and business logic working correctly."
 
   - task: "Movimentações de Estoque - Create and Read with Business Logic"
     implemented: true
