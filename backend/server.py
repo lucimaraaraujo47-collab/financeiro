@@ -440,7 +440,7 @@ async def register(request: Request, user_data: UserCreate, current_user: dict =
     
     return user_obj
 
-@api_router.get("/users", response_model=List[UserProfile])
+@api_router.get("/users", response_model=List[UserResponse])
 async def list_users(current_user: dict = Depends(get_current_user)):
     """
     List all users - ADMIN ONLY
