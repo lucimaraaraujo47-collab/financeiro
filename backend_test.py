@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """
-Backend API Testing for WhatsApp Message Processing - Company ID Assignment Fix
-Tests the critical bug fix where WhatsApp transactions were assigned to wrong company
+Backend API Testing for ECHO SHOP FinAI - Investments and Credit Cards CRUD Operations
+Tests complete CRUD operations for Investimentos and Cartões de Crédito with transaction integration
 """
 
 import requests
 import json
 import os
 from datetime import datetime
+import uuid
 
 # Configuration
 BACKEND_URL = "https://fintracker-117.preview.emergentagent.com/api"
-ADMIN_EMAIL = "admin@echoshop.com"
-ADMIN_PASSWORD = "admin123"
+ADMIN_EMAIL = "admin@echoshop.com.br"
+ADMIN_PASSWORD = "Admin@2024"
 EMPRESA_ID = "226b58c1-4a48-4b66-9537-0dbf9fa65500"
 
 class WhatsAppTestRunner:
