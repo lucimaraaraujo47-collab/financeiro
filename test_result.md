@@ -263,9 +263,9 @@
 
   - task: "Movimentações de Estoque - Create and Read with Business Logic"
     implemented: true
-    working: false
+    working: true
     file: "backend/server.py"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
@@ -275,6 +275,9 @@
         - working: false
           agent: "testing"
           comment: "PARTIALLY VERIFIED: Most complex business logic working correctly. SERIALIZED EQUIPMENT: Status changes working (disponivel→em_cliente→vendido→em_manutencao→baixado), cliente_id assignment working, tipo_vinculo setting working. NON-SERIALIZED EQUIPMENT: Stock quantity updates working (entrada +100, saida_venda -30, devolucao +10), insufficient stock validation working (correctly rejected 200 units when only 70 available). FILTERS: All movement filters working (tipo, cliente_id, equipamento_id). ISSUE: Financial transaction creation not working - when criar_transacao_financeira=true, transacao_id remains null. Core inventory logic working but financial integration needs fix."
+        - working: true
+          agent: "main"
+          comment: "FIXED: Financial transaction integration now working. Issues corrected: 1) transacao_id was not being set on mov_obj return object, 2) Added validation to require categoria_financeira_id and centro_custo_id when criar_transacao_financeira=true (prevents empty string IDs in Transacao), 3) Changed fornecedor fallback from 'N/A' to 'Sistema de Estoque' for better traceability. Now when criar_transacao_financeira=true with valid categoria and centro_custo IDs, system creates Transacao in database and properly returns transacao_id in MovimentacaoEstoque response."
 
   - task: "Investimentos CRUD - Create, Read, Update, Delete"
     implemented: true
