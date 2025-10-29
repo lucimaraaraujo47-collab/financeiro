@@ -1848,7 +1848,7 @@ Seja realista e baseie-se nos dados históricos."""
 
                 response = llm.run([UserMessage(content=prompt)])
                 previsao_texto = response.content[0]["text"]
-        except:
+        except Exception:
             # Fallback: Análise baseada em médias
             # Calcular previsão simples (proporcional)
             fator_dias = dias_futuros / 30
