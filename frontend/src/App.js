@@ -12,6 +12,7 @@ import MockWhatsApp from './components/MockWhatsApp';
 import WhatsAppReal from './components/WhatsAppReal';
 import GerenciarUsuarios from './components/GerenciarUsuarios';
 import Relatorios from './components/Relatorios';
+import ImportarTransacoes from './components/ImportarTransacoes';
 import Layout from './components/Layout';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
