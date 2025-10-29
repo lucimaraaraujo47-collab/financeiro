@@ -690,5 +690,5 @@ class FinAITestRunner:
         return results
 
 if __name__ == "__main__":
-    tester = WhatsAppTestRunner()
+    tester = FinAITestRunner()
     results = tester.run_all_tests()
