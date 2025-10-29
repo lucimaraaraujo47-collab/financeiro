@@ -44,7 +44,7 @@ function Transacoes({ user, token }) {
         const emp = empresasRes.data[0];
         setEmpresa(emp);
 
-        const [transacoesRes, categoriasRes, ccRes] = await Promise.all([
+        const [transacoesRes, categoriasRes, ccRes, contasRes, cartoesRes] = await Promise.all([
           axios.get(`${API}/empresas/${emp.id}/transacoes`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
@@ -53,12 +53,20 @@ function Transacoes({ user, token }) {
           }),
           axios.get(`${API}/empresas/${emp.id}/centros-custo`, {
             headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${API}/empresas/${emp.id}/contas`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${API}/empresas/${emp.id}/cartoes`, {
+            headers: { Authorization: `Bearer ${token}` }
           })
         ]);
 
         setTransacoes(transacoesRes.data);
         setCategorias(categoriasRes.data);
         setCentrosCusto(ccRes.data);
+        setContas(contasRes.data);
+        setCartoes(cartoesRes.data);
       }
     } catch (error) {
       console.error('Error loading data:', error);
