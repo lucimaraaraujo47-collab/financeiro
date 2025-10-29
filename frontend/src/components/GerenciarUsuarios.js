@@ -104,6 +104,24 @@ function GerenciarUsuarios({ user, token }) {
     }
   };
 
+  const handleDelete = async (userId, userName) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o usuário "${userName}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API}/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setMessage('Usuário excluído com sucesso!');
+      loadData();
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || 'Erro ao excluir usuário';
+      setMessage(errorMsg);
+    }
+  };
+
   if (user.perfil !== 'admin') {
     return (
       <div className="dashboard">
