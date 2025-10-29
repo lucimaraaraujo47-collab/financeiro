@@ -93,6 +93,16 @@ function App() {
           <Route path="/whatsapp" element={<WhatsAppReal user={user} token={token} />} />
           <Route path="/whatsapp-mock" element={<MockWhatsApp user={user} token={token} />} />
           <Route path="/usuarios" element={<GerenciarUsuarios user={user} token={token} />} />
+          
+          {/* Estoque Routes */}
+          <Route path="/clientes" element={<Clientes user={user} token={token} />} />
+          <Route path="/fornecedores" element={<Fornecedores user={user} token={token} />} />
+          <Route path="/locais" element={<Locais user={user} token={token} />} />
+          <Route path="/categorias-equipamentos" element={<CategoriasEquipamentos user={user} token={token} />} />
+          <Route path="/equipamentos" element={<Equipamentos user={user} token={token} />} />
+          <Route path="/equipamentos-serializados" element={<EquipamentosSerializados user={user} token={token} />} />
+          <Route path="/movimentacoes" element={<Movimentacoes user={user} token={token} />} />
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
