@@ -1567,6 +1567,272 @@ Retorne APENAS o JSON, sem texto adicional."""
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao processar PDF: {str(e)}")
 
+# AI ANALYSIS ROUTES
+@api_router.get("/empresas/{empresa_id}/ai/analise-financeira")
+async def analise_financeira_ai(
+    empresa_id: str,
+    periodo_dias: int = 30,
+    current_user: dict = Depends(get_current_user)
+):
+    """Análise financeira completa com IA: padrões, sugestões e insights"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    try:
+        # Buscar dados dos últimos N dias
+        data_inicio = (datetime.now(timezone.utc) - timedelta(days=periodo_dias)).strftime("%Y-%m-%d")
+        
+        transacoes = await db.transacoes.find({
+            "empresa_id": empresa_id,
+            "data_competencia": {"$gte": data_inicio}
+        }, {"_id": 0}).to_list(1000)
+        
+        if not transacoes:
+            return {
+                "status": "no_data",
+                "message": "Não há transações suficientes para análise"
+            }
+        
+        # Calcular métricas básicas
+        total_receitas = sum(t["valor_total"] for t in transacoes if t["tipo"] == "receita")
+        total_despesas = sum(t["valor_total"] for t in transacoes if t["tipo"] == "despesa")
+        
+        # Agrupar por categoria
+        despesas_por_categoria = {}
+        for t in transacoes:
+            if t["tipo"] == "despesa":
+                cat_id = t.get("categoria_id", "sem_categoria")
+                if cat_id not in despesas_por_categoria:
+                    cat = await db.categorias.find_one({"id": cat_id}, {"_id": 0})
+                    despesas_por_categoria[cat_id] = {
+                        "nome": cat["nome"] if cat else "Sem categoria",
+                        "valor": 0,
+                        "transacoes": 0
+                    }
+                despesas_por_categoria[cat_id]["valor"] += t["valor_total"]
+                despesas_por_categoria[cat_id]["transacoes"] += 1
+        
+        # Preparar dados para IA
+        resumo_financeiro = f"""
+Análise Financeira - Últimos {periodo_dias} dias:
+
+RESUMO GERAL:
+- Total de Receitas: R$ {total_receitas:,.2f}
+- Total de Despesas: R$ {total_despesas:,.2f}
+- Saldo: R$ {(total_receitas - total_despesas):,.2f}
+- Total de Transações: {len(transacoes)}
+
+DESPESAS POR CATEGORIA:
+"""
+        for cat_data in sorted(despesas_por_categoria.values(), key=lambda x: x["valor"], reverse=True):
+            percentual = (cat_data["valor"] / total_despesas * 100) if total_despesas > 0 else 0
+            resumo_financeiro += f"- {cat_data['nome']}: R$ {cat_data['valor']:,.2f} ({percentual:.1f}%) - {cat_data['transacoes']} transações\n"
+        
+        # Chamar IA
+        emergent_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not emergent_key:
+            raise HTTPException(status_code=500, detail="Chave de IA não configurada")
+        
+        llm = LlmChat(
+            platform="openai",
+            model="gpt-4o",
+            api_key=emergent_key
+        )
+        
+        prompt = f"""{resumo_financeiro}
+
+Como consultor financeiro especializado, analise estes dados e forneça:
+
+1. **PADRÕES IDENTIFICADOS**: Principais tendências de gastos
+2. **OPORTUNIDADES DE OTIMIZAÇÃO**: 3-5 sugestões práticas para reduzir custos
+3. **ALERTAS**: Categorias com gastos acima do esperado
+4. **RECOMENDAÇÕES**: Ações prioritárias para melhorar a saúde financeira
+
+Seja objetivo, prático e focado em ações concretas. Use formato claro com bullets."""
+
+        response = llm.run([UserMessage(content=prompt)])
+        analise_texto = response.content[0]["text"]
+        
+        return {
+            "status": "success",
+            "periodo_dias": periodo_dias,
+            "metricas": {
+                "total_receitas": total_receitas,
+                "total_despesas": total_despesas,
+                "saldo": total_receitas - total_despesas,
+                "num_transacoes": len(transacoes)
+            },
+            "analise_ia": analise_texto,
+            "despesas_por_categoria": despesas_por_categoria
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro na análise: {str(e)}")
+
+@api_router.get("/empresas/{empresa_id}/ai/anomalias")
+async def detectar_anomalias(
+    empresa_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Detectar anomalias e gastos incomuns usando IA"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    try:
+        # Buscar últimos 60 dias de transações
+        data_inicio = (datetime.now(timezone.utc) - timedelta(days=60)).strftime("%Y-%m-%d")
+        
+        transacoes = await db.transacoes.find({
+            "empresa_id": empresa_id,
+            "tipo": "despesa",
+            "data_competencia": {"$gte": data_inicio}
+        }, {"_id": 0}).to_list(1000)
+        
+        if len(transacoes) < 10:
+            return {
+                "status": "insufficient_data",
+                "message": "Necessário pelo menos 10 transações para análise de anomalias",
+                "anomalias": []
+            }
+        
+        # Calcular estatísticas por categoria
+        stats_por_categoria = {}
+        for t in transacoes:
+            cat_id = t.get("categoria_id", "sem_categoria")
+            if cat_id not in stats_por_categoria:
+                stats_por_categoria[cat_id] = []
+            stats_por_categoria[cat_id].append(t["valor_total"])
+        
+        # Detectar valores outliers (acima de 2 desvios padrão)
+        import statistics
+        anomalias = []
+        
+        for cat_id, valores in stats_por_categoria.items():
+            if len(valores) < 3:
+                continue
+            
+            media = statistics.mean(valores)
+            desvio = statistics.stdev(valores) if len(valores) > 1 else 0
+            
+            for t in transacoes:
+                if t.get("categoria_id") == cat_id:
+                    if t["valor_total"] > media + (2 * desvio) and desvio > 0:
+                        cat = await db.categorias.find_one({"id": cat_id}, {"_id": 0})
+                        anomalias.append({
+                            "transacao_id": t["id"],
+                            "data": t["data_competencia"],
+                            "fornecedor": t["fornecedor"],
+                            "valor": t["valor_total"],
+                            "categoria": cat["nome"] if cat else "Sem categoria",
+                            "media_categoria": round(media, 2),
+                            "desvio": round((t["valor_total"] - media) / desvio, 2) if desvio > 0 else 0,
+                            "tipo_alerta": "valor_acima_media"
+                        })
+        
+        # Ordenar por desvio (mais críticos primeiro)
+        anomalias.sort(key=lambda x: x["desvio"], reverse=True)
+        
+        return {
+            "status": "success",
+            "num_anomalias": len(anomalias),
+            "anomalias": anomalias[:10],  # Top 10
+            "message": f"Encontradas {len(anomalias)} transações com valores acima do padrão"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro na detecção: {str(e)}")
+
+@api_router.get("/empresas/{empresa_id}/ai/previsao-fluxo")
+async def previsao_fluxo_caixa(
+    empresa_id: str,
+    dias_futuros: int = 30,
+    current_user: dict = Depends(get_current_user)
+):
+    """Prever fluxo de caixa futuro usando IA"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    try:
+        # Buscar histórico dos últimos 90 dias
+        data_inicio = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
+        
+        transacoes = await db.transacoes.find({
+            "empresa_id": empresa_id,
+            "data_competencia": {"$gte": data_inicio}
+        }, {"_id": 0}).to_list(1000)
+        
+        if len(transacoes) < 15:
+            return {
+                "status": "insufficient_data",
+                "message": "Necessário pelo menos 15 transações para previsão"
+            }
+        
+        # Calcular médias mensais
+        total_receitas = sum(t["valor_total"] for t in transacoes if t["tipo"] == "receita")
+        total_despesas = sum(t["valor_total"] for t in transacoes if t["tipo"] == "despesa")
+        
+        media_receitas_mensal = (total_receitas / 90) * 30
+        media_despesas_mensal = (total_despesas / 90) * 30
+        
+        # Preparar dados para IA
+        resumo = f"""
+HISTÓRICO FINANCEIRO (últimos 90 dias):
+- Total Receitas: R$ {total_receitas:,.2f}
+- Total Despesas: R$ {total_despesas:,.2f}
+- Média Mensal Receitas: R$ {media_receitas_mensal:,.2f}
+- Média Mensal Despesas: R$ {media_despesas_mensal:,.2f}
+- Total de Transações: {len(transacoes)}
+"""
+        
+        # Chamar IA
+        emergent_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not emergent_key:
+            raise HTTPException(status_code=500, detail="Chave de IA não configurada")
+        
+        llm = LlmChat(
+            platform="openai",
+            model="gpt-4o",
+            api_key=emergent_key
+        )
+        
+        prompt = f"""{resumo}
+
+Como analista financeiro, baseado neste histórico, forneça uma previsão para os próximos {dias_futuros} dias:
+
+1. **CENÁRIO PROVÁVEL**: Estimativa de receitas e despesas
+2. **FATORES DE RISCO**: O que pode impactar negativamente
+3. **OPORTUNIDADES**: O que pode melhorar os resultados
+4. **RECOMENDAÇÕES**: Ações para os próximos {dias_futuros} dias
+
+Seja realista e baseie-se nos dados históricos."""
+
+        response = llm.run([UserMessage(content=prompt)])
+        previsao_texto = response.content[0]["text"]
+        
+        # Calcular previsão simples (proporcional)
+        fator_dias = dias_futuros / 30
+        previsao_receitas = media_receitas_mensal * fator_dias
+        previsao_despesas = media_despesas_mensal * fator_dias
+        
+        return {
+            "status": "success",
+            "periodo_analise_dias": 90,
+            "dias_futuros": dias_futuros,
+            "previsao_numerica": {
+                "receitas_estimadas": round(previsao_receitas, 2),
+                "despesas_estimadas": round(previsao_despesas, 2),
+                "saldo_estimado": round(previsao_receitas - previsao_despesas, 2)
+            },
+            "previsao_ia": previsao_texto,
+            "historico": {
+                "media_receitas_mensal": round(media_receitas_mensal, 2),
+                "media_despesas_mensal": round(media_despesas_mensal, 2)
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro na previsão: {str(e)}")
+
 # WHATSAPP MESSAGE PROCESSING (internal service)
 class WhatsAppMessageRequest(BaseModel):
     phone_number: str
