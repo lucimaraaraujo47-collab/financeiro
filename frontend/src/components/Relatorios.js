@@ -213,6 +213,36 @@ function Relatorios({ user, token }) {
             </button>
           </div>
         )}
+
+        {/* Botões de Exportação */}
+        {relatorio && (
+          <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #374151' }}>
+            <h4 style={{ marginBottom: '0.75rem', color: '#9ca3af' }}>Exportar Relatório</h4>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button 
+                className="btn-success" 
+                onClick={() => handleExport('csv')}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                📄 CSV
+              </button>
+              <button 
+                className="btn-success" 
+                onClick={() => handleExport('excel')}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                📊 Excel
+              </button>
+              <button 
+                className="btn-success" 
+                onClick={() => handleExport('pdf')}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                📑 PDF
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {loading ? (
