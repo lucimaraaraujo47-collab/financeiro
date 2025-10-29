@@ -217,61 +217,151 @@ class FinAITestRunner:
             self.log(f"    ❌ Error deleting investment: {str(e)}", "ERROR")
             return False
     
-    def test_whatsapp_processing(self):
-        """Test 3: Test WhatsApp Message Processing (without auth - internal endpoint)"""
-        self.log("Testing WhatsApp message processing...")
+    def test_cartoes_crud(self):
+        """Test 3: Cartões de Crédito CRUD Operations"""
+        self.log("Testing Cartões de Crédito CRUD operations...")
         
-        test_message = {
-            "phone_number": "5511999999999",
-            "sender_name": "Test User",
-            "message": "Paguei R$ 200,00 para Padaria do Zé"
+        if not self.token:
+            self.log("❌ No auth token available", "ERROR")
+            return False
+        
+        # Test CREATE Credit Card
+        self.log("  3.1 Testing CREATE credit card...")
+        card_data = {
+            "nome": "Nubank Platinum",
+            "bandeira": "Mastercard",
+            "limite_total": 5000.0,
+            "dia_fechamento": 10,
+            "dia_vencimento": 15
         }
         
         try:
-            # Remove auth header for internal endpoint
-            headers = {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            }
-            
-            response = requests.post(f"{BACKEND_URL}/whatsapp/process", 
-                                   json=test_message, 
-                                   headers=headers)
+            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/cartoes", json=card_data)
             
             if response.status_code == 200:
-                data = response.json()
-                self.log("✅ WhatsApp message processed successfully")
+                created_card = response.json()
+                self.created_card_id = created_card.get('id')
+                self.log("    ✅ Credit card created successfully")
+                self.log(f"       ID: {self.created_card_id}")
+                self.log(f"       Nome: {created_card.get('nome')}")
+                self.log(f"       Bandeira: {created_card.get('bandeira')}")
+                self.log(f"       Limite Total: R$ {created_card.get('limite_total')}")
+                self.log(f"       Limite Disponível: R$ {created_card.get('limite_disponivel')}")
+                self.log(f"       Fatura Atual: R$ {created_card.get('fatura_atual')}")
                 
-                # Check response structure
-                if 'dados_extraidos' in data:
-                    dados = data['dados_extraidos']
-                    self.log(f"   Extracted data: {json.dumps(dados, indent=2)}")
+                # Verify initial values
+                if created_card.get('limite_disponivel') == 5000.0:
+                    self.log("    ✅ Limite disponível initialized correctly")
+                else:
+                    self.log(f"    ❌ Limite disponível incorrect: {created_card.get('limite_disponivel')}", "ERROR")
+                    return False
                     
-                    # Verify key fields
-                    if dados.get('valor_total'):
-                        self.log(f"   ✅ Value extracted: R$ {dados['valor_total']}")
-                    else:
-                        self.log("   ❌ No value extracted", "ERROR")
-                        
-                    if dados.get('fornecedor'):
-                        self.log(f"   ✅ Supplier extracted: {dados['fornecedor']}")
-                    else:
-                        self.log("   ❌ No supplier extracted", "ERROR")
+                if created_card.get('fatura_atual') == 0.0:
+                    self.log("    ✅ Fatura atual initialized correctly")
                 else:
-                    self.log("   ❌ No 'dados_extraidos' in response", "ERROR")
-                
-                if 'response_message' in data:
-                    self.log(f"   Response message: {data['response_message']}")
-                else:
-                    self.log("   ❌ No response message", "ERROR")
-                
-                return data
+                    self.log(f"    ❌ Fatura atual incorrect: {created_card.get('fatura_atual')}", "ERROR")
+                    return False
             else:
-                self.log(f"❌ WhatsApp processing failed: {response.status_code} - {response.text}", "ERROR")
+                self.log(f"    ❌ Failed to create credit card: {response.status_code} - {response.text}", "ERROR")
                 return False
                 
         except Exception as e:
-            self.log(f"❌ Error processing WhatsApp message: {str(e)}", "ERROR")
+            self.log(f"    ❌ Error creating credit card: {str(e)}", "ERROR")
+            return False
+        
+        # Test LIST Credit Cards
+        self.log("  3.2 Testing LIST credit cards...")
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/cartoes")
+            
+            if response.status_code == 200:
+                cards = response.json()
+                self.log(f"    ✅ Retrieved {len(cards)} credit cards")
+                
+                # Verify created card appears in list
+                found_card = None
+                for card in cards:
+                    if card.get('id') == self.created_card_id:
+                        found_card = card
+                        break
+                
+                if found_card:
+                    self.log("    ✅ Created credit card found in list")
+                    self.log(f"       Nome: {found_card.get('nome')}")
+                    self.log(f"       Bandeira: {found_card.get('bandeira')}")
+                    self.log(f"       Limite Total: R$ {found_card.get('limite_total')}")
+                else:
+                    self.log("    ❌ Created credit card NOT found in list", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to list credit cards: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error listing credit cards: {str(e)}", "ERROR")
+            return False
+        
+        # Test UPDATE Credit Card
+        self.log("  3.3 Testing UPDATE credit card...")
+        update_data = {
+            "nome": "Nubank Platinum",
+            "bandeira": "Mastercard",
+            "limite_total": 8000.0,  # Updated limit
+            "dia_fechamento": 10,
+            "dia_vencimento": 15
+        }
+        
+        try:
+            response = self.session.put(f"{BACKEND_URL}/cartoes/{self.created_card_id}", json=update_data)
+            
+            if response.status_code == 200:
+                updated_card = response.json()
+                self.log("    ✅ Credit card updated successfully")
+                self.log(f"       New Limite Total: R$ {updated_card.get('limite_total')}")
+                
+                # Verify the update
+                if updated_card.get('limite_total') == 8000.0:
+                    self.log("    ✅ Limite total updated correctly")
+                else:
+                    self.log(f"    ❌ Limite total not updated correctly: {updated_card.get('limite_total')}", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to update credit card: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error updating credit card: {str(e)}", "ERROR")
+            return False
+        
+        # Test DELETE Credit Card
+        self.log("  3.4 Testing DELETE credit card...")
+        try:
+            response = self.session.delete(f"{BACKEND_URL}/cartoes/{self.created_card_id}")
+            
+            if response.status_code == 200:
+                self.log("    ✅ Credit card deleted successfully")
+                
+                # Verify card no longer in list
+                response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/cartoes")
+                if response.status_code == 200:
+                    cards = response.json()
+                    found_deleted = any(card.get('id') == self.created_card_id for card in cards)
+                    
+                    if not found_deleted:
+                        self.log("    ✅ Credit card no longer appears in list")
+                        return True
+                    else:
+                        self.log("    ❌ Credit card still appears in list after deletion", "ERROR")
+                        return False
+                else:
+                    self.log(f"    ❌ Failed to verify deletion: {response.status_code}", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to delete credit card: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error deleting credit card: {str(e)}", "ERROR")
             return False
     
     def test_new_transaction_assignment(self, initial_count):
