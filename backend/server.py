@@ -1084,6 +1084,417 @@ async def delete_cartao(cartao_id: str, current_user: dict = Depends(get_current
         raise HTTPException(status_code=404, detail="Cartão não encontrado")
     return {"message": "Cartão deletado"}
 
+# ==================== ESTOQUE ROUTES ====================
+
+# CLIENTES ROUTES
+@api_router.post("/empresas/{empresa_id}/clientes", response_model=Cliente)
+async def create_cliente(empresa_id: str, cliente_data: ClienteCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    cliente_obj = Cliente(**cliente_data.model_dump(), empresa_id=empresa_id)
+    doc = cliente_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.clientes.insert_one(doc)
+    return cliente_obj
+
+@api_router.get("/empresas/{empresa_id}/clientes", response_model=List[Cliente])
+async def get_clientes(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    clientes = await db.clientes.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(1000)
+    return clientes
+
+@api_router.get("/clientes/{cliente_id}", response_model=Cliente)
+async def get_cliente(cliente_id: str, current_user: dict = Depends(get_current_user)):
+    cliente = await db.clientes.find_one({"id": cliente_id}, {"_id": 0})
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    return cliente
+
+@api_router.put("/clientes/{cliente_id}", response_model=Cliente)
+async def update_cliente(cliente_id: str, cliente_data: ClienteCreate, current_user: dict = Depends(get_current_user)):
+    cliente = await db.clientes.find_one({"id": cliente_id}, {"_id": 0})
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    update_data = cliente_data.model_dump()
+    await db.clientes.update_one({"id": cliente_id}, {"$set": update_data})
+    
+    updated_cliente = await db.clientes.find_one({"id": cliente_id}, {"_id": 0})
+    return updated_cliente
+
+@api_router.delete("/clientes/{cliente_id}")
+async def delete_cliente(cliente_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.clientes.delete_one({"id": cliente_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    return {"message": "Cliente deletado"}
+
+# FORNECEDORES ROUTES
+@api_router.post("/empresas/{empresa_id}/fornecedores", response_model=Fornecedor)
+async def create_fornecedor(empresa_id: str, fornecedor_data: FornecedorCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    fornecedor_obj = Fornecedor(**fornecedor_data.model_dump(), empresa_id=empresa_id)
+    doc = fornecedor_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.fornecedores.insert_one(doc)
+    return fornecedor_obj
+
+@api_router.get("/empresas/{empresa_id}/fornecedores", response_model=List[Fornecedor])
+async def get_fornecedores(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    fornecedores = await db.fornecedores.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(1000)
+    return fornecedores
+
+@api_router.put("/fornecedores/{fornecedor_id}", response_model=Fornecedor)
+async def update_fornecedor(fornecedor_id: str, fornecedor_data: FornecedorCreate, current_user: dict = Depends(get_current_user)):
+    fornecedor = await db.fornecedores.find_one({"id": fornecedor_id}, {"_id": 0})
+    if not fornecedor:
+        raise HTTPException(status_code=404, detail="Fornecedor não encontrado")
+    
+    update_data = fornecedor_data.model_dump()
+    await db.fornecedores.update_one({"id": fornecedor_id}, {"$set": update_data})
+    
+    updated_fornecedor = await db.fornecedores.find_one({"id": fornecedor_id}, {"_id": 0})
+    return updated_fornecedor
+
+@api_router.delete("/fornecedores/{fornecedor_id}")
+async def delete_fornecedor(fornecedor_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.fornecedores.delete_one({"id": fornecedor_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Fornecedor não encontrado")
+    return {"message": "Fornecedor deletado"}
+
+# LOCAIS/DEPÓSITOS ROUTES
+@api_router.post("/empresas/{empresa_id}/locais", response_model=LocalDeposito)
+async def create_local(empresa_id: str, local_data: LocalDepositoCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    local_obj = LocalDeposito(**local_data.model_dump(), empresa_id=empresa_id)
+    doc = local_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.locais_deposito.insert_one(doc)
+    return local_obj
+
+@api_router.get("/empresas/{empresa_id}/locais", response_model=List[LocalDeposito])
+async def get_locais(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    locais = await db.locais_deposito.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(1000)
+    return locais
+
+@api_router.put("/locais/{local_id}", response_model=LocalDeposito)
+async def update_local(local_id: str, local_data: LocalDepositoCreate, current_user: dict = Depends(get_current_user)):
+    local = await db.locais_deposito.find_one({"id": local_id}, {"_id": 0})
+    if not local:
+        raise HTTPException(status_code=404, detail="Local não encontrado")
+    
+    update_data = local_data.model_dump()
+    await db.locais_deposito.update_one({"id": local_id}, {"$set": update_data})
+    
+    updated_local = await db.locais_deposito.find_one({"id": local_id}, {"_id": 0})
+    return updated_local
+
+@api_router.delete("/locais/{local_id}")
+async def delete_local(local_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.locais_deposito.delete_one({"id": local_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Local não encontrado")
+    return {"message": "Local deletado"}
+
+# CATEGORIAS DE EQUIPAMENTOS ROUTES
+@api_router.post("/empresas/{empresa_id}/categorias-equipamentos", response_model=CategoriaEquipamento)
+async def create_categoria_equipamento(empresa_id: str, categoria_data: CategoriaEquipamentoCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    categoria_obj = CategoriaEquipamento(**categoria_data.model_dump(), empresa_id=empresa_id)
+    doc = categoria_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.categorias_equipamentos.insert_one(doc)
+    return categoria_obj
+
+@api_router.get("/empresas/{empresa_id}/categorias-equipamentos", response_model=List[CategoriaEquipamento])
+async def get_categorias_equipamentos(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    categorias = await db.categorias_equipamentos.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(1000)
+    return categorias
+
+@api_router.put("/categorias-equipamentos/{categoria_id}", response_model=CategoriaEquipamento)
+async def update_categoria_equipamento(categoria_id: str, categoria_data: CategoriaEquipamentoCreate, current_user: dict = Depends(get_current_user)):
+    categoria = await db.categorias_equipamentos.find_one({"id": categoria_id}, {"_id": 0})
+    if not categoria:
+        raise HTTPException(status_code=404, detail="Categoria não encontrada")
+    
+    update_data = categoria_data.model_dump()
+    await db.categorias_equipamentos.update_one({"id": categoria_id}, {"$set": update_data})
+    
+    updated_categoria = await db.categorias_equipamentos.find_one({"id": categoria_id}, {"_id": 0})
+    return updated_categoria
+
+@api_router.delete("/categorias-equipamentos/{categoria_id}")
+async def delete_categoria_equipamento(categoria_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.categorias_equipamentos.delete_one({"id": categoria_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Categoria não encontrada")
+    return {"message": "Categoria deletada"}
+
+# EQUIPAMENTOS ROUTES
+@api_router.post("/empresas/{empresa_id}/equipamentos", response_model=Equipamento)
+async def create_equipamento(empresa_id: str, equipamento_data: EquipamentoCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    equipamento_obj = Equipamento(**equipamento_data.model_dump(), empresa_id=empresa_id)
+    doc = equipamento_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.equipamentos.insert_one(doc)
+    return equipamento_obj
+
+@api_router.get("/empresas/{empresa_id}/equipamentos", response_model=List[Equipamento])
+async def get_equipamentos(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    equipamentos = await db.equipamentos.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(1000)
+    return equipamentos
+
+@api_router.get("/equipamentos/{equipamento_id}", response_model=Equipamento)
+async def get_equipamento(equipamento_id: str, current_user: dict = Depends(get_current_user)):
+    equipamento = await db.equipamentos.find_one({"id": equipamento_id}, {"_id": 0})
+    if not equipamento:
+        raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+    return equipamento
+
+@api_router.put("/equipamentos/{equipamento_id}", response_model=Equipamento)
+async def update_equipamento(equipamento_id: str, equipamento_data: EquipamentoCreate, current_user: dict = Depends(get_current_user)):
+    equipamento = await db.equipamentos.find_one({"id": equipamento_id}, {"_id": 0})
+    if not equipamento:
+        raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+    
+    update_data = equipamento_data.model_dump()
+    # Preservar quantidade_estoque atual
+    update_data['quantidade_estoque'] = equipamento['quantidade_estoque']
+    
+    await db.equipamentos.update_one({"id": equipamento_id}, {"$set": update_data})
+    
+    updated_equipamento = await db.equipamentos.find_one({"id": equipamento_id}, {"_id": 0})
+    return updated_equipamento
+
+@api_router.delete("/equipamentos/{equipamento_id}")
+async def delete_equipamento(equipamento_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.equipamentos.delete_one({"id": equipamento_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+    return {"message": "Equipamento deletado"}
+
+# EQUIPAMENTOS SERIALIZADOS ROUTES
+@api_router.post("/empresas/{empresa_id}/equipamentos-serializados", response_model=EquipamentoSerializado)
+async def create_equipamento_serializado(empresa_id: str, eq_serial_data: EquipamentoSerializadoCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Verificar se número de série já existe
+    existing = await db.equipamentos_serializados.find_one({"numero_serie": eq_serial_data.numero_serie, "empresa_id": empresa_id})
+    if existing:
+        raise HTTPException(status_code=400, detail="Número de série já cadastrado")
+    
+    eq_serial_obj = EquipamentoSerializado(**eq_serial_data.model_dump(), empresa_id=empresa_id)
+    doc = eq_serial_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.equipamentos_serializados.insert_one(doc)
+    return eq_serial_obj
+
+@api_router.get("/empresas/{empresa_id}/equipamentos-serializados", response_model=List[EquipamentoSerializado])
+async def get_equipamentos_serializados(
+    empresa_id: str, 
+    status: Optional[str] = None,
+    cliente_id: Optional[str] = None,
+    equipamento_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    query = {"empresa_id": empresa_id}
+    if status:
+        query["status"] = status
+    if cliente_id:
+        query["cliente_id"] = cliente_id
+    if equipamento_id:
+        query["equipamento_id"] = equipamento_id
+    
+    equipamentos = await db.equipamentos_serializados.find(query, {"_id": 0}).to_list(1000)
+    return equipamentos
+
+@api_router.get("/equipamentos-serializados/{eq_serial_id}", response_model=EquipamentoSerializado)
+async def get_equipamento_serializado(eq_serial_id: str, current_user: dict = Depends(get_current_user)):
+    eq_serial = await db.equipamentos_serializados.find_one({"id": eq_serial_id}, {"_id": 0})
+    if not eq_serial:
+        raise HTTPException(status_code=404, detail="Equipamento serializado não encontrado")
+    return eq_serial
+
+@api_router.put("/equipamentos-serializados/{eq_serial_id}", response_model=EquipamentoSerializado)
+async def update_equipamento_serializado(eq_serial_id: str, eq_serial_data: Dict[str, Any], current_user: dict = Depends(get_current_user)):
+    eq_serial = await db.equipamentos_serializados.find_one({"id": eq_serial_id}, {"_id": 0})
+    if not eq_serial:
+        raise HTTPException(status_code=404, detail="Equipamento serializado não encontrado")
+    
+    # Se mudou o SIM card, adicionar ao histórico
+    if 'numero_simcard' in eq_serial_data and eq_serial_data['numero_simcard'] != eq_serial.get('numero_simcard'):
+        if 'historico_simcards' not in eq_serial:
+            eq_serial['historico_simcards'] = []
+        
+        if eq_serial.get('numero_simcard'):
+            eq_serial['historico_simcards'].append({
+                "numero": eq_serial['numero_simcard'],
+                "data_troca": datetime.now(timezone.utc).isoformat()
+            })
+        eq_serial_data['historico_simcards'] = eq_serial['historico_simcards']
+    
+    await db.equipamentos_serializados.update_one({"id": eq_serial_id}, {"$set": eq_serial_data})
+    
+    updated_eq_serial = await db.equipamentos_serializados.find_one({"id": eq_serial_id}, {"_id": 0})
+    return updated_eq_serial
+
+@api_router.delete("/equipamentos-serializados/{eq_serial_id}")
+async def delete_equipamento_serializado(eq_serial_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.equipamentos_serializados.delete_one({"id": eq_serial_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Equipamento serializado não encontrado")
+    return {"message": "Equipamento serializado deletado"}
+
+# MOVIMENTAÇÕES DE ESTOQUE ROUTES
+@api_router.post("/empresas/{empresa_id}/movimentacoes", response_model=MovimentacaoEstoque)
+async def create_movimentacao(empresa_id: str, mov_data: MovimentacaoEstoqueCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Buscar equipamento
+    equipamento = await db.equipamentos.find_one({"id": mov_data.equipamento_id}, {"_id": 0})
+    if not equipamento:
+        raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+    
+    mov_obj = MovimentacaoEstoque(
+        **mov_data.model_dump(exclude={'categoria_financeira_id', 'centro_custo_id'}),
+        empresa_id=empresa_id,
+        usuario_id=current_user["id"]
+    )
+    doc = mov_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    # Processar movimentação baseado no tipo
+    if equipamento['tipo_controle'] == 'serializado':
+        # Para serializados, atualizar status do equipamento
+        if mov_data.equipamento_serializado_id:
+            eq_serial = await db.equipamentos_serializados.find_one({"id": mov_data.equipamento_serializado_id}, {"_id": 0})
+            if not eq_serial:
+                raise HTTPException(status_code=404, detail="Equipamento serializado não encontrado")
+            
+            update_data = {}
+            if mov_data.tipo == "saida_venda":
+                update_data = {"status": "vendido", "cliente_id": mov_data.cliente_id, "tipo_vinculo": "venda"}
+            elif mov_data.tipo == "saida_locacao":
+                update_data = {"status": "em_cliente", "cliente_id": mov_data.cliente_id, "tipo_vinculo": "locacao"}
+            elif mov_data.tipo == "devolucao":
+                update_data = {"status": "disponivel", "cliente_id": None, "tipo_vinculo": None}
+            elif mov_data.tipo == "manutencao":
+                update_data = {"status": "em_manutencao"}
+            elif mov_data.tipo == "perda":
+                update_data = {"status": "baixado"}
+            
+            if update_data:
+                await db.equipamentos_serializados.update_one({"id": mov_data.equipamento_serializado_id}, {"$set": update_data})
+    
+    else:
+        # Para não-serializados, atualizar quantidade em estoque
+        if mov_data.tipo == "entrada":
+            await db.equipamentos.update_one(
+                {"id": mov_data.equipamento_id},
+                {"$inc": {"quantidade_estoque": mov_data.quantidade}}
+            )
+        elif mov_data.tipo in ["saida_venda", "saida_locacao", "perda"]:
+            # Verificar se há estoque suficiente
+            if equipamento['quantidade_estoque'] < mov_data.quantidade:
+                raise HTTPException(status_code=400, detail="Estoque insuficiente")
+            
+            await db.equipamentos.update_one(
+                {"id": mov_data.equipamento_id},
+                {"$inc": {"quantidade_estoque": -mov_data.quantidade}}
+            )
+        elif mov_data.tipo == "devolucao":
+            await db.equipamentos.update_one(
+                {"id": mov_data.equipamento_id},
+                {"$inc": {"quantidade_estoque": mov_data.quantidade}}
+            )
+    
+    # Criar transação financeira se solicitado
+    if mov_data.criar_transacao_financeira and mov_data.valor_financeiro:
+        transacao_tipo = "receita" if mov_data.tipo in ["saida_venda", "saida_locacao"] else "despesa"
+        
+        transacao_obj = Transacao(
+            empresa_id=empresa_id,
+            usuario_id=current_user["id"],
+            tipo=transacao_tipo,
+            fornecedor=mov_data.cliente_id or "N/A",
+            descricao=f"Movimentação estoque: {mov_data.tipo} - {equipamento['nome']}",
+            valor_total=mov_data.valor_financeiro,
+            data_competencia=mov_data.data,
+            categoria_id=mov_data.categoria_financeira_id or "",
+            centro_custo_id=mov_data.centro_custo_id or "",
+            status="conciliada",
+            origem="estoque"
+        )
+        
+        trans_doc = transacao_obj.model_dump()
+        trans_doc['created_at'] = trans_doc['created_at'].isoformat()
+        
+        await db.transacoes.insert_one(trans_doc)
+        doc['transacao_id'] = transacao_obj.id
+    
+    await db.movimentacoes_estoque.insert_one(doc)
+    return mov_obj
+
+@api_router.get("/empresas/{empresa_id}/movimentacoes", response_model=List[MovimentacaoEstoque])
+async def get_movimentacoes(
+    empresa_id: str,
+    tipo: Optional[str] = None,
+    equipamento_id: Optional[str] = None,
+    cliente_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    query = {"empresa_id": empresa_id}
+    if tipo:
+        query["tipo"] = tipo
+    if equipamento_id:
+        query["equipamento_id"] = equipamento_id
+    if cliente_id:
+        query["cliente_id"] = cliente_id
+    
+    movimentacoes = await db.movimentacoes_estoque.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return movimentacoes
+
+# ==================== END ESTOQUE ROUTES ====================
+
 # TRANSACAO ROUTES
 @api_router.post("/empresas/{empresa_id}/transacoes", response_model=Transacao)
 async def create_transacao(empresa_id: str, transacao_data: TransacaoCreate, current_user: dict = Depends(get_current_user)):
