@@ -1885,7 +1885,7 @@ Seja realista e baseie-se nos dados históricos."""
 
 _Nota: Análise com IA temporariamente indisponível. Usando projeção estatística simples._"""
         
-        # Calcular previsão simples (proporcional)
+        # Calcular previsão simples (proporcional) para retorno
         fator_dias = dias_futuros / 30
         previsao_receitas = media_receitas_mensal * fator_dias
         previsao_despesas = media_despesas_mensal * fator_dias
