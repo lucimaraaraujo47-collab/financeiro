@@ -1823,18 +1823,19 @@ HISTÓRICO FINANCEIRO (últimos 90 dias):
 - Total de Transações: {len(transacoes)}
 """
         
-        # Chamar IA
-        emergent_key = os.environ.get("EMERGENT_LLM_KEY")
-        if not emergent_key:
-            raise HTTPException(status_code=500, detail="Chave de IA não configurada")
+        # Tentar usar IA com fallback
+        previsao_texto = ""
         
-        llm = LlmChat(
-            api_key=emergent_key,
-            session_id=f"analise-{empresa_id}",
-            system_message="Você é um consultor financeiro especializado."
-        ).with_model("openai", "gpt-4o-mini")
-        
-        prompt = f"""{resumo}
+        try:
+            emergent_key = os.environ.get("EMERGENT_LLM_KEY")
+            if emergent_key:
+                llm = LlmChat(
+                    api_key=emergent_key,
+                    session_id=f"analise-{empresa_id}",
+                    system_message="Você é um consultor financeiro especializado."
+                ).with_model("openai", "gpt-4o-mini")
+                
+                prompt = f"""{resumo}
 
 Como analista financeiro, baseado neste histórico, forneça uma previsão para os próximos {dias_futuros} dias:
 
@@ -1845,8 +1846,44 @@ Como analista financeiro, baseado neste histórico, forneça uma previsão para 
 
 Seja realista e baseie-se nos dados históricos."""
 
-        response = llm.run([UserMessage(content=prompt)])
-        previsao_texto = response.content[0]["text"]
+                response = llm.run([UserMessage(content=prompt)])
+                previsao_texto = response.content[0]["text"]
+        except:
+            # Fallback: Análise baseada em médias
+            # Calcular previsão simples (proporcional)
+            fator_dias = dias_futuros / 30
+            previsao_receitas = media_receitas_mensal * fator_dias
+            previsao_despesas = media_despesas_mensal * fator_dias
+            
+            previsao_texto = f"""**PREVISÃO ESTATÍSTICA - Próximos {dias_futuros} dias**
+
+**CENÁRIO PROVÁVEL (baseado em médias):**
+- Receitas Estimadas: R$ {previsao_receitas:,.2f}
+- Despesas Estimadas: R$ {previsao_despesas:,.2f}
+- Saldo Projetado: R$ {(previsao_receitas - previsao_despesas):,.2f}
+
+**TENDÊNCIA:**
+"""
+            if previsao_receitas > previsao_despesas:
+                margem = ((previsao_receitas - previsao_despesas) / previsao_receitas * 100)
+                previsao_texto += f"- ✅ Projeção positiva com margem de {margem:.1f}%"
+            else:
+                deficit = previsao_despesas - previsao_receitas
+                previsao_texto += f"- ⚠️ Projeção de déficit de R$ {deficit:,.2f}"
+            
+            previsao_texto += f"""
+
+**FATORES A CONSIDERAR:**
+- Baseado em média de {len(transacoes)} transações dos últimos 90 dias
+- Sazonalidade e eventos específicos não considerados
+- Recomenda-se revisão quinzenal da previsão
+
+**RECOMENDAÇÕES:**
+- Manter reserva de emergência equivalente a 1 mês de despesas
+- Monitorar receitas semanalmente
+- Revisar despesas fixas mensalmente
+
+_Nota: Análise com IA temporariamente indisponível. Usando projeção estatística simples._"""
         
         # Calcular previsão simples (proporcional)
         fator_dias = dias_futuros / 30
