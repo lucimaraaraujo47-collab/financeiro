@@ -127,3 +127,6 @@ yarl==1.22.0
 zipp==3.23.0
 openpyxl==3.1.5
 reportlab==4.4.4
+pandas==2.3.3
+ofxparse==0.21
+PyPDF2==3.0.1
