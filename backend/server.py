@@ -2131,8 +2131,9 @@ async def whatsapp_reconnect(current_user: dict = Depends(get_current_user)):
     """Proxy to WhatsApp service reconnect"""
     try:
         import httpx
+        whatsapp_url = os.environ.get("WHATSAPP_SERVICE_URL", "http://localhost:8002")
         async with httpx.AsyncClient() as client:
-            response = await client.post("http://localhost:8002/reconnect", timeout=10.0)
+            response = await client.post(f"{whatsapp_url}/reconnect", timeout=10.0)
             return response.json()
     except Exception as e:
         logging.error(f"Error reconnecting WhatsApp: {e}")
