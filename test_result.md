@@ -203,15 +203,18 @@
 
   - task: "Locais/Depósitos CRUD - Create, Read, Update, Delete"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Backend endpoints implemented for warehouse/location management: POST/GET /empresas/{empresa_id}/locais, PUT/DELETE /locais/{local_id}. Model includes: nome, descricao, responsavel, endereco, status."
+        - working: true
+          agent: "testing"
+          comment: "VERIFIED: Complete CRUD testing successful. Created location 'Depósito Principal' (responsável Carlos, endereço Rua ABC, 123). All operations working: CREATE (location created with correct fields), LIST (location appears in empresa list), UPDATE (nome updated to 'Depósito Principal Atualizado'), DELETE (location removed from list). All API endpoints responding correctly."
 
   - task: "Categorias Equipamentos CRUD - Create, Read, Update, Delete"
     implemented: true
