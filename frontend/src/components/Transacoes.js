@@ -294,15 +294,70 @@ function Transacoes({ user, token }) {
 
               <div className="form-group">
                 <label className="form-label">Método de Pagamento</label>
-                <input
-                  type="text"
-                  className="form-input"
+                <select
+                  className="form-select"
                   value={formData.metodo_pagamento}
                   onChange={(e) => setFormData({ ...formData, metodo_pagamento: e.target.value })}
-                  placeholder="Ex: Cartão, Boleto, PIX"
-                  data-testid="transacao-metodo-input"
-                />
+                  data-testid="transacao-metodo-select"
+                >
+                  <option value="dinheiro">Dinheiro</option>
+                  <option value="conta_bancaria">Conta Bancária</option>
+                  <option value="cartao_credito">Cartão de Crédito</option>
+                  <option value="pix">PIX</option>
+                  <option value="boleto">Boleto</option>
+                  <option value="transferencia">Transferência</option>
+                </select>
               </div>
+
+              {/* Conta Bancária - Mostrar se método for conta_bancaria, pix, transferencia ou dinheiro */}
+              {['conta_bancaria', 'pix', 'transferencia', 'dinheiro'].includes(formData.metodo_pagamento) && (
+                <div className="form-group">
+                  <label className="form-label">
+                    {formData.tipo === 'receita' ? 'Conta de Entrada' : 'Conta de Saída'}
+                  </label>
+                  <select
+                    className="form-select"
+                    value={formData.conta_bancaria_id}
+                    onChange={(e) => setFormData({ ...formData, conta_bancaria_id: e.target.value })}
+                    data-testid="transacao-conta-select"
+                  >
+                    <option value="">Nenhuma (sem vínculo)</option>
+                    {contas.map(conta => (
+                      <option key={conta.id} value={conta.id}>
+                        {conta.nome} - {conta.banco} (Saldo: R$ {conta.saldo_atual?.toFixed(2)})
+                      </option>
+                    ))}
+                  </select>
+                  <small style={{ color: '#9ca3af', marginTop: '0.25rem', display: 'block' }}>
+                    {formData.tipo === 'receita' 
+                      ? '✅ O valor será creditado nesta conta' 
+                      : '⚠️ O valor será debitado desta conta'}
+                  </small>
+                </div>
+              )}
+
+              {/* Cartão de Crédito - Mostrar apenas se método for cartao_credito e tipo for despesa */}
+              {formData.metodo_pagamento === 'cartao_credito' && formData.tipo === 'despesa' && (
+                <div className="form-group">
+                  <label className="form-label">Cartão de Crédito</label>
+                  <select
+                    className="form-select"
+                    value={formData.cartao_credito_id}
+                    onChange={(e) => setFormData({ ...formData, cartao_credito_id: e.target.value })}
+                    data-testid="transacao-cartao-select"
+                  >
+                    <option value="">Selecione um cartão...</option>
+                    {cartoes.map(cartao => (
+                      <option key={cartao.id} value={cartao.id}>
+                        {cartao.nome} - {cartao.bandeira} (Disponível: R$ {cartao.limite_disponivel?.toFixed(2)})
+                      </option>
+                    ))}
+                  </select>
+                  <small style={{ color: '#9ca3af', marginTop: '0.25rem', display: 'block' }}>
+                    💳 Será incluído na fatura do cartão
+                  </small>
+                </div>
+              )}
 
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                 <label className="form-label">Descrição</label>
