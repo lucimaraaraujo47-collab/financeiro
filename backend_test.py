@@ -13,8 +13,8 @@ import uuid
 
 # Configuration
 BACKEND_URL = "https://fintracker-117.preview.emergentagent.com/api"
-ADMIN_EMAIL = "admin@echoshop.com.br"  # Updated to match test credentials
-ADMIN_PASSWORD = "Admin@2024"  # Updated to match test credentials
+ADMIN_EMAIL = "admin@echoshop.com"  # Using existing admin user
+ADMIN_PASSWORD = "admin123"  # Using existing password
 EMPRESA_ID = "226b58c1-4a48-4b66-9537-0dbf9fa65500"
 
 class FinAITestRunner:
