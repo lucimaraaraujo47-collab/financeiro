@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Backend API Testing for ECHO SHOP FinAI - Investments and Credit Cards CRUD Operations
-Tests complete CRUD operations for Investimentos and Cartões de Crédito with transaction integration
+Backend API Testing for ECHO SHOP FinAI - Complete Inventory Management System CRUD Operations
+Tests complete CRUD operations for all inventory modules: Clientes, Fornecedores, Locais, 
+Categorias Equipamentos, Equipamentos, Equipamentos Serializados, and Movimentações de Estoque
 """
 
 import requests
@@ -12,8 +13,8 @@ import uuid
 
 # Configuration
 BACKEND_URL = "https://fintracker-117.preview.emergentagent.com/api"
-ADMIN_EMAIL = "admin@echoshop.com"  # Using existing admin user
-ADMIN_PASSWORD = "admin123"  # Using existing password
+ADMIN_EMAIL = "admin@echoshop.com.br"  # Updated to match test credentials
+ADMIN_PASSWORD = "Admin@2024"  # Updated to match test credentials
 EMPRESA_ID = "226b58c1-4a48-4b66-9537-0dbf9fa65500"
 
 class FinAITestRunner:
