@@ -959,6 +959,277 @@ async def get_relatorio_detalhado(
         transacoes=transacoes[:100]  # Limitar a 100 transações para performance
     )
 
+@api_router.get("/empresas/{empresa_id}/relatorios/export/csv")
+async def export_relatorio_csv(
+    empresa_id: str,
+    periodo_inicio: Optional[str] = None,
+    periodo_fim: Optional[str] = None,
+    tipo_periodo: str = "mensal",
+    current_user: dict = Depends(get_current_user)
+):
+    """Export relatório para CSV"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Reutilizar lógica do endpoint de relatórios
+    hoje = datetime.now(timezone.utc)
+    if tipo_periodo == "mensal":
+        periodo_inicio = hoje.replace(day=1).isoformat()
+        periodo_fim = hoje.isoformat()
+    elif tipo_periodo == "anual":
+        periodo_inicio = hoje.replace(month=1, day=1).isoformat()
+        periodo_fim = hoje.isoformat()
+    
+    query = {"empresa_id": empresa_id}
+    if periodo_inicio and periodo_fim:
+        query["data_competencia"] = {
+            "$gte": periodo_inicio.split("T")[0],
+            "$lte": periodo_fim.split("T")[0]
+        }
+    
+    transacoes = await db.transacoes.find(query, {"_id": 0}).to_list(10000)
+    
+    # Criar CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Cabeçalho
+    writer.writerow(['ID', 'Data', 'Tipo', 'Fornecedor', 'Categoria', 'Centro de Custo', 'Valor', 'Status', 'Origem'])
+    
+    # Dados
+    for t in transacoes:
+        writer.writerow([
+            t.get('id', ''),
+            t.get('data_competencia', ''),
+            t.get('tipo', ''),
+            t.get('fornecedor', ''),
+            t.get('categoria_id', ''),
+            t.get('centro_custo_id', ''),
+            t.get('valor_total', 0),
+            t.get('status', ''),
+            t.get('origem', '')
+        ])
+    
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=relatorio_{tipo_periodo}.csv"}
+    )
+
+@api_router.get("/empresas/{empresa_id}/relatorios/export/excel")
+async def export_relatorio_excel(
+    empresa_id: str,
+    periodo_inicio: Optional[str] = None,
+    periodo_fim: Optional[str] = None,
+    tipo_periodo: str = "mensal",
+    current_user: dict = Depends(get_current_user)
+):
+    """Export relatório para Excel"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Reutilizar lógica do endpoint de relatórios
+    hoje = datetime.now(timezone.utc)
+    if tipo_periodo == "mensal":
+        periodo_inicio = hoje.replace(day=1).isoformat()
+        periodo_fim = hoje.isoformat()
+    elif tipo_periodo == "anual":
+        periodo_inicio = hoje.replace(month=1, day=1).isoformat()
+        periodo_fim = hoje.isoformat()
+    
+    query = {"empresa_id": empresa_id}
+    if periodo_inicio and periodo_fim:
+        query["data_competencia"] = {
+            "$gte": periodo_inicio.split("T")[0],
+            "$lte": periodo_fim.split("T")[0]
+        }
+    
+    transacoes = await db.transacoes.find(query, {"_id": 0}).to_list(10000)
+    
+    # Calcular métricas
+    total_receitas = sum(t["valor_total"] for t in transacoes if t["tipo"] == "receita")
+    total_despesas = sum(t["valor_total"] for t in transacoes if t["tipo"] == "despesa")
+    
+    # Criar workbook
+    wb = Workbook()
+    
+    # Sheet 1: Resumo
+    ws_resumo = wb.active
+    ws_resumo.title = "Resumo"
+    
+    # Título
+    ws_resumo['A1'] = 'RELATÓRIO FINANCEIRO'
+    ws_resumo['A1'].font = Font(size=16, bold=True)
+    ws_resumo.merge_cells('A1:D1')
+    
+    ws_resumo['A3'] = 'Total de Receitas:'
+    ws_resumo['B3'] = f'R$ {total_receitas:,.2f}'
+    ws_resumo['B3'].font = Font(color="008000")
+    
+    ws_resumo['A4'] = 'Total de Despesas:'
+    ws_resumo['B4'] = f'R$ {total_despesas:,.2f}'
+    ws_resumo['B4'].font = Font(color="FF0000")
+    
+    ws_resumo['A5'] = 'Lucro/Prejuízo:'
+    ws_resumo['B5'] = f'R$ {(total_receitas - total_despesas):,.2f}'
+    ws_resumo['B5'].font = Font(color="008000" if (total_receitas - total_despesas) >= 0 else "FF0000", bold=True)
+    
+    # Sheet 2: Transações
+    ws_trans = wb.create_sheet("Transações")
+    
+    # Cabeçalho
+    headers = ['ID', 'Data', 'Tipo', 'Fornecedor', 'Categoria', 'Centro Custo', 'Valor', 'Status', 'Origem']
+    ws_trans.append(headers)
+    
+    # Estilo do cabeçalho
+    for cell in ws_trans[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        cell.alignment = Alignment(horizontal="center")
+    
+    # Dados
+    for t in transacoes:
+        ws_trans.append([
+            t.get('id', '')[:8] + '...',
+            t.get('data_competencia', ''),
+            t.get('tipo', ''),
+            t.get('fornecedor', ''),
+            t.get('categoria_id', '')[:8] + '...' if t.get('categoria_id') else '',
+            t.get('centro_custo_id', '')[:8] + '...' if t.get('centro_custo_id') else '',
+            t.get('valor_total', 0),
+            t.get('status', ''),
+            t.get('origem', '')
+        ])
+    
+    # Salvar em memória
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=relatorio_{tipo_periodo}.xlsx"}
+    )
+
+@api_router.get("/empresas/{empresa_id}/relatorios/export/pdf")
+async def export_relatorio_pdf(
+    empresa_id: str,
+    periodo_inicio: Optional[str] = None,
+    periodo_fim: Optional[str] = None,
+    tipo_periodo: str = "mensal",
+    current_user: dict = Depends(get_current_user)
+):
+    """Export relatório para PDF"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Reutilizar lógica do endpoint de relatórios
+    hoje = datetime.now(timezone.utc)
+    if tipo_periodo == "mensal":
+        periodo_inicio = hoje.replace(day=1).isoformat()
+        periodo_fim = hoje.isoformat()
+    elif tipo_periodo == "anual":
+        periodo_inicio = hoje.replace(month=1, day=1).isoformat()
+        periodo_fim = hoje.isoformat()
+    
+    query = {"empresa_id": empresa_id}
+    if periodo_inicio and periodo_fim:
+        query["data_competencia"] = {
+            "$gte": periodo_inicio.split("T")[0],
+            "$lte": periodo_fim.split("T")[0]
+        }
+    
+    transacoes = await db.transacoes.find(query, {"_id": 0}).to_list(10000)
+    
+    # Calcular métricas
+    total_receitas = sum(t["valor_total"] for t in transacoes if t["tipo"] == "receita")
+    total_despesas = sum(t["valor_total"] for t in transacoes if t["tipo"] == "despesa")
+    lucro = total_receitas - total_despesas
+    
+    # Criar PDF
+    output = io.BytesIO()
+    doc = SimpleDocTemplate(output, pagesize=landscape(A4))
+    elements = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#1f2937'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    
+    # Título
+    elements.append(Paragraph("RELATÓRIO FINANCEIRO - ECHO SHOP", title_style))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Resumo
+    resumo_data = [
+        ['RESUMO FINANCEIRO', ''],
+        ['Total de Receitas', f'R$ {total_receitas:,.2f}'],
+        ['Total de Despesas', f'R$ {total_despesas:,.2f}'],
+        ['Lucro/Prejuízo', f'R$ {lucro:,.2f}'],
+        ['Número de Transações', str(len(transacoes))]
+    ]
+    
+    resumo_table = Table(resumo_data, colWidths=[3*inch, 2*inch])
+    resumo_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4472C4')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 14),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    
+    elements.append(resumo_table)
+    elements.append(Spacer(1, 0.5*inch))
+    
+    # Transações (primeiras 50)
+    if transacoes:
+        elements.append(Paragraph("TRANSAÇÕES (Primeiras 50)", styles['Heading2']))
+        elements.append(Spacer(1, 0.2*inch))
+        
+        trans_data = [['Data', 'Tipo', 'Fornecedor', 'Valor', 'Status']]
+        for t in transacoes[:50]:
+            trans_data.append([
+                t.get('data_competencia', '')[:10],
+                t.get('tipo', ''),
+                t.get('fornecedor', '')[:20],
+                f'R$ {t.get("valor_total", 0):,.2f}',
+                t.get('status', '')
+            ])
+        
+        trans_table = Table(trans_data, colWidths=[1.2*inch, 1*inch, 2.5*inch, 1.3*inch, 1*inch])
+        trans_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ]))
+        
+        elements.append(trans_table)
+    
+    doc.build(elements)
+    output.seek(0)
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=relatorio_{tipo_periodo}.pdf"}
+    )
+
 # WHATSAPP MESSAGE PROCESSING (internal service)
 class WhatsAppMessageRequest(BaseModel):
     phone_number: str
