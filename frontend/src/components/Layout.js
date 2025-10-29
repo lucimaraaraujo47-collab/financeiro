@@ -5,8 +5,16 @@ import './Layout.css';
 function Layout({ user, onLogout, children }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [configOpen, setConfigOpen] = useState(false);
+  const [estoqueOpen, setEstoqueOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path;
+  
+  const configPaths = ['/categorias', '/centros-custo', '/financas', '/whatsapp', '/usuarios'];
+  const estoquePaths = ['/clientes', '/fornecedores', '/locais', '/categorias-equipamentos', '/equipamentos', '/equipamentos-serializados', '/movimentacoes'];
+  
+  const isConfigActive = configPaths.some(path => location.pathname === path);
+  const isEstoqueActive = estoquePaths.some(path => location.pathname === path);
 
   return (
     <div className="layout">
