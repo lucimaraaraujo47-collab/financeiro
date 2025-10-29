@@ -880,6 +880,38 @@ async def list_users(current_user: dict = Depends(get_current_user)):
     users = await db.users.find({}, {"_id": 0, "senha_hash": 0}).to_list(1000)
     return users
 
+@api_router.delete("/users/{user_id}")
+async def delete_user(user_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Delete a user - ADMIN ONLY
+    """
+    if current_user.get("perfil") != "admin":
+        raise HTTPException(status_code=403, detail="Apenas administradores podem deletar usuários")
+    
+    # Prevent self-deletion
+    if user_id == current_user["id"]:
+        raise HTTPException(status_code=400, detail="Você não pode deletar sua própria conta")
+    
+    # Check if user exists
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Delete user
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Log the deletion
+    log_security_event(
+        "USER_DELETED",
+        user_id=current_user["id"],
+        ip_address="system",
+        details=f"Deleted user: {user['email']}"
+    )
+    
+    return {"message": f"Usuário {user['nome']} deletado com sucesso"}
+
 # EMPRESA ROUTES
 @api_router.post("/empresas", response_model=Empresa)
 async def create_empresa(empresa_data: EmpresaCreate, current_user: dict = Depends(get_current_user)):
