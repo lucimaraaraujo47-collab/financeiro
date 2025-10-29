@@ -263,15 +263,18 @@
 
   - task: "Movimentações de Estoque - Create and Read with Business Logic"
     implemented: true
-    working: "NA"
+    working: false
     file: "backend/server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Backend endpoints implemented for stock movements: POST/GET /empresas/{empresa_id}/movimentacoes (with filters: tipo, equipamento_id, cliente_id). Types: entrada, saida_venda, saida_locacao, devolucao, transferencia, perda, manutencao. COMPLEX BUSINESS LOGIC: For serialized items - updates status (vendido/em_cliente/disponivel/em_manutencao/baixado) and cliente_id. For non-serialized - updates quantidade_estoque with validation for sufficient stock. Optional financial integration - creates Transacao automatically if criar_transacao_financeira=true. Model includes: tipo, data, equipamento_id, equipamento_serializado_id, quantidade, cliente_id, local_origem_id, local_destino_id, valor_financeiro, criar_transacao_financeira, transacao_id."
+        - working: false
+          agent: "testing"
+          comment: "PARTIALLY VERIFIED: Most complex business logic working correctly. SERIALIZED EQUIPMENT: Status changes working (disponivel→em_cliente→vendido→em_manutencao→baixado), cliente_id assignment working, tipo_vinculo setting working. NON-SERIALIZED EQUIPMENT: Stock quantity updates working (entrada +100, saida_venda -30, devolucao +10), insufficient stock validation working (correctly rejected 200 units when only 70 available). FILTERS: All movement filters working (tipo, cliente_id, equipamento_id). ISSUE: Financial transaction creation not working - when criar_transacao_financeira=true, transacao_id remains null. Core inventory logic working but financial integration needs fix."
 
   - task: "Investimentos CRUD - Create, Read, Update, Delete"
     implemented: true
