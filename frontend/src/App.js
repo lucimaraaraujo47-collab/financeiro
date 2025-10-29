@@ -78,6 +78,7 @@ function App() {
           <Route path="/empresas" element={<EmpresaSetup user={user} token={token} onUpdate={loadUser} />} />
           <Route path="/categorias" element={<Categorias user={user} token={token} />} />
           <Route path="/centros-custo" element={<CentrosCusto user={user} token={token} />} />
+          <Route path="/financas" element={<Financas user={user} token={token} />} />
           <Route path="/transacoes" element={<Transacoes user={user} token={token} />} />
           <Route path="/relatorios" element={<Relatorios user={user} token={token} />} />
           <Route path="/importar" element={<ImportarTransacoes user={user} token={token} />} />
