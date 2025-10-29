@@ -1670,6 +1670,16 @@ async def get_dashboard(empresa_id: str, current_user: dict = Depends(get_curren
     total_despesas = sum(t["valor_total"] for t in transacoes if t["tipo"] == "despesa")
     saldo = total_receitas - total_despesas
     
+    # Get bank accounts balance
+    contas = await db.contas_bancarias.find({"empresa_id": empresa_id, "ativa": True}, {"_id": 0}).to_list(1000)
+    saldo_contas = sum(c.get("saldo_atual", 0) for c in contas)
+    num_contas = len(contas)
+    
+    # Get credit cards balance
+    cartoes = await db.cartoes_credito.find({"empresa_id": empresa_id, "ativo": True}, {"_id": 0}).to_list(1000)
+    saldo_cartoes = sum(c.get("limite_disponivel", 0) for c in cartoes)
+    num_cartoes = len(cartoes)
+    
     # Despesas por categoria
     cat_map = {}
     for t in transacoes:
@@ -1705,6 +1715,10 @@ async def get_dashboard(empresa_id: str, current_user: dict = Depends(get_curren
         total_receitas=total_receitas,
         total_despesas=total_despesas,
         saldo=saldo,
+        saldo_contas=saldo_contas,
+        saldo_cartoes=saldo_cartoes,
+        num_contas=num_contas,
+        num_cartoes=num_cartoes,
         despesas_por_categoria=despesas_por_categoria,
         despesas_por_centro_custo=despesas_por_centro_custo,
         transacoes_recentes=transacoes_recentes
