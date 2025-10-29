@@ -271,6 +271,197 @@ class FaturaCartao(BaseModel):
     transacoes_ids: List[str] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# ==================== ESTOQUE MODELS ====================
+
+# CLIENTES
+class Cliente(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str
+    tipo: str  # fisica, juridica
+    cnpj_cpf: str
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+    endereco: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    cep: Optional[str] = None
+    status: str = "ativo"  # ativo, inativo
+    observacoes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ClienteCreate(BaseModel):
+    nome: str
+    tipo: str
+    cnpj_cpf: str
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+    endereco: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    cep: Optional[str] = None
+    observacoes: Optional[str] = None
+
+# FORNECEDORES
+class Fornecedor(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str
+    cnpj: str
+    contato: Optional[str] = None
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+    endereco: Optional[str] = None
+    status: str = "ativo"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class FornecedorCreate(BaseModel):
+    nome: str
+    cnpj: str
+    contato: Optional[str] = None
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+    endereco: Optional[str] = None
+
+# LOCAIS/DEPÓSITOS
+class LocalDeposito(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str
+    descricao: Optional[str] = None
+    responsavel: Optional[str] = None
+    endereco: Optional[str] = None
+    status: str = "ativo"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class LocalDepositoCreate(BaseModel):
+    nome: str
+    descricao: Optional[str] = None
+    responsavel: Optional[str] = None
+    endereco: Optional[str] = None
+
+# CATEGORIAS DE EQUIPAMENTOS
+class CategoriaEquipamento(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str
+    descricao: Optional[str] = None
+    tipo_controle: str  # serializado, nao_serializado
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CategoriaEquipamentoCreate(BaseModel):
+    nome: str
+    descricao: Optional[str] = None
+    tipo_controle: str
+
+# EQUIPAMENTOS (PRODUTOS)
+class Equipamento(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str
+    categoria_id: str
+    fabricante: Optional[str] = None
+    modelo: Optional[str] = None
+    descricao: Optional[str] = None
+    custo_aquisicao: float = 0.0
+    valor_venda: float = 0.0
+    valor_locacao_mensal: float = 0.0
+    tipo_controle: str  # serializado, nao_serializado
+    foto_url: Optional[str] = None
+    fornecedor_id: Optional[str] = None
+    # Para não-serializados
+    quantidade_estoque: int = 0
+    estoque_minimo: int = 0
+    status: str = "ativo"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class EquipamentoCreate(BaseModel):
+    nome: str
+    categoria_id: str
+    fabricante: Optional[str] = None
+    modelo: Optional[str] = None
+    descricao: Optional[str] = None
+    custo_aquisicao: float = 0.0
+    valor_venda: float = 0.0
+    valor_locacao_mensal: float = 0.0
+    tipo_controle: str
+    foto_url: Optional[str] = None
+    fornecedor_id: Optional[str] = None
+    estoque_minimo: int = 0
+
+# EQUIPAMENTOS SERIALIZADOS (INSTÂNCIAS)
+class EquipamentoSerializado(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    equipamento_id: str
+    numero_serie: str
+    numero_linha: Optional[str] = None
+    numero_simcard: Optional[str] = None
+    historico_simcards: List[Dict[str, str]] = []  # [{"numero": "123", "data_troca": "2024-01-01"}]
+    status: str = "disponivel"  # disponivel, em_cliente, em_manutencao, vendido, baixado
+    cliente_id: Optional[str] = None
+    tipo_vinculo: Optional[str] = None  # venda, locacao, comodato
+    local_id: Optional[str] = None
+    data_aquisicao: Optional[str] = None
+    data_garantia: Optional[str] = None
+    custo_especifico: Optional[float] = None
+    observacoes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class EquipamentoSerializadoCreate(BaseModel):
+    equipamento_id: str
+    numero_serie: str
+    numero_linha: Optional[str] = None
+    numero_simcard: Optional[str] = None
+    local_id: Optional[str] = None
+    data_aquisicao: Optional[str] = None
+    data_garantia: Optional[str] = None
+    custo_especifico: Optional[float] = None
+    observacoes: Optional[str] = None
+
+# MOVIMENTAÇÕES DE ESTOQUE
+class MovimentacaoEstoque(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    tipo: str  # entrada, saida_venda, saida_locacao, devolucao, transferencia, perda, manutencao
+    data: str  # ISO date
+    equipamento_id: str
+    equipamento_serializado_id: Optional[str] = None  # Para serializados
+    quantidade: int = 1  # Para não-serializados
+    cliente_id: Optional[str] = None
+    local_origem_id: Optional[str] = None
+    local_destino_id: Optional[str] = None
+    observacoes: Optional[str] = None
+    usuario_id: str
+    valor_financeiro: Optional[float] = None
+    criar_transacao_financeira: bool = False
+    transacao_id: Optional[str] = None  # ID da transação financeira criada
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MovimentacaoEstoqueCreate(BaseModel):
+    tipo: str
+    data: str
+    equipamento_id: str
+    equipamento_serializado_id: Optional[str] = None
+    quantidade: int = 1
+    cliente_id: Optional[str] = None
+    local_origem_id: Optional[str] = None
+    local_destino_id: Optional[str] = None
+    observacoes: Optional[str] = None
+    valor_financeiro: Optional[float] = None
+    criar_transacao_financeira: bool = False
+    categoria_financeira_id: Optional[str] = None  # Para criação de transação
+    centro_custo_id: Optional[str] = None
+
+# ==================== END ESTOQUE MODELS ====================
+
 class Transacao(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
