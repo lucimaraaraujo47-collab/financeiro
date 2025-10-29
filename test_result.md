@@ -431,10 +431,8 @@
   run_ui: true
 
 ## test_plan:
-  current_focus:
-    - "Movimentações de Estoque - Financial Transaction Integration Fix"
-  stuck_tasks:
-    - "Movimentações de Estoque - Create and Read with Business Logic"
+  current_focus: []
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
