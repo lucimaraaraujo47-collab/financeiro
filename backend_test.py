@@ -641,15 +641,15 @@ class FinAITestRunner:
     
     def run_all_tests(self):
         """Run all test scenarios"""
-        self.log("=" * 60)
-        self.log("STARTING WHATSAPP COMPANY ID ASSIGNMENT TESTS")
-        self.log("=" * 60)
+        self.log("=" * 80)
+        self.log("STARTING ECHO SHOP FinAI - INVESTMENTS & CREDIT CARDS CRUD TESTS")
+        self.log("=" * 80)
         
         results = {
             'login': False,
-            'existing_transactions': False,
-            'whatsapp_processing': False,
-            'new_transaction_assignment': False
+            'investimentos_crud': False,
+            'cartoes_crud': False,
+            'transaction_integration': False
         }
         
         # Test 1: Admin Login
@@ -659,27 +659,19 @@ class FinAITestRunner:
             self.log("❌ Cannot continue without successful login", "ERROR")
             return results
         
-        # Test 2: Existing Transactions
-        transaction_result = self.test_existing_transactions()
-        if transaction_result:
-            results['existing_transactions'] = True
-            initial_count, whatsapp_txns = transaction_result
-        else:
-            initial_count = 0
+        # Test 2: Investimentos CRUD
+        results['investimentos_crud'] = self.test_investimentos_crud()
         
-        # Test 3: WhatsApp Processing
-        processing_result = self.test_whatsapp_processing()
-        if processing_result:
-            results['whatsapp_processing'] = True
+        # Test 3: Cartões de Crédito CRUD
+        results['cartoes_crud'] = self.test_cartoes_crud()
         
-        # Test 4: New Transaction Assignment
-        if results['whatsapp_processing']:
-            results['new_transaction_assignment'] = self.test_new_transaction_assignment(initial_count)
+        # Test 4: Transaction Integration
+        results['transaction_integration'] = self.test_transaction_integration()
         
         # Summary
-        self.log("=" * 60)
+        self.log("=" * 80)
         self.log("TEST RESULTS SUMMARY")
-        self.log("=" * 60)
+        self.log("=" * 80)
         
         for test_name, passed in results.items():
             status = "✅ PASS" if passed else "❌ FAIL"
@@ -691,9 +683,9 @@ class FinAITestRunner:
         self.log(f"\nOverall: {passed_tests}/{total_tests} tests passed")
         
         if passed_tests == total_tests:
-            self.log("🎉 ALL TESTS PASSED - WhatsApp company ID assignment is working correctly!")
+            self.log("🎉 ALL TESTS PASSED - Investments & Credit Cards CRUD operations working correctly!")
         else:
-            self.log("⚠️ SOME TESTS FAILED - Issues detected with WhatsApp company ID assignment")
+            self.log("⚠️ SOME TESTS FAILED - Issues detected with CRUD operations")
         
         return results
 
