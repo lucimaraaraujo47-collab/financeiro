@@ -2118,8 +2118,9 @@ async def whatsapp_qr(current_user: dict = Depends(get_current_user)):
     """Proxy to WhatsApp service QR code"""
     try:
         import httpx
+        whatsapp_url = os.environ.get("WHATSAPP_SERVICE_URL", "http://localhost:8002")
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:8002/qr", timeout=5.0)
+            response = await client.get(f"{whatsapp_url}/qr", timeout=5.0)
             return response.json()
     except Exception as e:
         logging.error(f"Error getting WhatsApp QR: {e}")
