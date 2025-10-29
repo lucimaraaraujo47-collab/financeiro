@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-## user_problem_statement: "Complete full implementation of Investments and Credit Cards management system with CRUD operations and integration with transactions"
+## user_problem_statement: "Implement complete Inventory Management System with serialized and non-serialized equipment tracking, client management, stock movements, and financial integration"
 
 ## backend:
   - task: "WhatsApp Message Processing - Company ID Assignment"
