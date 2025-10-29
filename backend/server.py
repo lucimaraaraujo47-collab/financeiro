@@ -75,6 +75,17 @@ class UserProfile(BaseModel):
     senha_hash: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class UserResponse(BaseModel):
+    """User response without password hash"""
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    nome: str
+    email: EmailStr
+    telefone: Optional[str] = None
+    perfil: str
+    empresa_ids: List[str] = []
+    created_at: datetime
+
 class UserCreate(BaseModel):
     nome: str
     email: EmailStr
