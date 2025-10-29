@@ -233,15 +233,18 @@
 
   - task: "Equipamentos CRUD - Create, Read, Update, Delete"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Backend endpoints implemented for equipment/product management: POST/GET /empresas/{empresa_id}/equipamentos, GET/PUT/DELETE /equipamentos/{equipamento_id}. Model includes: nome, categoria_id, fabricante, modelo, descricao, custo_aquisicao, valor_venda, valor_locacao_mensal, tipo_controle, foto_url, fornecedor_id, quantidade_estoque, estoque_minimo. Quantity is preserved during updates."
+        - working: true
+          agent: "testing"
+          comment: "VERIFIED: Complete CRUD testing successful. Created two equipments: 'Roteador TP-Link AX3000' (serializado, R$ 800 venda, R$ 100 locação) and 'Cabo Ethernet Cat6' (nao_serializado, R$ 20 venda). All operations working: CREATE (both equipments created with correct pricing and tipo_controle), LIST (both appear in empresa list), GET specific equipment by ID, UPDATE (router valor_venda updated from R$ 800 to R$ 900 with quantidade_estoque preserved), DELETE (cabo equipment removed). All API endpoints responding correctly."
 
   - task: "Equipamentos Serializados CRUD - Create, Read, Update, Delete"
     implemented: true
