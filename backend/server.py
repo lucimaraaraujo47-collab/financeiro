@@ -1637,7 +1637,7 @@ DESPESAS POR CATEGORIA:
             api_key=emergent_key,
             session_id=f"analise-{empresa_id}",
             system_message="Você é um consultor financeiro especializado."
-        ).with_model("openai", "gpt-4o")
+        ).with_model("openai", "gpt-4o-mini")
         
         prompt = f"""{resumo_financeiro}
 
@@ -1794,7 +1794,7 @@ HISTÓRICO FINANCEIRO (últimos 90 dias):
             api_key=emergent_key,
             session_id=f"analise-{empresa_id}",
             system_message="Você é um consultor financeiro especializado."
-        ).with_model("openai", "gpt-4o")
+        ).with_model("openai", "gpt-4o-mini")
         
         prompt = f"""{resumo}
 
