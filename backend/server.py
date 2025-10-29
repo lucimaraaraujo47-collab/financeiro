@@ -904,6 +904,32 @@ async def create_transacao(empresa_id: str, transacao_data: TransacaoCreate, cur
     doc['created_at'] = doc['created_at'].isoformat()
     
     await db.transacoes.insert_one(doc)
+    
+    # Atualizar saldo da conta bancária se vinculado
+    if transacao_data.conta_bancaria_id:
+        if transacao_data.tipo == "receita":
+            await db.contas_bancarias.update_one(
+                {"id": transacao_data.conta_bancaria_id},
+                {"$inc": {"saldo_atual": transacao_data.valor_total}}
+            )
+        else:  # despesa
+            await db.contas_bancarias.update_one(
+                {"id": transacao_data.conta_bancaria_id},
+                {"$inc": {"saldo_atual": -transacao_data.valor_total}}
+            )
+    
+    # Atualizar fatura do cartão se vinculado
+    if transacao_data.cartao_credito_id and transacao_data.tipo == "despesa":
+        await db.cartoes_credito.update_one(
+            {"id": transacao_data.cartao_credito_id},
+            {
+                "$inc": {
+                    "fatura_atual": transacao_data.valor_total,
+                    "limite_disponivel": -transacao_data.valor_total
+                }
+            }
+        )
+    
     return transacao_obj
 
 @api_router.get("/empresas/{empresa_id}/transacoes", response_model=List[Transacao])
