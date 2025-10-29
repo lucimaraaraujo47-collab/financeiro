@@ -1650,8 +1650,9 @@ Como consultor financeiro especializado, analise estes dados e forneça:
 
 Seja objetivo, prático e focado em ações concretas. Use formato claro com bullets."""
 
-        response = llm.run([UserMessage(content=prompt)])
-        analise_texto = response.content[0]["text"]
+        user_message = UserMessage(text=prompt)
+        response = await llm.send_message(user_message)
+        analise_texto = response
         
         return {
             "status": "success",
