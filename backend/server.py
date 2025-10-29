@@ -29,6 +29,9 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
+import pandas as pd
+from ofxparse import OfxParser
+from PyPDF2 import PdfReader
 from security_utils import (
     validate_password_strength,
     sanitize_string,
