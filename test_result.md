@@ -171,6 +171,90 @@
   test_all: false
   test_priority: "high_first"
 
+  - task: "Clientes CRUD - Create, Read, Update, Delete"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Backend endpoints implemented for client management: POST/GET /empresas/{empresa_id}/clientes, GET/PUT/DELETE /clientes/{cliente_id}. Model includes: nome, tipo (fisica/juridica), cnpj_cpf, email, telefone, endereco, cidade, estado, cep, status, observacoes."
+
+  - task: "Fornecedores CRUD - Create, Read, Update, Delete"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Backend endpoints implemented for supplier management: POST/GET /empresas/{empresa_id}/fornecedores, PUT/DELETE /fornecedores/{fornecedor_id}. Model includes: nome, cnpj, contato, email, telefone, endereco, status."
+
+  - task: "Locais/Depósitos CRUD - Create, Read, Update, Delete"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Backend endpoints implemented for warehouse/location management: POST/GET /empresas/{empresa_id}/locais, PUT/DELETE /locais/{local_id}. Model includes: nome, descricao, responsavel, endereco, status."
+
+  - task: "Categorias Equipamentos CRUD - Create, Read, Update, Delete"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Backend endpoints implemented for equipment category management: POST/GET /empresas/{empresa_id}/categorias-equipamentos, PUT/DELETE /categorias-equipamentos/{categoria_id}. Model includes: nome, descricao, tipo_controle (serializado/nao_serializado)."
+
+  - task: "Equipamentos CRUD - Create, Read, Update, Delete"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Backend endpoints implemented for equipment/product management: POST/GET /empresas/{empresa_id}/equipamentos, GET/PUT/DELETE /equipamentos/{equipamento_id}. Model includes: nome, categoria_id, fabricante, modelo, descricao, custo_aquisicao, valor_venda, valor_locacao_mensal, tipo_controle, foto_url, fornecedor_id, quantidade_estoque, estoque_minimo. Quantity is preserved during updates."
+
+  - task: "Equipamentos Serializados CRUD - Create, Read, Update, Delete"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Backend endpoints implemented for serialized equipment instances: POST/GET /empresas/{empresa_id}/equipamentos-serializados (with filters: status, cliente_id, equipamento_id), GET/PUT/DELETE /equipamentos-serializados/{eq_serial_id}. Model includes: equipamento_id, numero_serie (unique), numero_linha, numero_simcard, historico_simcards, status (disponivel/em_cliente/em_manutencao/vendido/baixado), cliente_id, tipo_vinculo (venda/locacao/comodato), local_id, data_aquisicao, data_garantia. SIM card changes are tracked in history automatically."
+
+  - task: "Movimentações de Estoque - Create and Read with Business Logic"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Backend endpoints implemented for stock movements: POST/GET /empresas/{empresa_id}/movimentacoes (with filters: tipo, equipamento_id, cliente_id). Types: entrada, saida_venda, saida_locacao, devolucao, transferencia, perda, manutencao. COMPLEX BUSINESS LOGIC: For serialized items - updates status (vendido/em_cliente/disponivel/em_manutencao/baixado) and cliente_id. For non-serialized - updates quantidade_estoque with validation for sufficient stock. Optional financial integration - creates Transacao automatically if criar_transacao_financeira=true. Model includes: tipo, data, equipamento_id, equipamento_serializado_id, quantidade, cliente_id, local_origem_id, local_destino_id, valor_financeiro, criar_transacao_financeira, transacao_id."
+
   - task: "Investimentos CRUD - Create, Read, Update, Delete"
     implemented: true
     working: true
