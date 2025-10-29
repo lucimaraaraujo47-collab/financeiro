@@ -15,6 +15,13 @@ import Relatorios from './components/Relatorios';
 import ImportarTransacoes from './components/ImportarTransacoes';
 import AnaliseIA from './components/AnaliseIA';
 import Financas from './components/Financas';
+import Clientes from './components/Clientes';
+import Fornecedores from './components/Fornecedores';
+import Locais from './components/Locais';
+import CategoriasEquipamentos from './components/CategoriasEquipamentos';
+import Equipamentos from './components/Equipamentos';
+import EquipamentosSerializados from './components/EquipamentosSerializados';
+import Movimentacoes from './components/Movimentacoes';
 import Layout from './components/Layout';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
