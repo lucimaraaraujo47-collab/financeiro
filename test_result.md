@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-## user_problem_statement: "Fix WhatsApp transaction company ID mismatch - transactions were being registered to wrong company, making them invisible to admin user"
+## user_problem_statement: "Complete full implementation of Investments and Credit Cards management system with CRUD operations and integration with transactions"
 
 ## backend:
   - task: "WhatsApp Message Processing - Company ID Assignment"
