@@ -816,6 +816,138 @@ async def get_dashboard(empresa_id: str, current_user: dict = Depends(get_curren
         transacoes_recentes=transacoes_recentes
     )
 
+@api_router.get("/empresas/{empresa_id}/relatorios", response_model=RelatorioDetalhado)
+async def get_relatorio_detalhado(
+    empresa_id: str,
+    periodo_inicio: Optional[str] = None,
+    periodo_fim: Optional[str] = None,
+    tipo_periodo: str = "mensal",  # mensal, anual, personalizado
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Gerar relatório detalhado com análise por centro de custo e categoria
+    """
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Definir período baseado no tipo
+    hoje = datetime.now(timezone.utc)
+    if tipo_periodo == "mensal":
+        periodo_inicio = hoje.replace(day=1).isoformat()
+        periodo_fim = hoje.isoformat()
+    elif tipo_periodo == "anual":
+        periodo_inicio = hoje.replace(month=1, day=1).isoformat()
+        periodo_fim = hoje.isoformat()
+    # Para personalizado, usar os parâmetros fornecidos
+    
+    # Buscar transações do período
+    query = {"empresa_id": empresa_id}
+    if periodo_inicio and periodo_fim:
+        query["data_competencia"] = {
+            "$gte": periodo_inicio.split("T")[0],
+            "$lte": periodo_fim.split("T")[0]
+        }
+    
+    transacoes = await db.transacoes.find(query, {"_id": 0}).to_list(10000)
+    
+    # Calcular resumo geral
+    total_receitas = sum(t["valor_total"] for t in transacoes if t["tipo"] == "receita")
+    total_despesas = sum(t["valor_total"] for t in transacoes if t["tipo"] == "despesa")
+    lucro = total_receitas - total_despesas
+    
+    resumo_geral = {
+        "total_receitas": total_receitas,
+        "total_despesas": total_despesas,
+        "lucro": lucro,
+        "num_transacoes": len(transacoes),
+        "ticket_medio": (total_receitas + total_despesas) / len(transacoes) if transacoes else 0
+    }
+    
+    # Análise por Centro de Custo
+    cc_map = {}
+    for t in transacoes:
+        cc_id = t.get("centro_custo_id")
+        if cc_id:
+            if cc_id not in cc_map:
+                cc = await db.centros_custo.find_one({"id": cc_id}, {"_id": 0})
+                cc_map[cc_id] = {
+                    "id": cc_id,
+                    "nome": cc["nome"] if cc else "Desconhecido",
+                    "receitas": 0,
+                    "despesas": 0,
+                    "num_transacoes": 0
+                }
+            
+            cc_map[cc_id]["num_transacoes"] += 1
+            if t["tipo"] == "receita":
+                cc_map[cc_id]["receitas"] += t["valor_total"]
+            else:
+                cc_map[cc_id]["despesas"] += t["valor_total"]
+    
+    por_centro_custo = []
+    for cc_id, data in cc_map.items():
+        lucro_cc = data["receitas"] - data["despesas"]
+        percentual = ((data["receitas"] + data["despesas"]) / (total_receitas + total_despesas) * 100) if (total_receitas + total_despesas) > 0 else 0
+        
+        por_centro_custo.append(CentroCustoMetrics(
+            centro_custo_id=cc_id,
+            centro_custo_nome=data["nome"],
+            total_receitas=data["receitas"],
+            total_despesas=data["despesas"],
+            lucro=lucro_cc,
+            num_transacoes=data["num_transacoes"],
+            percentual_total=round(percentual, 2)
+        ))
+    
+    por_centro_custo.sort(key=lambda x: abs(x.total_receitas + x.total_despesas), reverse=True)
+    
+    # Análise por Categoria
+    cat_map = {}
+    for t in transacoes:
+        cat_id = t.get("categoria_id")
+        if cat_id:
+            if cat_id not in cat_map:
+                cat = await db.categorias.find_one({"id": cat_id}, {"_id": 0})
+                cat_map[cat_id] = {
+                    "id": cat_id,
+                    "nome": cat["nome"] if cat else "Desconhecido",
+                    "receitas": 0,
+                    "despesas": 0,
+                    "num_transacoes": 0
+                }
+            
+            cat_map[cat_id]["num_transacoes"] += 1
+            if t["tipo"] == "receita":
+                cat_map[cat_id]["receitas"] += t["valor_total"]
+            else:
+                cat_map[cat_id]["despesas"] += t["valor_total"]
+    
+    por_categoria = []
+    for cat_id, data in cat_map.items():
+        perc_despesas = (data["despesas"] / total_despesas * 100) if total_despesas > 0 else 0
+        perc_receitas = (data["receitas"] / total_receitas * 100) if total_receitas > 0 else 0
+        
+        por_categoria.append(CategoriaMetrics(
+            categoria_id=cat_id,
+            categoria_nome=data["nome"],
+            total_receitas=data["receitas"],
+            total_despesas=data["despesas"],
+            num_transacoes=data["num_transacoes"],
+            percentual_despesas=round(perc_despesas, 2),
+            percentual_receitas=round(perc_receitas, 2)
+        ))
+    
+    por_categoria.sort(key=lambda x: x.total_despesas + x.total_receitas, reverse=True)
+    
+    return RelatorioDetalhado(
+        periodo_inicio=periodo_inicio or hoje.isoformat(),
+        periodo_fim=periodo_fim or hoje.isoformat(),
+        resumo_geral=resumo_geral,
+        por_centro_custo=por_centro_custo,
+        por_categoria=por_categoria,
+        transacoes=transacoes[:100]  # Limitar a 100 transações para performance
+    )
+
 # WHATSAPP MESSAGE PROCESSING (internal service)
 class WhatsAppMessageRequest(BaseModel):
     phone_number: str
