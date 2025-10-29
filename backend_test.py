@@ -16,14 +16,20 @@ ADMIN_EMAIL = "admin@echoshop.com.br"
 ADMIN_PASSWORD = "Admin@2024"
 EMPRESA_ID = "226b58c1-4a48-4b66-9537-0dbf9fa65500"
 
-class WhatsAppTestRunner:
+class FinAITestRunner:
     def __init__(self):
         self.token = None
+        self.user_data = None
         self.session = requests.Session()
         self.session.headers.update({
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         })
+        
+        # Test data storage
+        self.created_investment_id = None
+        self.created_card_id = None
+        self.created_account_id = None
         
     def log(self, message, level="INFO"):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
