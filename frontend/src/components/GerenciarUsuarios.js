@@ -298,6 +298,7 @@ function GerenciarUsuarios({ user, token }) {
                   <th>Perfil</th>
                   <th>Empresas</th>
                   <th>Criado em</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody data-testid="usuarios-table">
@@ -313,6 +314,23 @@ function GerenciarUsuarios({ user, token }) {
                     </td>
                     <td>{usuario.empresa_ids?.length || 0}</td>
                     <td>{new Date(usuario.created_at).toLocaleDateString('pt-BR')}</td>
+                    <td>
+                      {usuario.id !== user.id && (
+                        <button 
+                          className="btn-danger" 
+                          onClick={() => handleDelete(usuario.id, usuario.nome)}
+                          style={{ fontSize: '0.875rem', padding: '0.375rem 0.75rem' }}
+                          data-testid={`delete-user-${usuario.id}`}
+                        >
+                          🗑️ Excluir
+                        </button>
+                      )}
+                      {usuario.id === user.id && (
+                        <span style={{ fontSize: '0.875rem', color: '#94a3b8' }}>
+                          Você
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
