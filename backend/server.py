@@ -1233,6 +1233,340 @@ async def export_relatorio_pdf(
         headers={"Content-Disposition": f"attachment; filename=relatorio_{tipo_periodo}.pdf"}
     )
 
+# IMPORT ROUTES
+@api_router.post("/empresas/{empresa_id}/transacoes/import/csv")
+async def import_csv(
+    empresa_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Importar transações de arquivo CSV"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Arquivo deve ser CSV")
+    
+    try:
+        # Ler CSV
+        contents = await file.read()
+        df = pd.read_csv(io.BytesIO(contents))
+        
+        # Validar colunas esperadas
+        required_columns = ['data', 'tipo', 'fornecedor', 'valor']
+        if not all(col in df.columns for col in required_columns):
+            return {
+                "status": "error",
+                "message": f"CSV deve conter as colunas: {', '.join(required_columns)}",
+                "columns_found": list(df.columns)
+            }
+        
+        # Buscar categorias e centros de custo default
+        categorias = await db.categorias.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(100)
+        centros_custo = await db.centros_custo.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(100)
+        
+        default_categoria_id = categorias[0]["id"] if categorias else None
+        default_centro_custo_id = centros_custo[0]["id"] if centros_custo else None
+        
+        # Processar cada linha
+        imported_count = 0
+        errors = []
+        
+        for index, row in df.iterrows():
+            try:
+                transacao = {
+                    "id": str(uuid.uuid4()),
+                    "empresa_id": empresa_id,
+                    "usuario_id": current_user["id"],
+                    "tipo": str(row['tipo']).lower(),
+                    "fornecedor": str(row['fornecedor']),
+                    "valor_total": float(row['valor']),
+                    "data_competencia": str(row['data']),
+                    "categoria_id": str(row.get('categoria_id', default_categoria_id)) if 'categoria_id' in row else default_categoria_id,
+                    "centro_custo_id": str(row.get('centro_custo_id', default_centro_custo_id)) if 'centro_custo_id' in row else default_centro_custo_id,
+                    "descricao": str(row.get('descricao', '')),
+                    "status": "concluido",
+                    "origem": "import_csv",
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                await db.transacoes.insert_one(transacao)
+                imported_count += 1
+                
+            except Exception as e:
+                errors.append(f"Linha {index + 2}: {str(e)}")
+        
+        return {
+            "status": "success",
+            "imported": imported_count,
+            "total": len(df),
+            "errors": errors[:10]  # Limitar a 10 erros
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao processar CSV: {str(e)}")
+
+@api_router.post("/empresas/{empresa_id}/transacoes/import/excel")
+async def import_excel(
+    empresa_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Importar transações de arquivo Excel"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Arquivo deve ser Excel (.xlsx ou .xls)")
+    
+    try:
+        # Ler Excel
+        contents = await file.read()
+        df = pd.read_excel(io.BytesIO(contents))
+        
+        # Validar colunas esperadas
+        required_columns = ['data', 'tipo', 'fornecedor', 'valor']
+        if not all(col in df.columns for col in required_columns):
+            return {
+                "status": "error",
+                "message": f"Excel deve conter as colunas: {', '.join(required_columns)}",
+                "columns_found": list(df.columns)
+            }
+        
+        # Buscar categorias e centros de custo default
+        categorias = await db.categorias.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(100)
+        centros_custo = await db.centros_custo.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(100)
+        
+        default_categoria_id = categorias[0]["id"] if categorias else None
+        default_centro_custo_id = centros_custo[0]["id"] if centros_custo else None
+        
+        # Processar cada linha
+        imported_count = 0
+        errors = []
+        
+        for index, row in df.iterrows():
+            try:
+                transacao = {
+                    "id": str(uuid.uuid4()),
+                    "empresa_id": empresa_id,
+                    "usuario_id": current_user["id"],
+                    "tipo": str(row['tipo']).lower(),
+                    "fornecedor": str(row['fornecedor']),
+                    "valor_total": float(row['valor']),
+                    "data_competencia": str(row['data'])[:10],
+                    "categoria_id": str(row.get('categoria_id', default_categoria_id)) if 'categoria_id' in row else default_categoria_id,
+                    "centro_custo_id": str(row.get('centro_custo_id', default_centro_custo_id)) if 'centro_custo_id' in row else default_centro_custo_id,
+                    "descricao": str(row.get('descricao', '')),
+                    "status": "concluido",
+                    "origem": "import_excel",
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                await db.transacoes.insert_one(transacao)
+                imported_count += 1
+                
+            except Exception as e:
+                errors.append(f"Linha {index + 2}: {str(e)}")
+        
+        return {
+            "status": "success",
+            "imported": imported_count,
+            "total": len(df),
+            "errors": errors[:10]
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao processar Excel: {str(e)}")
+
+@api_router.post("/empresas/{empresa_id}/transacoes/import/ofx")
+async def import_ofx(
+    empresa_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Importar transações de arquivo OFX (extrato bancário)"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    if not file.filename.endswith('.ofx'):
+        raise HTTPException(status_code=400, detail="Arquivo deve ser OFX")
+    
+    try:
+        # Ler OFX
+        contents = await file.read()
+        ofx = OfxParser.parse(io.BytesIO(contents))
+        
+        # Buscar categorias e centros de custo default
+        categorias = await db.categorias.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(100)
+        centros_custo = await db.centros_custo.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(100)
+        
+        default_categoria_id = categorias[0]["id"] if categorias else None
+        default_centro_custo_id = centros_custo[0]["id"] if centros_custo else None
+        
+        # Processar transações
+        imported_count = 0
+        errors = []
+        
+        account = ofx.account
+        for transaction in account.statement.transactions:
+            try:
+                # Determinar tipo baseado no valor
+                tipo = "receita" if transaction.amount > 0 else "despesa"
+                valor_abs = abs(transaction.amount)
+                
+                transacao = {
+                    "id": str(uuid.uuid4()),
+                    "empresa_id": empresa_id,
+                    "usuario_id": current_user["id"],
+                    "tipo": tipo,
+                    "fornecedor": transaction.payee or "Não informado",
+                    "valor_total": valor_abs,
+                    "data_competencia": transaction.date.strftime("%Y-%m-%d"),
+                    "categoria_id": default_categoria_id,
+                    "centro_custo_id": default_centro_custo_id,
+                    "descricao": transaction.memo or "",
+                    "status": "concluido",
+                    "origem": "import_ofx",
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                await db.transacoes.insert_one(transacao)
+                imported_count += 1
+                
+            except Exception as e:
+                errors.append(f"Transação {transaction.id}: {str(e)}")
+        
+        return {
+            "status": "success",
+            "imported": imported_count,
+            "account": account.number if hasattr(account, 'number') else "N/A",
+            "errors": errors[:10]
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao processar OFX: {str(e)}")
+
+@api_router.post("/empresas/{empresa_id}/transacoes/import/pdf")
+async def import_pdf(
+    empresa_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Importar transações de arquivo PDF (usando OCR via IA)"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    if not file.filename.endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Arquivo deve ser PDF")
+    
+    try:
+        # Ler PDF
+        contents = await file.read()
+        pdf_reader = PdfReader(io.BytesIO(contents))
+        
+        # Extrair texto de todas as páginas
+        texto_completo = ""
+        for page in pdf_reader.pages:
+            texto_completo += page.extract_text() + "\n"
+        
+        if not texto_completo.strip():
+            raise HTTPException(status_code=400, detail="Não foi possível extrair texto do PDF")
+        
+        # Usar IA para extrair dados financeiros
+        emergent_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not emergent_key:
+            raise HTTPException(status_code=500, detail="Chave de IA não configurada")
+        
+        llm = LlmChat(
+            platform="openai",
+            model="gpt-4o-mini",
+            api_key=emergent_key
+        )
+        
+        prompt = f"""Analise este extrato/fatura e extraia todas as transações financeiras.
+        
+Texto do PDF:
+{texto_completo[:3000]}
+
+Retorne um JSON com lista de transações no formato:
+{{
+  "transacoes": [
+    {{
+      "data": "YYYY-MM-DD",
+      "tipo": "receita" ou "despesa",
+      "fornecedor": "nome do fornecedor/cliente",
+      "valor": número (apenas valor numérico),
+      "descricao": "descrição breve"
+    }}
+  ]
+}}
+
+Retorne APENAS o JSON, sem texto adicional."""
+
+        response = llm.run([UserMessage(content=prompt)])
+        
+        # Parse resposta
+        import json
+        try:
+            # Tentar extrair JSON da resposta
+            resposta_texto = response.content[0]["text"]
+            # Remover markdown se presente
+            if "```json" in resposta_texto:
+                resposta_texto = resposta_texto.split("```json")[1].split("```")[0]
+            elif "```" in resposta_texto:
+                resposta_texto = resposta_texto.split("```")[1].split("```")[0]
+            
+            dados = json.loads(resposta_texto.strip())
+            transacoes_extraidas = dados.get("transacoes", [])
+        except:
+            raise HTTPException(status_code=500, detail="Não foi possível processar resposta da IA")
+        
+        # Buscar categorias e centros de custo default
+        categorias = await db.categorias.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(100)
+        centros_custo = await db.centros_custo.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(100)
+        
+        default_categoria_id = categorias[0]["id"] if categorias else None
+        default_centro_custo_id = centros_custo[0]["id"] if centros_custo else None
+        
+        # Inserir transações
+        imported_count = 0
+        errors = []
+        
+        for trans in transacoes_extraidas:
+            try:
+                transacao = {
+                    "id": str(uuid.uuid4()),
+                    "empresa_id": empresa_id,
+                    "usuario_id": current_user["id"],
+                    "tipo": trans.get("tipo", "despesa"),
+                    "fornecedor": trans.get("fornecedor", "Não informado"),
+                    "valor_total": float(trans.get("valor", 0)),
+                    "data_competencia": trans.get("data", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
+                    "categoria_id": default_categoria_id,
+                    "centro_custo_id": default_centro_custo_id,
+                    "descricao": trans.get("descricao", ""),
+                    "status": "pendente",  # Pendente para revisão
+                    "origem": "import_pdf",
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                await db.transacoes.insert_one(transacao)
+                imported_count += 1
+                
+            except Exception as e:
+                errors.append(f"Erro: {str(e)}")
+        
+        return {
+            "status": "success",
+            "imported": imported_count,
+            "total": len(transacoes_extraidas),
+            "errors": errors[:10],
+            "message": "Transações importadas como 'pendente' para revisão"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao processar PDF: {str(e)}")
+
 # WHATSAPP MESSAGE PROCESSING (internal service)
 class WhatsAppMessageRequest(BaseModel):
     phone_number: str
