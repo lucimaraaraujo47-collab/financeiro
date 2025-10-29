@@ -173,15 +173,18 @@
 
   - task: "Investimentos CRUD - Create, Read, Update, Delete"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Backend endpoints implemented: POST /empresas/{empresa_id}/investimentos, GET /empresas/{empresa_id}/investimentos, PUT /investimentos/{inv_id}, DELETE /investimentos/{inv_id}. Models: Investimento and InvestimentoCreate with fields: nome, tipo (renda_fixa, renda_variavel, fundos, outros), valor_investido, valor_atual, data_aplicacao, rentabilidade_percentual, instituicao. Need comprehensive testing."
+        - working: true
+          agent: "testing"
+          comment: "VERIFIED: Complete CRUD testing successful. Created investment 'CDB Banco XYZ' with R$ 10,000 invested, R$ 10,500 current value, 5% yield. All operations working: CREATE (investment created with correct fields), LIST (investment appears in empresa list), UPDATE (valor_atual updated from R$ 10,500 to R$ 10,800, rentabilidade from 5% to 8%), DELETE (investment removed from list). All API endpoints responding correctly with proper status codes and data validation."
 
   - task: "Cartões de Crédito CRUD - Create, Read, Update, Delete"
     implemented: true
