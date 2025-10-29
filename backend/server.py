@@ -287,6 +287,8 @@ class Transacao(BaseModel):
     centro_custo_id: str
     metodo_pagamento: Optional[str] = None
     conta_origem: Optional[str] = None
+    conta_bancaria_id: Optional[str] = None  # Vinculo com conta bancária
+    cartao_credito_id: Optional[str] = None  # Vinculo com cartão
     impostos: Optional[Dict[str, float]] = {}
     parcelas: Optional[Dict[str, Any]] = None
     comprovante_url: Optional[str] = None
