@@ -7,6 +7,8 @@ function Transacoes({ user, token }) {
   const [transacoes, setTransacoes] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [centrosCusto, setCentrosCusto] = useState([]);
+  const [contas, setContas] = useState([]);
+  const [cartoes, setCartoes] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     tipo: 'despesa',
@@ -18,7 +20,9 @@ function Transacoes({ user, token }) {
     data_pagamento: '',
     categoria_id: '',
     centro_custo_id: '',
-    metodo_pagamento: '',
+    metodo_pagamento: 'dinheiro',
+    conta_bancaria_id: '',
+    cartao_credito_id: '',
     conta_origem: '',
     status: 'pendente',
     origem: 'manual'
