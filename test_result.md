@@ -218,15 +218,18 @@
 
   - task: "Categorias Equipamentos CRUD - Create, Read, Update, Delete"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Backend endpoints implemented for equipment category management: POST/GET /empresas/{empresa_id}/categorias-equipamentos, PUT/DELETE /categorias-equipamentos/{categoria_id}. Model includes: nome, descricao, tipo_controle (serializado/nao_serializado)."
+        - working: true
+          agent: "testing"
+          comment: "VERIFIED: Complete CRUD testing successful. Created two categories: 'Roteadores' (serializado) and 'Cabos' (nao_serializado). All operations working: CREATE (both categories created with correct tipo_controle), LIST (both categories appear in empresa list), UPDATE (Roteadores updated to 'Roteadores Atualizados'), DELETE (Cabos category removed from list). All API endpoints responding correctly with proper tipo_controle validation."
 
   - task: "Equipamentos CRUD - Create, Read, Update, Delete"
     implemented: true
