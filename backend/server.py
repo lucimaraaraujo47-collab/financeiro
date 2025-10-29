@@ -770,6 +770,129 @@ async def delete_centro_custo(cc_id: str, current_user: dict = Depends(get_curre
         raise HTTPException(status_code=404, detail="Centro de custo não encontrado")
     return {"message": "Centro de custo deletado"}
 
+# CONTAS BANCÁRIAS ROUTES
+@api_router.post("/empresas/{empresa_id}/contas", response_model=ContaBancaria)
+async def create_conta(empresa_id: str, conta_data: ContaBancariaCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    conta_obj = ContaBancaria(**conta_data.model_dump(), empresa_id=empresa_id, saldo_atual=conta_data.saldo_inicial)
+    doc = conta_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.contas_bancarias.insert_one(doc)
+    return conta_obj
+
+@api_router.get("/empresas/{empresa_id}/contas", response_model=List[ContaBancaria])
+async def get_contas(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    contas = await db.contas_bancarias.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(100)
+    return contas
+
+@api_router.put("/contas/{conta_id}", response_model=ContaBancaria)
+async def update_conta(conta_id: str, conta_data: ContaBancariaCreate, current_user: dict = Depends(get_current_user)):
+    conta = await db.contas_bancarias.find_one({"id": conta_id}, {"_id": 0})
+    if not conta:
+        raise HTTPException(status_code=404, detail="Conta não encontrada")
+    
+    update_data = conta_data.model_dump()
+    update_data['saldo_atual'] = conta['saldo_atual']  # Preservar saldo atual
+    await db.contas_bancarias.update_one({"id": conta_id}, {"$set": update_data})
+    
+    updated_conta = await db.contas_bancarias.find_one({"id": conta_id}, {"_id": 0})
+    return updated_conta
+
+@api_router.delete("/contas/{conta_id}")
+async def delete_conta(conta_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.contas_bancarias.delete_one({"id": conta_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Conta não encontrada")
+    return {"message": "Conta deletada"}
+
+# INVESTIMENTOS ROUTES
+@api_router.post("/empresas/{empresa_id}/investimentos", response_model=Investimento)
+async def create_investimento(empresa_id: str, inv_data: InvestimentoCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    inv_obj = Investimento(**inv_data.model_dump(), empresa_id=empresa_id)
+    doc = inv_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.investimentos.insert_one(doc)
+    return inv_obj
+
+@api_router.get("/empresas/{empresa_id}/investimentos", response_model=List[Investimento])
+async def get_investimentos(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    investimentos = await db.investimentos.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(100)
+    return investimentos
+
+@api_router.put("/investimentos/{inv_id}", response_model=Investimento)
+async def update_investimento(inv_id: str, inv_data: InvestimentoCreate, current_user: dict = Depends(get_current_user)):
+    inv = await db.investimentos.find_one({"id": inv_id}, {"_id": 0})
+    if not inv:
+        raise HTTPException(status_code=404, detail="Investimento não encontrado")
+    
+    update_data = inv_data.model_dump()
+    await db.investimentos.update_one({"id": inv_id}, {"$set": update_data})
+    
+    updated_inv = await db.investimentos.find_one({"id": inv_id}, {"_id": 0})
+    return updated_inv
+
+@api_router.delete("/investimentos/{inv_id}")
+async def delete_investimento(inv_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.investimentos.delete_one({"id": inv_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Investimento não encontrado")
+    return {"message": "Investimento deletado"}
+
+# CARTÕES DE CRÉDITO ROUTES
+@api_router.post("/empresas/{empresa_id}/cartoes", response_model=CartaoCredito)
+async def create_cartao(empresa_id: str, cartao_data: CartaoCreditoCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    cartao_obj = CartaoCredito(**cartao_data.model_dump(), empresa_id=empresa_id, limite_disponivel=cartao_data.limite_total)
+    doc = cartao_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.cartoes_credito.insert_one(doc)
+    return cartao_obj
+
+@api_router.get("/empresas/{empresa_id}/cartoes", response_model=List[CartaoCredito])
+async def get_cartoes(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    cartoes = await db.cartoes_credito.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(100)
+    return cartoes
+
+@api_router.put("/cartoes/{cartao_id}", response_model=CartaoCredito)
+async def update_cartao(cartao_id: str, cartao_data: CartaoCreditoCreate, current_user: dict = Depends(get_current_user)):
+    cartao = await db.cartoes_credito.find_one({"id": cartao_id}, {"_id": 0})
+    if not cartao:
+        raise HTTPException(status_code=404, detail="Cartão não encontrado")
+    
+    update_data = cartao_data.model_dump()
+    update_data['limite_disponivel'] = cartao['limite_disponivel']  # Preservar limite disponível
+    update_data['fatura_atual'] = cartao['fatura_atual']  # Preservar fatura
+    await db.cartoes_credito.update_one({"id": cartao_id}, {"$set": update_data})
+    
+    updated_cartao = await db.cartoes_credito.find_one({"id": cartao_id}, {"_id": 0})
+    return updated_cartao
+
+@api_router.delete("/cartoes/{cartao_id}")
+async def delete_cartao(cartao_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.cartoes_credito.delete_one({"id": cartao_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Cartão não encontrado")
+    return {"message": "Cartão deletado"}
+
 # TRANSACAO ROUTES
 @api_router.post("/empresas/{empresa_id}/transacoes", response_model=Transacao)
 async def create_transacao(empresa_id: str, transacao_data: TransacaoCreate, current_user: dict = Depends(get_current_user)):
