@@ -50,14 +50,24 @@ class FinAITestRunner:
             if response.status_code == 200:
                 data = response.json()
                 self.token = data.get("access_token")
+                self.user_data = data.get("user", {})
+                
                 if self.token:
                     self.session.headers.update({
                         'Authorization': f'Bearer {self.token}'
                     })
                     self.log("✅ Admin login successful")
-                    self.log(f"   User ID: {data.get('user', {}).get('id')}")
-                    self.log(f"   User Profile: {data.get('user', {}).get('perfil')}")
-                    self.log(f"   Empresa IDs: {data.get('user', {}).get('empresa_ids')}")
+                    self.log(f"   User ID: {self.user_data.get('id')}")
+                    self.log(f"   User Profile: {self.user_data.get('perfil')}")
+                    self.log(f"   Empresa IDs: {self.user_data.get('empresa_ids')}")
+                    
+                    # Verify expected empresa_id is in user's list
+                    if EMPRESA_ID in self.user_data.get('empresa_ids', []):
+                        self.log(f"   ✅ Expected empresa_id {EMPRESA_ID} found in user's empresas")
+                    else:
+                        self.log(f"   ❌ Expected empresa_id {EMPRESA_ID} NOT found in user's empresas", "ERROR")
+                        return False
+                    
                     return True
                 else:
                     self.log("❌ Login response missing access token", "ERROR")
