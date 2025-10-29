@@ -86,6 +86,15 @@ function Layout({ user, onLogout, children }) {
           </Link>
 
           <Link 
+            to="/analise-ia" 
+            className={`nav-item ${isActive('/analise-ia') ? 'active' : ''}`}
+            data-testid="nav-analise-ia"
+          >
+            <span className="nav-icon">🤖</span>
+            {sidebarOpen && <span className="nav-text">Análise IA</span>}
+          </Link>
+
+          <Link 
             to="/whatsapp" 
             className={`nav-item ${isActive('/whatsapp') ? 'active' : ''}`}
             data-testid="nav-whatsapp"
