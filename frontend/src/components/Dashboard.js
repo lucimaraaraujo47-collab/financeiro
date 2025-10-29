@@ -81,9 +81,23 @@ function Dashboard({ user, token }) {
         </div>
 
         <div className="metric-card">
-          <div className="metric-label">Saldo</div>
+          <div className="metric-label">Saldo (Receitas - Despesas)</div>
           <div className={`metric-value ${dashboard.saldo >= 0 ? 'positive' : 'negative'}`} data-testid="saldo">
             R$ {dashboard.saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-label">💰 Saldo em Contas ({dashboard.num_contas || 0})</div>
+          <div className={`metric-value ${dashboard.saldo_contas >= 0 ? 'positive' : 'negative'}`} data-testid="saldo-contas">
+            R$ {(dashboard.saldo_contas || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-label">💳 Limite Disponível ({dashboard.num_cartoes || 0} cartões)</div>
+          <div className="metric-value positive" data-testid="limite-cartoes">
+            R$ {(dashboard.saldo_cartoes || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
         </div>
       </div>
