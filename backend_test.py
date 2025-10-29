@@ -364,54 +364,280 @@ class FinAITestRunner:
             self.log(f"    ❌ Error deleting credit card: {str(e)}", "ERROR")
             return False
     
-    def test_new_transaction_assignment(self, initial_count):
-        """Test 4: Verify New Transaction Assignment"""
-        self.log("Verifying new transaction assignment...")
+    def test_transaction_integration(self):
+        """Test 4: Transaction Integration with Accounts and Cards"""
+        self.log("Testing transaction integration with accounts and cards...")
         
         if not self.token:
             self.log("❌ No auth token available", "ERROR")
             return False
-            
+        
+        # First, we need to get or create categories and cost centers
+        self.log("  4.1 Setting up categories and cost centers...")
+        
+        # Get existing categories
         try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/transacoes")
+            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/categorias")
+            if response.status_code == 200:
+                categories = response.json()
+                if categories:
+                    categoria_id = categories[0]['id']
+                    self.log(f"    ✅ Using existing category: {categories[0]['nome']}")
+                else:
+                    # Create a category
+                    cat_data = {"nome": "Teste", "tipo": "despesa"}
+                    response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/categorias", json=cat_data)
+                    if response.status_code == 200:
+                        categoria_id = response.json()['id']
+                        self.log("    ✅ Created test category")
+                    else:
+                        self.log(f"    ❌ Failed to create category: {response.status_code}", "ERROR")
+                        return False
+            else:
+                self.log(f"    ❌ Failed to get categories: {response.status_code}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error with categories: {str(e)}", "ERROR")
+            return False
+        
+        # Get existing cost centers
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/centros-custo")
+            if response.status_code == 200:
+                cost_centers = response.json()
+                if cost_centers:
+                    centro_custo_id = cost_centers[0]['id']
+                    self.log(f"    ✅ Using existing cost center: {cost_centers[0]['nome']}")
+                else:
+                    # Create a cost center
+                    cc_data = {"nome": "Teste", "area": "Operação"}
+                    response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/centros-custo", json=cc_data)
+                    if response.status_code == 200:
+                        centro_custo_id = response.json()['id']
+                        self.log("    ✅ Created test cost center")
+                    else:
+                        self.log(f"    ❌ Failed to create cost center: {response.status_code}", "ERROR")
+                        return False
+            else:
+                self.log(f"    ❌ Failed to get cost centers: {response.status_code}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error with cost centers: {str(e)}", "ERROR")
+            return False
+        
+        # Create a bank account
+        self.log("  4.2 Creating bank account...")
+        account_data = {
+            "nome": "Conta Teste",
+            "tipo": "corrente",
+            "banco": "Banco Teste",
+            "agencia": "1234",
+            "numero_conta": "56789-0",
+            "saldo_inicial": 1000.0
+        }
+        
+        try:
+            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/contas", json=account_data)
             
             if response.status_code == 200:
-                transactions = response.json()
-                new_count = len(transactions)
+                created_account = response.json()
+                self.created_account_id = created_account.get('id')
+                initial_balance = created_account.get('saldo_atual')
+                self.log(f"    ✅ Bank account created with initial balance: R$ {initial_balance}")
+            else:
+                self.log(f"    ❌ Failed to create bank account: {response.status_code} - {response.text}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error creating bank account: {str(e)}", "ERROR")
+            return False
+        
+        # Create a credit card
+        self.log("  4.3 Creating credit card...")
+        card_data = {
+            "nome": "Cartão Teste",
+            "bandeira": "Visa",
+            "limite_total": 2000.0,
+            "dia_fechamento": 5,
+            "dia_vencimento": 10
+        }
+        
+        try:
+            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/cartoes", json=card_data)
+            
+            if response.status_code == 200:
+                created_card = response.json()
+                self.created_card_id = created_card.get('id')
+                initial_limit = created_card.get('limite_disponivel')
+                initial_invoice = created_card.get('fatura_atual')
+                self.log(f"    ✅ Credit card created with limit: R$ {initial_limit}, invoice: R$ {initial_invoice}")
+            else:
+                self.log(f"    ❌ Failed to create credit card: {response.status_code} - {response.text}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error creating credit card: {str(e)}", "ERROR")
+            return False
+        
+        # Test RECEITA transaction linked to bank account
+        self.log("  4.4 Testing RECEITA transaction (bank account)...")
+        receita_data = {
+            "tipo": "receita",
+            "fornecedor": "Cliente Teste",
+            "descricao": "Pagamento de serviço",
+            "valor_total": 1000.0,
+            "data_competencia": "2024-01-20",
+            "categoria_id": categoria_id,
+            "centro_custo_id": centro_custo_id,
+            "conta_bancaria_id": self.created_account_id
+        }
+        
+        try:
+            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/transacoes", json=receita_data)
+            
+            if response.status_code == 200:
+                self.log("    ✅ RECEITA transaction created")
                 
-                self.log(f"   Transaction count before: {initial_count}")
-                self.log(f"   Transaction count after: {new_count}")
-                
-                if new_count > initial_count:
-                    self.log(f"✅ New transaction(s) created: {new_count - initial_count}")
+                # Verify account balance increased
+                response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/contas")
+                if response.status_code == 200:
+                    accounts = response.json()
+                    test_account = next((acc for acc in accounts if acc['id'] == self.created_account_id), None)
                     
-                    # Find the newest transaction
-                    newest_transaction = max(transactions, key=lambda x: x.get('created_at', ''))
-                    
-                    self.log(f"   Newest transaction ID: {newest_transaction.get('id')}")
-                    self.log(f"   Empresa ID: {newest_transaction.get('empresa_id')}")
-                    self.log(f"   Supplier: {newest_transaction.get('fornecedor')}")
-                    self.log(f"   Value: R$ {newest_transaction.get('valor_total')}")
-                    self.log(f"   Origin: {newest_transaction.get('origem')}")
-                    
-                    # Verify empresa_id is correct
-                    if newest_transaction.get('empresa_id') == EMPRESA_ID:
-                        self.log("   ✅ New transaction has correct empresa_id")
-                        return True
+                    if test_account:
+                        new_balance = test_account.get('saldo_atual')
+                        expected_balance = 1000.0 + 1000.0  # initial + receita
+                        
+                        if new_balance == expected_balance:
+                            self.log(f"    ✅ Account balance updated correctly: R$ {new_balance}")
+                        else:
+                            self.log(f"    ❌ Account balance incorrect: expected R$ {expected_balance}, got R$ {new_balance}", "ERROR")
+                            return False
                     else:
-                        self.log(f"   ❌ New transaction has wrong empresa_id: {newest_transaction.get('empresa_id')}", "ERROR")
+                        self.log("    ❌ Test account not found", "ERROR")
                         return False
                 else:
-                    self.log("   ⚠️ No new transactions created")
+                    self.log(f"    ❌ Failed to get updated accounts: {response.status_code}", "ERROR")
                     return False
-                    
             else:
-                self.log(f"❌ Failed to get updated transactions: {response.status_code} - {response.text}", "ERROR")
+                self.log(f"    ❌ Failed to create RECEITA transaction: {response.status_code} - {response.text}", "ERROR")
                 return False
-                
         except Exception as e:
-            self.log(f"❌ Error verifying new transaction: {str(e)}", "ERROR")
+            self.log(f"    ❌ Error creating RECEITA transaction: {str(e)}", "ERROR")
             return False
+        
+        # Test DESPESA transaction linked to bank account
+        self.log("  4.5 Testing DESPESA transaction (bank account)...")
+        despesa_data = {
+            "tipo": "despesa",
+            "fornecedor": "Fornecedor Teste",
+            "descricao": "Compra de material",
+            "valor_total": 300.0,
+            "data_competencia": "2024-01-21",
+            "categoria_id": categoria_id,
+            "centro_custo_id": centro_custo_id,
+            "conta_bancaria_id": self.created_account_id
+        }
+        
+        try:
+            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/transacoes", json=despesa_data)
+            
+            if response.status_code == 200:
+                self.log("    ✅ DESPESA transaction created")
+                
+                # Verify account balance decreased
+                response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/contas")
+                if response.status_code == 200:
+                    accounts = response.json()
+                    test_account = next((acc for acc in accounts if acc['id'] == self.created_account_id), None)
+                    
+                    if test_account:
+                        new_balance = test_account.get('saldo_atual')
+                        expected_balance = 2000.0 - 300.0  # previous balance - despesa
+                        
+                        if new_balance == expected_balance:
+                            self.log(f"    ✅ Account balance updated correctly: R$ {new_balance}")
+                        else:
+                            self.log(f"    ❌ Account balance incorrect: expected R$ {expected_balance}, got R$ {new_balance}", "ERROR")
+                            return False
+                    else:
+                        self.log("    ❌ Test account not found", "ERROR")
+                        return False
+                else:
+                    self.log(f"    ❌ Failed to get updated accounts: {response.status_code}", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to create DESPESA transaction: {response.status_code} - {response.text}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error creating DESPESA transaction: {str(e)}", "ERROR")
+            return False
+        
+        # Test DESPESA transaction linked to credit card
+        self.log("  4.6 Testing DESPESA transaction (credit card)...")
+        card_despesa_data = {
+            "tipo": "despesa",
+            "fornecedor": "Loja Teste",
+            "descricao": "Compra no cartão",
+            "valor_total": 500.0,
+            "data_competencia": "2024-01-22",
+            "categoria_id": categoria_id,
+            "centro_custo_id": centro_custo_id,
+            "cartao_credito_id": self.created_card_id
+        }
+        
+        try:
+            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/transacoes", json=card_despesa_data)
+            
+            if response.status_code == 200:
+                self.log("    ✅ Credit card DESPESA transaction created")
+                
+                # Verify card invoice and limit updated
+                response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/cartoes")
+                if response.status_code == 200:
+                    cards = response.json()
+                    test_card = next((card for card in cards if card['id'] == self.created_card_id), None)
+                    
+                    if test_card:
+                        new_invoice = test_card.get('fatura_atual')
+                        new_limit = test_card.get('limite_disponivel')
+                        expected_invoice = 500.0  # despesa amount
+                        expected_limit = 2000.0 - 500.0  # total limit - despesa
+                        
+                        if new_invoice == expected_invoice:
+                            self.log(f"    ✅ Card invoice updated correctly: R$ {new_invoice}")
+                        else:
+                            self.log(f"    ❌ Card invoice incorrect: expected R$ {expected_invoice}, got R$ {new_invoice}", "ERROR")
+                            return False
+                            
+                        if new_limit == expected_limit:
+                            self.log(f"    ✅ Card available limit updated correctly: R$ {new_limit}")
+                        else:
+                            self.log(f"    ❌ Card limit incorrect: expected R$ {expected_limit}, got R$ {new_limit}", "ERROR")
+                            return False
+                    else:
+                        self.log("    ❌ Test card not found", "ERROR")
+                        return False
+                else:
+                    self.log(f"    ❌ Failed to get updated cards: {response.status_code}", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to create credit card DESPESA transaction: {response.status_code} - {response.text}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error creating credit card DESPESA transaction: {str(e)}", "ERROR")
+            return False
+        
+        self.log("  4.7 Cleaning up test data...")
+        # Clean up created test data
+        try:
+            if self.created_account_id:
+                self.session.delete(f"{BACKEND_URL}/contas/{self.created_account_id}")
+            if self.created_card_id:
+                self.session.delete(f"{BACKEND_URL}/cartoes/{self.created_card_id}")
+            self.log("    ✅ Test data cleaned up")
+        except:
+            pass  # Ignore cleanup errors
+        
+        return True
     
     def run_all_tests(self):
         """Run all test scenarios"""
