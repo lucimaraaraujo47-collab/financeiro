@@ -1445,19 +1445,19 @@ async def create_movimentacao(empresa_id: str, mov_data: MovimentacaoEstoqueCrea
             )
     
     # Criar transação financeira se solicitado
-    if mov_data.criar_transacao_financeira and mov_data.valor_financeiro:
+    if mov_data.criar_transacao_financeira and mov_data.valor_financeiro and mov_data.categoria_financeira_id and mov_data.centro_custo_id:
         transacao_tipo = "receita" if mov_data.tipo in ["saida_venda", "saida_locacao"] else "despesa"
         
         transacao_obj = Transacao(
             empresa_id=empresa_id,
             usuario_id=current_user["id"],
             tipo=transacao_tipo,
-            fornecedor=mov_data.cliente_id or "N/A",
+            fornecedor=mov_data.cliente_id or "Sistema de Estoque",
             descricao=f"Movimentação estoque: {mov_data.tipo} - {equipamento['nome']}",
             valor_total=mov_data.valor_financeiro,
             data_competencia=mov_data.data,
-            categoria_id=mov_data.categoria_financeira_id or "",
-            centro_custo_id=mov_data.centro_custo_id or "",
+            categoria_id=mov_data.categoria_financeira_id,
+            centro_custo_id=mov_data.centro_custo_id,
             status="conciliada",
             origem="estoque"
         )
@@ -1466,6 +1466,7 @@ async def create_movimentacao(empresa_id: str, mov_data: MovimentacaoEstoqueCrea
         trans_doc['created_at'] = trans_doc['created_at'].isoformat()
         
         await db.transacoes.insert_one(trans_doc)
+        mov_obj.transacao_id = transacao_obj.id
         doc['transacao_id'] = transacao_obj.id
     
     await db.movimentacoes_estoque.insert_one(doc)
