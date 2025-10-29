@@ -59,6 +59,15 @@ function Layout({ user, onLogout, children }) {
           </Link>
 
           <Link 
+            to="/financas" 
+            className={`nav-item ${isActive('/financas') ? 'active' : ''}`}
+            data-testid="nav-financas"
+          >
+            <span className="nav-icon">🏦</span>
+            {sidebarOpen && <span className="nav-text">Contas & Cartões</span>}
+          </Link>
+
+          <Link 
             to="/transacoes" 
             className={`nav-item ${isActive('/transacoes') ? 'active' : ''}`}
             data-testid="nav-transacoes"
