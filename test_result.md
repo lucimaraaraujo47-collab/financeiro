@@ -429,14 +429,9 @@
 
 ## test_plan:
   current_focus:
-    - "Clientes CRUD - Create, Read, Update, Delete"
-    - "Fornecedores CRUD - Create, Read, Update, Delete"
-    - "Locais/Depósitos CRUD - Create, Read, Update, Delete"
-    - "Categorias Equipamentos CRUD - Create, Read, Update, Delete"
-    - "Equipamentos CRUD - Create, Read, Update, Delete"
-    - "Equipamentos Serializados CRUD - Create, Read, Update, Delete"
+    - "Movimentações de Estoque - Financial Transaction Integration Fix"
+  stuck_tasks:
     - "Movimentações de Estoque - Create and Read with Business Logic"
-  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
