@@ -429,6 +429,20 @@ async def register(request: Request, user_data: UserCreate, current_user: dict =
     
     return user_obj
 
+@api_router.get("/users", response_model=List[UserProfile])
+async def list_users(current_user: dict = Depends(get_current_user)):
+    """
+    List all users - ADMIN ONLY
+    """
+    if current_user.get("perfil") != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Acesso negado. Apenas administradores podem listar usuários."
+        )
+    
+    users = await db.users.find({}, {"_id": 0, "senha_hash": 0}).to_list(100)
+    return users
+
 @api_router.post("/auth/login", response_model=TokenResponse)
 @limiter.limit("10/minute")
 async def login(request: Request, credentials: UserLogin):
