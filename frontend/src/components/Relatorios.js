@@ -94,6 +94,46 @@ function Relatorios({ user, token }) {
     }).format(value);
   };
 
+  const handleExport = async (formato) => {
+    if (!empresa) return;
+
+    try {
+      let url = `${API}/empresas/${empresa.id}/relatorios/export/${formato}?tipo_periodo=${tipoPeriodo}`;
+      
+      if (tipoPeriodo === 'personalizado' && periodoInicio && periodoFim) {
+        url += `&periodo_inicio=${periodoInicio}&periodo_fim=${periodoFim}`;
+      }
+
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+
+      // Criar download do arquivo
+      const blob = new Blob([response.data]);
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      const extensoes = {
+        csv: 'csv',
+        excel: 'xlsx',
+        pdf: 'pdf'
+      };
+      
+      link.download = `relatorio_${tipoPeriodo}.${extensoes[formato]}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+
+      setMessage(`Relatório exportado com sucesso em ${formato.toUpperCase()}!`);
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage('Erro ao exportar relatório: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
   // Preparar dados para gráfico de pizza - Despesas por Categoria
   const dadosPizzaCategorias = relatorio?.por_categoria
     .filter(c => c.total_despesas > 0)
