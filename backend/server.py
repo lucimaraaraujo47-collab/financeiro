@@ -183,6 +183,94 @@ class CentroCustoCreate(BaseModel):
     nome: str
     area: Optional[str] = None
 
+# CONTAS BANCÁRIAS
+class ContaBancaria(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str
+    tipo: str  # corrente, poupanca, caixa
+    banco: str
+    agencia: Optional[str] = None
+    numero_conta: Optional[str] = None
+    saldo_inicial: float
+    saldo_atual: float
+    ativa: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ContaBancariaCreate(BaseModel):
+    nome: str
+    tipo: str
+    banco: str
+    agencia: Optional[str] = None
+    numero_conta: Optional[str] = None
+    saldo_inicial: float
+
+# INVESTIMENTOS
+class Investimento(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str
+    tipo: str  # renda_fixa, renda_variavel, fundos, outros
+    valor_investido: float
+    valor_atual: float
+    data_aplicacao: str
+    data_vencimento: Optional[str] = None
+    rentabilidade_percentual: float = 0.0
+    instituicao: Optional[str] = None
+    ativo: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InvestimentoCreate(BaseModel):
+    nome: str
+    tipo: str
+    valor_investido: float
+    valor_atual: float
+    data_aplicacao: str
+    data_vencimento: Optional[str] = None
+    rentabilidade_percentual: float = 0.0
+    instituicao: Optional[str] = None
+
+# CARTÕES DE CRÉDITO
+class CartaoCredito(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str
+    bandeira: str  # Visa, Mastercard, Elo, etc
+    limite_total: float
+    limite_disponivel: float
+    dia_fechamento: int  # 1-31
+    dia_vencimento: int  # 1-31
+    fatura_atual: float = 0.0
+    conta_debito_id: Optional[str] = None  # Conta para débito automático
+    ativo: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CartaoCreditoCreate(BaseModel):
+    nome: str
+    bandeira: str
+    limite_total: float
+    dia_fechamento: int
+    dia_vencimento: int
+    conta_debito_id: Optional[str] = None
+
+# FATURAS DE CARTÃO
+class FaturaCartao(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    cartao_id: str
+    empresa_id: str
+    mes_referencia: str  # YYYY-MM
+    valor_total: float
+    valor_pago: float = 0.0
+    data_fechamento: str
+    data_vencimento: str
+    status: str = "aberta"  # aberta, paga, vencida
+    transacoes_ids: List[str] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class Transacao(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
