@@ -1628,18 +1628,20 @@ DESPESAS POR CATEGORIA:
             percentual = (cat_data["valor"] / total_despesas * 100) if total_despesas > 0 else 0
             resumo_financeiro += f"- {cat_data['nome']}: R$ {cat_data['valor']:,.2f} ({percentual:.1f}%) - {cat_data['transacoes']} transações\n"
         
-        # Chamar IA
-        emergent_key = os.environ.get("EMERGENT_LLM_KEY")
-        if not emergent_key:
-            raise HTTPException(status_code=500, detail="Chave de IA não configurada")
+        # Tentar usar IA, mas fornecer fallback se falhar
+        analise_texto = ""
+        ia_disponivel = False
         
-        llm = LlmChat(
-            api_key=emergent_key,
-            session_id=f"analise-{empresa_id}",
-            system_message="Você é um consultor financeiro especializado."
-        ).with_model("openai", "gpt-4o-mini")
-        
-        prompt = f"""{resumo_financeiro}
+        try:
+            emergent_key = os.environ.get("EMERGENT_LLM_KEY")
+            if emergent_key:
+                llm = LlmChat(
+                    api_key=emergent_key,
+                    session_id=f"analise-{empresa_id}",
+                    system_message="Você é um consultor financeiro especializado."
+                ).with_model("openai", "gpt-4o-mini")
+                
+                prompt = f"""{resumo_financeiro}
 
 Como consultor financeiro especializado, analise estes dados e forneça:
 
@@ -1650,9 +1652,45 @@ Como consultor financeiro especializado, analise estes dados e forneça:
 
 Seja objetivo, prático e focado em ações concretas. Use formato claro com bullets."""
 
-        user_message = UserMessage(text=prompt)
-        response = await llm.send_message(user_message)
-        analise_texto = response
+                user_message = UserMessage(text=prompt)
+                response = await llm.send_message(user_message)
+                analise_texto = response
+                ia_disponivel = True
+        except Exception as ia_error:
+            # Fallback: Análise estatística básica
+            analise_texto = f"""**ANÁLISE ESTATÍSTICA AUTOMÁTICA**
+
+**RESUMO FINANCEIRO:**
+- Receitas: R$ {total_receitas:,.2f}
+- Despesas: R$ {total_despesas:,.2f}
+- Saldo: R$ {(total_receitas - total_despesas):,.2f}
+- Status: {"✅ Positivo" if total_receitas > total_despesas else "⚠️ Negativo"}
+
+**PRINCIPAIS CATEGORIAS DE DESPESAS:**
+"""
+            top_categorias = sorted(despesas_por_categoria.values(), key=lambda x: x["valor"], reverse=True)[:5]
+            for i, cat in enumerate(top_categorias, 1):
+                percentual = (cat["valor"] / total_despesas * 100) if total_despesas > 0 else 0
+                analise_texto += f"\n{i}. {cat['nome']}: R$ {cat['valor']:,.2f} ({percentual:.1f}%)"
+            
+            analise_texto += "\n\n**ALERTAS:**"
+            if total_despesas > total_receitas:
+                deficit = total_despesas - total_receitas
+                analise_texto += f"\n- ⚠️ Déficit de R$ {deficit:,.2f} no período"
+            
+            if despesas_por_categoria:
+                maior_cat = max(despesas_por_categoria.values(), key=lambda x: x["valor"])
+                percentual_maior = (maior_cat["valor"] / total_despesas * 100) if total_despesas > 0 else 0
+                if percentual_maior > 40:
+                    analise_texto += f"\n- ⚠️ Categoria '{maior_cat['nome']}' representa {percentual_maior:.1f}% das despesas"
+            
+            analise_texto += "\n\n**RECOMENDAÇÕES:**"
+            analise_texto += "\n- Revisar as 3 maiores categorias de despesas"
+            analise_texto += "\n- Buscar alternativas para reduzir custos recorrentes"
+            if total_receitas > 0:
+                analise_texto += f"\n- Manter controle para não exceder receitas (margem: {((total_receitas - total_despesas) / total_receitas * 100):.1f}%)"
+            
+            analise_texto += "\n\n_Nota: Análise com IA temporariamente indisponível. Usando análise estatística._"
         
         return {
             "status": "success",
