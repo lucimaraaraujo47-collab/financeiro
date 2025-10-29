@@ -2105,8 +2105,9 @@ async def whatsapp_status(request: Request, current_user: dict = Depends(get_cur
     """Proxy to WhatsApp service status"""
     try:
         import httpx
+        whatsapp_url = os.environ.get("WHATSAPP_SERVICE_URL", "http://localhost:8002")
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:8002/status", timeout=5.0)
+            response = await client.get(f"{whatsapp_url}/status", timeout=5.0)
             return response.json()
     except Exception as e:
         logging.error(f"Error getting WhatsApp status: {e}")
