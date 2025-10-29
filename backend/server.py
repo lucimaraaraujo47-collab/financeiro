@@ -254,6 +254,32 @@ class DashboardMetrics(BaseModel):
     despesas_por_centro_custo: List[Dict[str, Any]]
     transacoes_recentes: List[Dict[str, Any]]
 
+class CentroCustoMetrics(BaseModel):
+    centro_custo_id: str
+    centro_custo_nome: str
+    total_receitas: float
+    total_despesas: float
+    lucro: float
+    num_transacoes: int
+    percentual_total: float
+
+class CategoriaMetrics(BaseModel):
+    categoria_id: str
+    categoria_nome: str
+    total_receitas: float
+    total_despesas: float
+    num_transacoes: int
+    percentual_despesas: float
+    percentual_receitas: float
+
+class RelatorioDetalhado(BaseModel):
+    periodo_inicio: str
+    periodo_fim: str
+    resumo_geral: Dict[str, Any]
+    por_centro_custo: List[CentroCustoMetrics]
+    por_categoria: List[CategoriaMetrics]
+    transacoes: List[Dict[str, Any]]
+
 # ==================== AUTH HELPERS ====================
 
 def hash_password(password: str) -> str:
