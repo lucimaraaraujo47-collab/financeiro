@@ -188,15 +188,18 @@
 
   - task: "Fornecedores CRUD - Create, Read, Update, Delete"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "Backend endpoints implemented for supplier management: POST/GET /empresas/{empresa_id}/fornecedores, PUT/DELETE /fornecedores/{fornecedor_id}. Model includes: nome, cnpj, contato, email, telefone, endereco, status."
+        - working: true
+          agent: "testing"
+          comment: "VERIFIED: Complete CRUD testing successful. Created supplier 'Fornecedor ABC' (CNPJ 98765432000100, contact João Silva). All operations working: CREATE (supplier created with correct fields), LIST (supplier appears in empresa list), UPDATE (nome updated to 'Fornecedor ABC Atualizado'), DELETE (supplier removed from list). All API endpoints responding correctly."
 
   - task: "Locais/Depósitos CRUD - Create, Read, Update, Delete"
     implemented: true
