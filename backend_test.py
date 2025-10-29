@@ -1878,11 +1878,19 @@ class FinAITestRunner:
     def run_all_tests(self):
         """Run all test scenarios"""
         self.log("=" * 80)
-        self.log("STARTING ECHO SHOP FinAI - INVESTMENTS & CREDIT CARDS CRUD TESTS")
+        self.log("STARTING ECHO SHOP FinAI - COMPLETE INVENTORY MANAGEMENT SYSTEM CRUD TESTS")
         self.log("=" * 80)
         
         results = {
             'login': False,
+            'clientes_crud': False,
+            'fornecedores_crud': False,
+            'locais_crud': False,
+            'categorias_equipamentos_crud': False,
+            'equipamentos_crud': False,
+            'equipamentos_serializados_crud': False,
+            'movimentacoes_estoque_complex': False,
+            'movimentacoes_filters': False,
             'investimentos_crud': False,
             'cartoes_crud': False,
             'transaction_integration': False
@@ -1895,23 +1903,78 @@ class FinAITestRunner:
             self.log("❌ Cannot continue without successful login", "ERROR")
             return results
         
-        # Test 2: Investimentos CRUD
+        # INVENTORY MANAGEMENT TESTS
+        self.log("\n" + "=" * 60)
+        self.log("INVENTORY MANAGEMENT SYSTEM TESTS")
+        self.log("=" * 60)
+        
+        # Test 2: Clientes CRUD
+        results['clientes_crud'] = self.test_clientes_crud()
+        
+        # Test 3: Fornecedores CRUD
+        results['fornecedores_crud'] = self.test_fornecedores_crud()
+        
+        # Test 4: Locais/Depósitos CRUD
+        results['locais_crud'] = self.test_locais_crud()
+        
+        # Test 5: Categorias Equipamentos CRUD
+        results['categorias_equipamentos_crud'] = self.test_categorias_equipamentos_crud()
+        
+        # Test 6: Equipamentos CRUD
+        results['equipamentos_crud'] = self.test_equipamentos_crud()
+        
+        # Test 7: Equipamentos Serializados CRUD
+        results['equipamentos_serializados_crud'] = self.test_equipamentos_serializados_crud()
+        
+        # Test 8: Movimentações de Estoque - Complex Business Logic
+        results['movimentacoes_estoque_complex'] = self.test_movimentacoes_estoque_complex()
+        
+        # Test 9: Movimentações Filters
+        results['movimentacoes_filters'] = self.test_movimentacoes_filters()
+        
+        # FINANCIAL SYSTEM TESTS (existing)
+        self.log("\n" + "=" * 60)
+        self.log("FINANCIAL SYSTEM TESTS")
+        self.log("=" * 60)
+        
+        # Test 10: Investimentos CRUD
         results['investimentos_crud'] = self.test_investimentos_crud()
         
-        # Test 3: Cartões de Crédito CRUD
+        # Test 11: Cartões de Crédito CRUD
         results['cartoes_crud'] = self.test_cartoes_crud()
         
-        # Test 4: Transaction Integration
+        # Test 12: Transaction Integration
         results['transaction_integration'] = self.test_transaction_integration()
         
+        # Cleanup inventory test data
+        self.cleanup_inventory_test_data()
+        
         # Summary
-        self.log("=" * 80)
+        self.log("\n" + "=" * 80)
         self.log("TEST RESULTS SUMMARY")
         self.log("=" * 80)
         
-        for test_name, passed in results.items():
-            status = "✅ PASS" if passed else "❌ FAIL"
-            self.log(f"{test_name.replace('_', ' ').title()}: {status}")
+        # Inventory tests
+        self.log("\nINVENTORY MANAGEMENT TESTS:")
+        inventory_tests = ['clientes_crud', 'fornecedores_crud', 'locais_crud', 'categorias_equipamentos_crud', 
+                          'equipamentos_crud', 'equipamentos_serializados_crud', 'movimentacoes_estoque_complex', 'movimentacoes_filters']
+        
+        for test_name in inventory_tests:
+            status = "✅ PASS" if results[test_name] else "❌ FAIL"
+            self.log(f"  {test_name.replace('_', ' ').title()}: {status}")
+        
+        # Financial tests
+        self.log("\nFINANCIAL SYSTEM TESTS:")
+        financial_tests = ['investimentos_crud', 'cartoes_crud', 'transaction_integration']
+        
+        for test_name in financial_tests:
+            status = "✅ PASS" if results[test_name] else "❌ FAIL"
+            self.log(f"  {test_name.replace('_', ' ').title()}: {status}")
+        
+        # Overall summary
+        self.log(f"\nLOGIN TEST:")
+        status = "✅ PASS" if results['login'] else "❌ FAIL"
+        self.log(f"  Login: {status}")
         
         total_tests = len(results)
         passed_tests = sum(results.values())
@@ -1919,9 +1982,10 @@ class FinAITestRunner:
         self.log(f"\nOverall: {passed_tests}/{total_tests} tests passed")
         
         if passed_tests == total_tests:
-            self.log("🎉 ALL TESTS PASSED - Investments & Credit Cards CRUD operations working correctly!")
+            self.log("🎉 ALL TESTS PASSED - Complete Inventory Management System working correctly!")
         else:
-            self.log("⚠️ SOME TESTS FAILED - Issues detected with CRUD operations")
+            failed_tests = [name for name, passed in results.items() if not passed]
+            self.log(f"⚠️ SOME TESTS FAILED: {', '.join(failed_tests)}")
         
         return results
 
