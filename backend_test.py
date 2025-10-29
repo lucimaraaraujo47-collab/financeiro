@@ -80,68 +80,141 @@ class FinAITestRunner:
             self.log(f"❌ Login request failed: {str(e)}", "ERROR")
             return False
     
-    def test_existing_transactions(self):
-        """Test 2: Verify Existing Transactions"""
-        self.log("Testing existing transactions visibility...")
+    def test_investimentos_crud(self):
+        """Test 2: Investimentos CRUD Operations"""
+        self.log("Testing Investimentos CRUD operations...")
         
         if not self.token:
             self.log("❌ No auth token available", "ERROR")
             return False
-            
+        
+        # Test CREATE Investment
+        self.log("  2.1 Testing CREATE investment...")
+        investment_data = {
+            "nome": "CDB Banco XYZ",
+            "tipo": "renda_fixa",
+            "valor_investido": 10000.0,
+            "valor_atual": 10500.0,
+            "data_aplicacao": "2024-01-15",
+            "rentabilidade_percentual": 5.0,
+            "instituicao": "Banco XYZ"
+        }
+        
         try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/transacoes")
+            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/investimentos", json=investment_data)
             
             if response.status_code == 200:
-                transactions = response.json()
-                self.log(f"✅ Retrieved {len(transactions)} transactions")
-                
-                # Look for the specific migrated WhatsApp transactions
-                whatsapp_transactions = [t for t in transactions if t.get('origem') == 'whatsapp']
-                self.log(f"   WhatsApp transactions found: {len(whatsapp_transactions)}")
-                
-                # Check for specific transaction IDs mentioned in the test
-                trx_f0c35180 = None
-                trx_09f9a544 = None
-                
-                for t in transactions:
-                    if 'f0c35180' in t.get('id', ''):
-                        trx_f0c35180 = t
-                    elif '09f9a544' in t.get('id', ''):
-                        trx_09f9a544 = t
-                
-                if trx_f0c35180:
-                    self.log(f"   ✅ Found TRX-f0c35180: {trx_f0c35180.get('fornecedor')} - R$ {trx_f0c35180.get('valor_total')}")
-                else:
-                    self.log("   ⚠️ TRX-f0c35180 (luz) not found")
-                    
-                if trx_09f9a544:
-                    self.log(f"   ✅ Found TRX-09f9a544: {trx_09f9a544.get('fornecedor')} - R$ {trx_09f9a544.get('valor_total')}")
-                else:
-                    self.log("   ⚠️ TRX-09f9a544 (internet) not found")
-                
-                # Verify all transactions belong to correct empresa
-                wrong_empresa_count = 0
-                for t in transactions:
-                    if t.get('empresa_id') != EMPRESA_ID:
-                        wrong_empresa_count += 1
-                        self.log(f"   ❌ Transaction {t.get('id')} has wrong empresa_id: {t.get('empresa_id')}", "ERROR")
-                
-                if wrong_empresa_count == 0:
-                    self.log("   ✅ All transactions have correct empresa_id")
-                else:
-                    self.log(f"   ❌ {wrong_empresa_count} transactions have wrong empresa_id", "ERROR")
-                
-                return len(transactions), whatsapp_transactions
-                
-            elif response.status_code == 403:
-                self.log("❌ Access denied to empresa transactions", "ERROR")
-                return False
+                created_investment = response.json()
+                self.created_investment_id = created_investment.get('id')
+                self.log("    ✅ Investment created successfully")
+                self.log(f"       ID: {self.created_investment_id}")
+                self.log(f"       Nome: {created_investment.get('nome')}")
+                self.log(f"       Valor Investido: R$ {created_investment.get('valor_investido')}")
+                self.log(f"       Valor Atual: R$ {created_investment.get('valor_atual')}")
+                self.log(f"       Rentabilidade: {created_investment.get('rentabilidade_percentual')}%")
             else:
-                self.log(f"❌ Failed to get transactions: {response.status_code} - {response.text}", "ERROR")
+                self.log(f"    ❌ Failed to create investment: {response.status_code} - {response.text}", "ERROR")
                 return False
                 
         except Exception as e:
-            self.log(f"❌ Error getting transactions: {str(e)}", "ERROR")
+            self.log(f"    ❌ Error creating investment: {str(e)}", "ERROR")
+            return False
+        
+        # Test LIST Investments
+        self.log("  2.2 Testing LIST investments...")
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/investimentos")
+            
+            if response.status_code == 200:
+                investments = response.json()
+                self.log(f"    ✅ Retrieved {len(investments)} investments")
+                
+                # Verify created investment appears in list
+                found_investment = None
+                for inv in investments:
+                    if inv.get('id') == self.created_investment_id:
+                        found_investment = inv
+                        break
+                
+                if found_investment:
+                    self.log("    ✅ Created investment found in list")
+                    self.log(f"       Nome: {found_investment.get('nome')}")
+                    self.log(f"       Tipo: {found_investment.get('tipo')}")
+                else:
+                    self.log("    ❌ Created investment NOT found in list", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to list investments: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error listing investments: {str(e)}", "ERROR")
+            return False
+        
+        # Test UPDATE Investment
+        self.log("  2.3 Testing UPDATE investment...")
+        update_data = {
+            "nome": "CDB Banco XYZ",
+            "tipo": "renda_fixa",
+            "valor_investido": 10000.0,
+            "valor_atual": 10800.0,  # Updated value
+            "data_aplicacao": "2024-01-15",
+            "rentabilidade_percentual": 8.0,  # Updated percentage
+            "instituicao": "Banco XYZ"
+        }
+        
+        try:
+            response = self.session.put(f"{BACKEND_URL}/investimentos/{self.created_investment_id}", json=update_data)
+            
+            if response.status_code == 200:
+                updated_investment = response.json()
+                self.log("    ✅ Investment updated successfully")
+                self.log(f"       New Valor Atual: R$ {updated_investment.get('valor_atual')}")
+                self.log(f"       New Rentabilidade: {updated_investment.get('rentabilidade_percentual')}%")
+                
+                # Verify the update
+                if updated_investment.get('valor_atual') == 10800.0:
+                    self.log("    ✅ Valor atual updated correctly")
+                else:
+                    self.log(f"    ❌ Valor atual not updated correctly: {updated_investment.get('valor_atual')}", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to update investment: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error updating investment: {str(e)}", "ERROR")
+            return False
+        
+        # Test DELETE Investment
+        self.log("  2.4 Testing DELETE investment...")
+        try:
+            response = self.session.delete(f"{BACKEND_URL}/investimentos/{self.created_investment_id}")
+            
+            if response.status_code == 200:
+                self.log("    ✅ Investment deleted successfully")
+                
+                # Verify investment no longer in list
+                response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/investimentos")
+                if response.status_code == 200:
+                    investments = response.json()
+                    found_deleted = any(inv.get('id') == self.created_investment_id for inv in investments)
+                    
+                    if not found_deleted:
+                        self.log("    ✅ Investment no longer appears in list")
+                        return True
+                    else:
+                        self.log("    ❌ Investment still appears in list after deletion", "ERROR")
+                        return False
+                else:
+                    self.log(f"    ❌ Failed to verify deletion: {response.status_code}", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to delete investment: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error deleting investment: {str(e)}", "ERROR")
             return False
     
     def test_whatsapp_processing(self):
