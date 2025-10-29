@@ -308,6 +308,8 @@ class TransacaoCreate(BaseModel):
     centro_custo_id: str
     metodo_pagamento: Optional[str] = None
     conta_origem: Optional[str] = None
+    conta_bancaria_id: Optional[str] = None
+    cartao_credito_id: Optional[str] = None
     impostos: Optional[Dict[str, float]] = None
     parcelas: Optional[Dict[str, Any]] = None
     status: str = "pendente"
