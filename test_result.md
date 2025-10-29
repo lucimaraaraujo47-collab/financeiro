@@ -323,10 +323,7 @@
   run_ui: true
 
 ## test_plan:
-  current_focus:
-    - "Investimentos CRUD - Create, Read, Update, Delete"
-    - "Cartões de Crédito CRUD - Create, Read, Update, Delete"
-    - "Transaction Integration with Accounts and Cards"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
