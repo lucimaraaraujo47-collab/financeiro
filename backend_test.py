@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://echo-finance.preview.emergentagent.com/api"
+BACKEND_URL = "https://fintracker-117.preview.emergentagent.com/api"
 ADMIN_EMAIL = "admin@echoshop.com"
 ADMIN_PASSWORD = "admin123"
 EMPRESA_ID = "226b58c1-4a48-4b66-9537-0dbf9fa65500"
