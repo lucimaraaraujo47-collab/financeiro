@@ -27,10 +27,23 @@ class FinAITestRunner:
             'Accept': 'application/json'
         })
         
-        # Test data storage
+        # Test data storage - Financial
         self.created_investment_id = None
         self.created_card_id = None
         self.created_account_id = None
+        
+        # Test data storage - Inventory
+        self.created_cliente_id = None
+        self.created_fornecedor_id = None
+        self.created_local_id = None
+        self.created_categoria_roteadores_id = None
+        self.created_categoria_cabos_id = None
+        self.created_equipamento_router_id = None
+        self.created_equipamento_cabo_id = None
+        self.created_eq_serial_1_id = None
+        self.created_eq_serial_2_id = None
+        self.test_categoria_id = None
+        self.test_centro_custo_id = None
         
     def log(self, message, level="INFO"):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
