@@ -1838,6 +1838,231 @@ async def get_lead_whatsapp_messages(lead_id: str, current_user: dict = Depends(
         "transacoes_relacionadas": transacoes[:10]
     }
 
+# TEMPLATES ROUTES
+@api_router.post("/empresas/{empresa_id}/templates", response_model=MessageTemplate)
+async def create_template(empresa_id: str, template_data: MessageTemplateCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    template_obj = MessageTemplate(**template_data.model_dump(), empresa_id=empresa_id)
+    doc = template_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.message_templates.insert_one(doc)
+    return template_obj
+
+@api_router.get("/empresas/{empresa_id}/templates", response_model=List[MessageTemplate])
+async def get_templates(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    templates = await db.message_templates.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(1000)
+    return templates
+
+@api_router.delete("/templates/{template_id}")
+async def delete_template(template_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.message_templates.delete_one({"id": template_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Template não encontrado")
+    return {"message": "Template deletado"}
+
+@api_router.post("/leads/{lead_id}/send-message")
+async def send_message_to_lead(
+    lead_id: str,
+    message: str,
+    template_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Enviar mensagem para lead via WhatsApp"""
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead não encontrado")
+    
+    telefone = lead.get('whatsapp_phone') or lead.get('telefone')
+    if not telefone:
+        raise HTTPException(status_code=400, detail="Lead não possui telefone cadastrado")
+    
+    # Se template_id fornecido, buscar e interpolar variáveis
+    if template_id:
+        template = await db.message_templates.find_one({"id": template_id}, {"_id": 0})
+        if template:
+            message = template['conteudo']
+            # Interpolar variáveis
+            message = message.replace('{nome}', lead.get('nome', ''))
+            message = message.replace('{valor}', str(lead.get('valor_estimado', 0)))
+            empresa = await db.empresas.find_one({"id": lead['empresa_id']}, {"_id": 0})
+            if empresa:
+                message = message.replace('{empresa}', empresa.get('razao_social', ''))
+    
+    # TODO: Integrar com serviço WhatsApp para enviar mensagem real
+    # Por enquanto, apenas registrar atividade
+    activity = Activity(
+        lead_id=lead_id,
+        empresa_id=lead['empresa_id'],
+        tipo="whatsapp",
+        descricao=f"Mensagem enviada: {message[:50]}...",
+        user_id=current_user["id"],
+        metadata={"telefone": telefone, "message": message}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    return {"message": "Mensagem enviada", "telefone": telefone, "conteudo": message}
+
+# AUTOMAÇÃO ROUTES
+@api_router.post("/empresas/{empresa_id}/automation-rules", response_model=AutomationRule)
+async def create_automation_rule(empresa_id: str, rule_data: AutomationRuleCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    rule_obj = AutomationRule(**rule_data.model_dump(), empresa_id=empresa_id)
+    doc = rule_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.automation_rules.insert_one(doc)
+    return rule_obj
+
+@api_router.get("/empresas/{empresa_id}/automation-rules", response_model=List[AutomationRule])
+async def get_automation_rules(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    rules = await db.automation_rules.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(1000)
+    return rules
+
+# ROTEAMENTO ROUTES
+@api_router.get("/empresas/{empresa_id}/routing-config", response_model=RoutingConfig)
+async def get_routing_config(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    config = await db.routing_configs.find_one({"empresa_id": empresa_id}, {"_id": 0})
+    if not config:
+        # Criar configuração padrão
+        config_obj = RoutingConfig(empresa_id=empresa_id)
+        doc = config_obj.model_dump()
+        await db.routing_configs.insert_one(doc)
+        return config_obj
+    return config
+
+@api_router.put("/empresas/{empresa_id}/routing-config", response_model=RoutingConfig)
+async def update_routing_config(
+    empresa_id: str,
+    tipo: str,
+    usuarios_ativos: List[str],
+    current_user: dict = Depends(get_current_user)
+):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    await db.routing_configs.update_one(
+        {"empresa_id": empresa_id},
+        {"$set": {"tipo": tipo, "usuarios_ativos": usuarios_ativos, "ativo": True}},
+        upsert=True
+    )
+    
+    config = await db.routing_configs.find_one({"empresa_id": empresa_id}, {"_id": 0})
+    return config
+
+async def apply_routing(empresa_id: str, lead_id: str):
+    """Aplicar roteamento automático ao lead"""
+    config = await db.routing_configs.find_one({"empresa_id": empresa_id, "ativo": True}, {"_id": 0})
+    if not config or not config.get('usuarios_ativos'):
+        return None
+    
+    if config['tipo'] == 'round_robin':
+        usuarios = config['usuarios_ativos']
+        ultimo = config.get('ultimo_atribuido')
+        
+        # Encontrar próximo usuário
+        if not ultimo or ultimo not in usuarios:
+            proximo = usuarios[0]
+        else:
+            idx = usuarios.index(ultimo)
+            proximo = usuarios[(idx + 1) % len(usuarios)]
+        
+        # Atualizar lead e config
+        await db.leads.update_one({"id": lead_id}, {"$set": {"assigned_to": proximo}})
+        await db.routing_configs.update_one(
+            {"empresa_id": empresa_id},
+            {"$set": {"ultimo_atribuido": proximo}}
+        )
+        
+        return proximo
+    
+    return None
+
+# AGENTE IA ROUTES
+@api_router.post("/empresas/{empresa_id}/ai-agents", response_model=AIAgent)
+async def create_ai_agent(empresa_id: str, agent_data: AIAgentCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    agent_obj = AIAgent(**agent_data.model_dump(), empresa_id=empresa_id)
+    doc = agent_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.ai_agents.insert_one(doc)
+    return agent_obj
+
+@api_router.get("/empresas/{empresa_id}/ai-agents", response_model=List[AIAgent])
+async def get_ai_agents(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    agents = await db.ai_agents.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(1000)
+    return agents
+
+@api_router.put("/ai-agents/{agent_id}", response_model=AIAgent)
+async def update_ai_agent(agent_id: str, agent_data: AIAgentCreate, current_user: dict = Depends(get_current_user)):
+    agent = await db.ai_agents.find_one({"id": agent_id}, {"_id": 0})
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agente não encontrado")
+    
+    update_data = agent_data.model_dump()
+    await db.ai_agents.update_one({"id": agent_id}, {"$set": update_data})
+    
+    updated_agent = await db.ai_agents.find_one({"id": agent_id}, {"_id": 0})
+    return updated_agent
+
+@api_router.delete("/ai-agents/{agent_id}")
+async def delete_ai_agent(agent_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.ai_agents.delete_one({"id": agent_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Agente não encontrado")
+    return {"message": "Agente deletado"}
+
+async def process_ai_response(empresa_id: str, lead_id: str, message: str):
+    """Processar mensagem com agente de IA e gerar resposta"""
+    # Buscar agente ativo
+    agent = await db.ai_agents.find_one({"empresa_id": empresa_id, "ativo": True}, {"_id": 0})
+    if not agent:
+        return None
+    
+    # Verificar palavras-chave de ativação
+    palavras_chave = agent.get('palavras_chave_ativacao', [])
+    if palavras_chave:
+        message_lower = message.lower()
+        if not any(palavra.lower() in message_lower for palavra in palavras_chave):
+            return None
+    
+    # TODO: Integrar com Emergent LLM
+    # Por enquanto, resposta simples baseada em regras
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    
+    prompt = f"{agent['prompt_sistema']}\n\nMensagem do cliente: {message}\nNome: {lead.get('nome', 'Cliente')}"
+    
+    # Resposta padrão por enquanto
+    if any(palavra in message.lower() for palavra in ['preço', 'valor', 'quanto', 'orçamento']):
+        resposta = f"Olá {lead.get('nome', 'Cliente')}! Obrigado pelo interesse. Nossa equipe entrará em contato em breve com um orçamento personalizado. Poderia me informar mais detalhes sobre suas necessidades?"
+    elif any(palavra in message.lower() for palavra in ['horário', 'atendimento', 'funciona']):
+        resposta = "Nosso horário de atendimento é de segunda a sexta, das 9h às 18h. Como posso ajudá-lo?"
+    else:
+        resposta = f"Olá! Recebi sua mensagem. Um de nossos consultores entrará em contato em breve. Há algo específico que gostaria de saber?"
+    
+    return resposta
+
 # ==================== END CRM ROUTES ====================
 
 # TRANSACAO ROUTES
