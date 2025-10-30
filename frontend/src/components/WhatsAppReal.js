@@ -72,6 +72,24 @@ function WhatsAppReal({ user, token }) {
     }
   };
 
+  const handleRefreshQR = async () => {
+    setLoading(true);
+    try {
+      await axios.post(`${API}/whatsapp/reconnect`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessage('🔄 Gerando novo QR Code...');
+      setTimeout(() => {
+        checkStatus();
+        setMessage('');
+      }, 2000);
+    } catch (error) {
+      setMessage('Erro ao gerar novo QR: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleReconnect = async () => {
     setLoading(true);
     setMessage('');
