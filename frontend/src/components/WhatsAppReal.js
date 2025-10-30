@@ -278,11 +278,16 @@ function WhatsAppReal({ user, token }) {
 
             {status === 'qr_ready' && (
               <button
-                className="btn-secondary"
-                onClick={handleReconnect}
+                className="btn-success"
+                onClick={handleRefreshQR}
                 disabled={loading}
+                style={{
+                  fontSize: '16px',
+                  padding: '12px 24px',
+                  marginTop: '8px'
+                }}
               >
-                🔄 Gerar Novo QR Code
+                {loading ? '⏳ Gerando...' : '🔄 Gerar Novo QR Code'}
               </button>
             )}
           </div>
