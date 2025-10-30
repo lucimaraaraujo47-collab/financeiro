@@ -33,6 +33,9 @@ async function connectToWhatsApp() {
     auth: state,
     printQRInTerminal: true,
     defaultQueryTimeoutMs: undefined,
+    qrTimeout: 60000, // 60 seconds per QR attempt instead of default ~20s
+    connectTimeoutMs: 60000, // Increase connection timeout
+    markOnlineOnConnect: true,
   });
 
   sock.ev.on('connection.update', async (update) => {
