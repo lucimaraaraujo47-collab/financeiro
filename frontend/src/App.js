@@ -104,6 +104,9 @@ function App() {
           <Route path="/equipamentos-serializados" element={<EquipamentosSerializados user={user} token={token} />} />
           <Route path="/movimentacoes" element={<Movimentacoes user={user} token={token} />} />
           
+          {/* CRM Route */}
+          <Route path="/crm" element={<CRM user={user} token={token} />} />
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
