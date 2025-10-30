@@ -204,6 +204,19 @@ function WhatsAppReal({ user, token }) {
 
           {status === 'qr_ready' && qrCodeImage && (
             <div className="qr-code-section" data-testid="qr-code-section">
+              <div className="qr-timer-alert" style={{
+                background: qrTimer <= 10 ? '#fee2e2' : '#dbeafe',
+                color: qrTimer <= 10 ? '#dc2626' : '#1e40af',
+                padding: '12px',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                textAlign: 'center',
+                fontWeight: 'bold',
+                fontSize: '16px'
+              }}>
+                {qrTimer <= 10 ? '⚠️' : '⏱️'} QR Code expira em: {qrTimer} segundos
+                {qrTimer <= 10 && <div style={{fontSize: '14px', marginTop: '4px'}}>Clique em "Gerar Novo QR" abaixo se não conseguir escanear a tempo!</div>}
+              </div>
               <div className="qr-code-container">
                 <img src={qrCodeImage} alt="QR Code" className="qr-code-image" />
               </div>
