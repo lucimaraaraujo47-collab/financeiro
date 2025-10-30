@@ -462,6 +462,60 @@ class MovimentacaoEstoqueCreate(BaseModel):
 
 # ==================== END ESTOQUE MODELS ====================
 
+# ==================== CRM MODELS ====================
+
+# LEADS / CONTATOS
+class Lead(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str
+    telefone: str
+    email: Optional[str] = None
+    origem: str = "manual"  # whatsapp, manual, importacao, landing, indicacao
+    status_funil: str = "novo"  # novo, contatado, qualificado, proposta, negociacao, ganho, perdido
+    tags: List[str] = []
+    valor_estimado: float = 0.0
+    assigned_to: Optional[str] = None  # user_id do vendedor
+    whatsapp_phone: Optional[str] = None  # Número formatado do WhatsApp
+    last_contact_at: Optional[datetime] = None
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class LeadCreate(BaseModel):
+    nome: str
+    telefone: str
+    email: Optional[str] = None
+    origem: str = "manual"
+    tags: List[str] = []
+    valor_estimado: float = 0.0
+    assigned_to: Optional[str] = None
+    notes: Optional[str] = None
+
+class LeadUpdate(BaseModel):
+    nome: Optional[str] = None
+    telefone: Optional[str] = None
+    email: Optional[str] = None
+    tags: Optional[List[str]] = None
+    valor_estimado: Optional[float] = None
+    assigned_to: Optional[str] = None
+    notes: Optional[str] = None
+
+# ATIVIDADES DO CRM
+class Activity(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    lead_id: str
+    empresa_id: str
+    tipo: str  # note, call, email, whatsapp, status_change, assignment
+    descricao: str
+    user_id: str
+    metadata: Dict[str, Any] = {}
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# ==================== END CRM MODELS ====================
+
 class Transacao(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
