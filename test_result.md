@@ -162,6 +162,18 @@
           comment: "VERIFIED: Admin user can successfully retrieve all WhatsApp transactions. Found TRX-f0c35180 (luz, R$ 450), TRX-09f9a544 (internet, R$ 10), and additional test transactions. All transactions have correct empresa_id (226b58c1-4a48-4b66-9537-0dbf9fa65500). Transaction visibility fully working."
 
 ## frontend:
+  - task: "WhatsApp QR Code with Countdown Timer"
+    implemented: true
+    working: true
+    file: "frontend/src/components/WhatsAppReal.js"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "VERIFIED: WhatsApp QR Code countdown timer feature fully working. ✅ QR Code displays correctly with scannable image, ✅ Countdown timer shows 'QR Code expira em: XX segundos' and counts down properly (verified 58→54 seconds), ✅ Refresh button '🔄 Gerar Novo QR Code' is visible and functional, ✅ Timer changes color when <10 seconds remaining (red warning), ✅ Status shows 'QR Code Pronto' correctly. All expected features from review request working perfectly. Tested at https://stock-crm-system-1.preview.emergentagent.com/whatsapp"
+
   - task: "Transaction List Display"
     implemented: true
     working: "NA"
