@@ -10,12 +10,34 @@ function WhatsAppReal({ user, token }) {
   const [phoneNumber, setPhoneNumber] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [qrTimer, setQrTimer] = useState(60); // 60 seconds countdown
 
   useEffect(() => {
     checkStatus();
     const interval = setInterval(checkStatus, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  // QR Timer countdown
+  useEffect(() => {
+    let timerInterval;
+    if (status === 'qr_ready' && qrCodeImage) {
+      setQrTimer(60); // Reset to 60 seconds
+      timerInterval = setInterval(() => {
+        setQrTimer(prev => {
+          if (prev <= 1) {
+            // QR expired, fetch new one
+            handleRefreshQR();
+            return 60;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timerInterval) clearInterval(timerInterval);
+    };
+  }, [status, qrCodeImage]);
 
   const checkStatus = async () => {
     try {
