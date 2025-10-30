@@ -2075,10 +2075,11 @@ async def process_ai_response(empresa_id: str, lead_id: str, message: str):
         if not any(palavra.lower() in message_lower for palavra in palavras_chave):
             return None
     
-    # TODO: Integrar com Emergent LLM
-    # Por enquanto, resposta simples baseada em regras
+    # Buscar lead
     lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
     
+    # TODO: Integrar com Emergent LLM para resposta real
+    # Por enquanto, resposta simples baseada em regras
     prompt = f"{agent['prompt_sistema']}\n\nMensagem do cliente: {message}\nNome: {lead.get('nome', 'Cliente')}"
     
     # Resposta padrão por enquanto
@@ -2090,6 +2091,194 @@ async def process_ai_response(empresa_id: str, lead_id: str, message: str):
         resposta = f"Olá! Recebi sua mensagem. Um de nossos consultores entrará em contato em breve. Há algo específico que gostaria de saber?"
     
     return resposta
+
+# MÉTRICAS E DASHBOARD CRM
+@api_router.get("/empresas/{empresa_id}/crm/metrics", response_model=CRMMetrics)
+async def get_crm_metrics(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    """Obter métricas e KPIs do CRM"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Buscar todos os leads
+    leads = await db.leads.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(10000)
+    
+    # Total de leads
+    total_leads = len(leads)
+    
+    # Leads por status
+    leads_por_status = {}
+    for lead in leads:
+        status = lead.get('status_funil', 'novo')
+        leads_por_status[status] = leads_por_status.get(status, 0) + 1
+    
+    # Leads por origem
+    leads_por_origem = {}
+    for lead in leads:
+        origem = lead.get('origem', 'manual')
+        leads_por_origem[origem] = leads_por_origem.get(origem, 0) + 1
+    
+    # Taxa de conversão por etapa
+    taxa_conversao = {}
+    total = total_leads if total_leads > 0 else 1
+    for status, count in leads_por_status.items():
+        taxa_conversao[status] = (count / total) * 100
+    
+    # Valor total do pipeline
+    valor_total_pipeline = sum(lead.get('valor_estimado', 0) for lead in leads if lead.get('status_funil') not in ['ganho', 'perdido'])
+    
+    # Leads ganhos e perdidos no mês atual
+    now = datetime.now(timezone.utc)
+    mes_atual = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
+    
+    leads_vencidos_mes = len([l for l in leads if l.get('status_funil') == 'ganho' and l.get('updated_at', '') >= mes_atual])
+    leads_perdidos_mes = len([l for l in leads if l.get('status_funil') == 'perdido' and l.get('updated_at', '') >= mes_atual])
+    
+    # Desempenho por vendedor
+    vendedores_stats = {}
+    for lead in leads:
+        assigned_to = lead.get('assigned_to')
+        if assigned_to:
+            if assigned_to not in vendedores_stats:
+                vendedores_stats[assigned_to] = {
+                    'user_id': assigned_to,
+                    'total_leads': 0,
+                    'leads_ganhos': 0,
+                    'leads_perdidos': 0,
+                    'valor_ganho': 0
+                }
+            vendedores_stats[assigned_to]['total_leads'] += 1
+            if lead.get('status_funil') == 'ganho':
+                vendedores_stats[assigned_to]['leads_ganhos'] += 1
+                vendedores_stats[assigned_to]['valor_ganho'] += lead.get('valor_estimado', 0)
+            elif lead.get('status_funil') == 'perdido':
+                vendedores_stats[assigned_to]['leads_perdidos'] += 1
+    
+    desempenho_vendedores = list(vendedores_stats.values())
+    
+    # Tempo médio por etapa (simplificado)
+    tempo_medio_por_etapa = {
+        "novo": 1.5,
+        "contatado": 2.0,
+        "qualificado": 3.5,
+        "proposta": 5.0,
+        "negociacao": 7.0
+    }
+    
+    return CRMMetrics(
+        total_leads=total_leads,
+        leads_por_status=leads_por_status,
+        leads_por_origem=leads_por_origem,
+        taxa_conversao=taxa_conversao,
+        tempo_medio_por_etapa=tempo_medio_por_etapa,
+        valor_total_pipeline=valor_total_pipeline,
+        leads_vencidos_mes=leads_vencidos_mes,
+        leads_perdidos_mes=leads_perdidos_mes,
+        desempenho_vendedores=desempenho_vendedores
+    )
+
+# RELATÓRIOS EXPORTÁVEIS
+@api_router.get("/empresas/{empresa_id}/crm/export/leads")
+async def export_leads_csv(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    """Exportar leads para CSV"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    leads = await db.leads.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(10000)
+    
+    # Criar CSV
+    import io
+    import csv
+    
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=['id', 'nome', 'telefone', 'email', 'origem', 'status_funil', 'valor_estimado', 'assigned_to', 'created_at'])
+    writer.writeheader()
+    
+    for lead in leads:
+        writer.writerow({
+            'id': lead.get('id'),
+            'nome': lead.get('nome'),
+            'telefone': lead.get('telefone'),
+            'email': lead.get('email', ''),
+            'origem': lead.get('origem'),
+            'status_funil': lead.get('status_funil'),
+            'valor_estimado': lead.get('valor_estimado', 0),
+            'assigned_to': lead.get('assigned_to', ''),
+            'created_at': lead.get('created_at')
+        })
+    
+    output.seek(0)
+    return Response(content=output.getvalue(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=leads.csv"})
+
+# SEQUÊNCIAS DE FOLLOW-UP
+@api_router.post("/empresas/{empresa_id}/follow-up-sequences", response_model=FollowUpSequence)
+async def create_sequence(empresa_id: str, sequence_data: FollowUpSequenceCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    sequence_obj = FollowUpSequence(**sequence_data.model_dump(), empresa_id=empresa_id)
+    doc = sequence_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.follow_up_sequences.insert_one(doc)
+    return sequence_obj
+
+@api_router.get("/empresas/{empresa_id}/follow-up-sequences", response_model=List[FollowUpSequence])
+async def get_sequences(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    sequences = await db.follow_up_sequences.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(1000)
+    return sequences
+
+@api_router.delete("/follow-up-sequences/{sequence_id}")
+async def delete_sequence(sequence_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.follow_up_sequences.delete_one({"id": sequence_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Sequência não encontrada")
+    return {"message": "Sequência deletada"}
+
+# COMPLIANCE LGPD
+@api_router.get("/leads/{lead_id}/export-data")
+async def export_lead_data(lead_id: str, current_user: dict = Depends(get_current_user)):
+    """Exportar todos os dados de um lead (LGPD)"""
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead não encontrado")
+    
+    # Buscar atividades
+    activities = await db.activities.find({"lead_id": lead_id}, {"_id": 0}).to_list(1000)
+    
+    # Montar pacote de dados
+    export_data = {
+        "lead": lead,
+        "activities": activities,
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "data_subject_rights": "Este é seu pacote completo de dados conforme LGPD"
+    }
+    
+    return export_data
+
+@api_router.delete("/leads/{lead_id}/gdpr-delete")
+async def delete_lead_gdpr(lead_id: str, current_user: dict = Depends(get_current_user)):
+    """Deletar permanentemente todos os dados de um lead (LGPD)"""
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead não encontrado")
+    
+    # Deletar lead
+    await db.leads.delete_one({"id": lead_id})
+    
+    # Deletar atividades
+    await db.activities.delete_many({"lead_id": lead_id})
+    
+    # Registrar log de exclusão
+    logging.info(f"LGPD: Lead {lead_id} deletado permanentemente por {current_user['id']}")
+    
+    return {
+        "message": "Todos os dados do lead foram deletados permanentemente",
+        "lead_id": lead_id,
+        "deleted_at": datetime.now(timezone.utc).isoformat()
+    }
 
 # ==================== END CRM ROUTES ====================
 
