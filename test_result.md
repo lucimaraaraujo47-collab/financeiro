@@ -102,9 +102,26 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-## user_problem_statement: "Implement complete Inventory Management System with serialized and non-serialized equipment tracking, client management, stock movements, and financial integration"
+## user_problem_statement: "Fix WhatsApp QR Code not displaying in deployment environment"
 
 ## backend:
+  - task: "WhatsApp QR Code Display in Deployment"
+    implemented: true
+    working: true
+    file: "backend/.env"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+        - working: false
+          agent: "user"
+          comment: "User reported: 'O QR COD DO WHATSAPP NAO FUNCIONA QUANDO SOBE PARA o deploy' - WhatsApp QR code not working when deployed to production environment, though it works locally."
+        - working: true
+          agent: "main"
+          comment: "ROOT CAUSE IDENTIFIED: In backend/.env file, line 11 had WHATSAPP_SERVICE_URL concatenated with LOGIN_BLOCK_MINUTES on same line (LOGIN_BLOCK_MINUTES=15WHATSAPP_SERVICE_URL=http://localhost:8002), preventing proper environment variable parsing. FIXED by adding newline between the two variables. Backend restarted to apply changes. QR code now displays correctly in deployment."
+        - working: true
+          agent: "main"
+          comment: "VERIFIED via screenshot: WhatsApp page in deployment now correctly shows 'QR Code Pronto' status with visible QR code. Frontend successfully calls backend proxy endpoints at /api/whatsapp/status and /api/whatsapp/qr, which correctly proxy to whatsapp-service on port 8002. Full integration chain working: Frontend → Backend (port 8001) → WhatsApp Service (port 8002)."
   - task: "WhatsApp Message Processing - Company ID Assignment"
     implemented: true
     working: true
