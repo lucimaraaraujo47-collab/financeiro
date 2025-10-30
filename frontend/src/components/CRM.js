@@ -162,9 +162,14 @@ function CRM({ user, token }) {
           <h1 className="dashboard-title">🎯 CRM - Funil de Vendas</h1>
           <p className="dashboard-subtitle">Gerencie seus leads e oportunidades</p>
         </div>
-        <button className="btn-success" onClick={() => setShowForm(true)}>
-          ➕ Novo Lead
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn-secondary" onClick={() => window.location.href = '/crm/config'}>
+            ⚙️ Configurações
+          </button>
+          <button className="btn-success" onClick={() => setShowForm(true)}>
+            ➕ Novo Lead
+          </button>
+        </div>
       </div>
 
       {message && (
