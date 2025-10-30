@@ -514,6 +514,71 @@ class Activity(BaseModel):
     metadata: Dict[str, Any] = {}
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# TEMPLATES DE MENSAGEM
+class MessageTemplate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str
+    conteudo: str  # Pode ter variáveis: {nome}, {valor}, {empresa}
+    tipo: str = "whatsapp"  # whatsapp, email, sms
+    ativo: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MessageTemplateCreate(BaseModel):
+    nome: str
+    conteudo: str
+    tipo: str = "whatsapp"
+
+# REGRAS DE AUTOMAÇÃO
+class AutomationRule(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str
+    gatilho: str  # novo_lead, mudanca_status, sem_resposta
+    condicoes: Dict[str, Any] = {}  # {"origem": "whatsapp", "status": "novo"}
+    acoes: List[Dict[str, Any]] = []  # [{"tipo": "enviar_template", "template_id": "xxx"}]
+    ativo: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AutomationRuleCreate(BaseModel):
+    nome: str
+    gatilho: str
+    condicoes: Dict[str, Any] = {}
+    acoes: List[Dict[str, Any]] = []
+
+# CONFIGURAÇÃO DE ROTEAMENTO
+class RoutingConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    tipo: str = "round_robin"  # round_robin, por_tag, manual
+    usuarios_ativos: List[str] = []  # Lista de user_ids
+    ultimo_atribuido: Optional[str] = None
+    regras_por_tag: Dict[str, str] = {}  # {"tag": "user_id"}
+    ativo: bool = True
+
+# AGENTE IA
+class AIAgent(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str
+    prompt_sistema: str
+    palavras_chave_ativacao: List[str] = []  # ["orçamento", "preço", "quanto custa"]
+    horario_ativo: Dict[str, Any] = {"inicio": "09:00", "fim": "18:00"}
+    autonomia: str = "baixa"  # baixa, media, alta
+    ativo: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AIAgentCreate(BaseModel):
+    nome: str
+    prompt_sistema: str
+    palavras_chave_ativacao: List[str] = []
+    horario_ativo: Dict[str, Any] = {"inicio": "09:00", "fim": "18:00"}
+    autonomia: str = "baixa"
+
 # ==================== END CRM MODELS ====================
 
 class Transacao(BaseModel):
