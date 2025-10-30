@@ -33,8 +33,8 @@ async function connectToWhatsApp() {
     auth: state,
     printQRInTerminal: true,
     defaultQueryTimeoutMs: undefined,
-    qrTimeout: 60000, // 60 seconds per QR attempt instead of default ~20s
     connectTimeoutMs: 60000, // Increase connection timeout
+    keepAliveIntervalMs: 30000, // Keep connection alive
     markOnlineOnConnect: true,
   });
 
