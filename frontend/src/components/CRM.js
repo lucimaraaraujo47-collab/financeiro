@@ -163,6 +163,9 @@ function CRM({ user, token }) {
           <p className="dashboard-subtitle">Gerencie seus leads e oportunidades</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn-secondary" onClick={() => window.location.href = '/crm/dashboard'}>
+            📊 Métricas
+          </button>
           <button className="btn-secondary" onClick={() => window.location.href = '/crm/config'}>
             ⚙️ Configurações
           </button>
