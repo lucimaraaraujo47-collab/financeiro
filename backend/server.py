@@ -579,6 +579,34 @@ class AIAgentCreate(BaseModel):
     horario_ativo: Dict[str, Any] = {"inicio": "09:00", "fim": "18:00"}
     autonomia: str = "baixa"
 
+# SEQUÊNCIAS DE AUTOMAÇÃO
+class FollowUpSequence(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str
+    gatilho_status: str  # Status que ativa a sequência
+    steps: List[Dict[str, Any]] = []  # [{"dia": 1, "template_id": "xxx", "tipo": "whatsapp"}]
+    ativo: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class FollowUpSequenceCreate(BaseModel):
+    nome: str
+    gatilho_status: str
+    steps: List[Dict[str, Any]] = []
+
+# MÉTRICAS E RELATÓRIOS
+class CRMMetrics(BaseModel):
+    total_leads: int
+    leads_por_status: Dict[str, int]
+    leads_por_origem: Dict[str, int]
+    taxa_conversao: Dict[str, float]
+    tempo_medio_por_etapa: Dict[str, float]
+    valor_total_pipeline: float
+    leads_vencidos_mes: int
+    leads_perdidos_mes: int
+    desempenho_vendedores: List[Dict[str, Any]]
+
 # ==================== END CRM MODELS ====================
 
 class Transacao(BaseModel):
