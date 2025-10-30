@@ -1586,6 +1586,195 @@ async def get_movimentacoes(
 
 # ==================== END ESTOQUE ROUTES ====================
 
+# ==================== CRM ROUTES ====================
+
+# LEADS ROUTES
+@api_router.post("/empresas/{empresa_id}/leads", response_model=Lead)
+async def create_lead(empresa_id: str, lead_data: LeadCreate, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    lead_obj = Lead(**lead_data.model_dump(), empresa_id=empresa_id)
+    doc = lead_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    if doc.get('last_contact_at'):
+        doc['last_contact_at'] = doc['last_contact_at'].isoformat()
+    
+    await db.leads.insert_one(doc)
+    
+    # Registrar atividade
+    activity = Activity(
+        lead_id=lead_obj.id,
+        empresa_id=empresa_id,
+        tipo="note",
+        descricao=f"Lead criado: {lead_obj.nome}",
+        user_id=current_user["id"]
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    return lead_obj
+
+@api_router.get("/empresas/{empresa_id}/leads", response_model=List[Lead])
+async def get_leads(
+    empresa_id: str,
+    status_funil: Optional[str] = None,
+    assigned_to: Optional[str] = None,
+    origem: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    query = {"empresa_id": empresa_id}
+    if status_funil:
+        query["status_funil"] = status_funil
+    if assigned_to:
+        query["assigned_to"] = assigned_to
+    if origem:
+        query["origem"] = origem
+    
+    leads = await db.leads.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return leads
+
+@api_router.get("/leads/{lead_id}", response_model=Lead)
+async def get_lead(lead_id: str, current_user: dict = Depends(get_current_user)):
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead não encontrado")
+    return lead
+
+@api_router.put("/leads/{lead_id}", response_model=Lead)
+async def update_lead(lead_id: str, lead_data: LeadUpdate, current_user: dict = Depends(get_current_user)):
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead não encontrado")
+    
+    update_data = {k: v for k, v in lead_data.model_dump(exclude_unset=True).items() if v is not None}
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.leads.update_one({"id": lead_id}, {"$set": update_data})
+    
+    # Registrar atividade
+    activity = Activity(
+        lead_id=lead_id,
+        empresa_id=lead['empresa_id'],
+        tipo="note",
+        descricao=f"Lead atualizado",
+        user_id=current_user["id"],
+        metadata=update_data
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    updated_lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    return updated_lead
+
+@api_router.delete("/leads/{lead_id}")
+async def delete_lead(lead_id: str, current_user: dict = Depends(get_current_user)):
+    result = await db.leads.delete_one({"id": lead_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Lead não encontrado")
+    return {"message": "Lead deletado"}
+
+@api_router.patch("/leads/{lead_id}/status")
+async def update_lead_status(lead_id: str, status: str, current_user: dict = Depends(get_current_user)):
+    """Atualizar status do lead no funil (para Kanban drag-and-drop)"""
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead não encontrado")
+    
+    old_status = lead.get('status_funil')
+    
+    await db.leads.update_one(
+        {"id": lead_id},
+        {"$set": {
+            "status_funil": status,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Registrar atividade
+    activity = Activity(
+        lead_id=lead_id,
+        empresa_id=lead['empresa_id'],
+        tipo="status_change",
+        descricao=f"Status alterado de '{old_status}' para '{status}'",
+        user_id=current_user["id"],
+        metadata={"old_status": old_status, "new_status": status}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    return {"message": "Status atualizado", "new_status": status}
+
+@api_router.patch("/leads/{lead_id}/assign")
+async def assign_lead(lead_id: str, user_id: str, current_user: dict = Depends(get_current_user)):
+    """Atribuir lead a um vendedor"""
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead não encontrado")
+    
+    old_assigned = lead.get('assigned_to')
+    
+    await db.leads.update_one(
+        {"id": lead_id},
+        {"$set": {
+            "assigned_to": user_id,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Registrar atividade
+    activity = Activity(
+        lead_id=lead_id,
+        empresa_id=lead['empresa_id'],
+        tipo="assignment",
+        descricao=f"Lead atribuído ao usuário {user_id}",
+        user_id=current_user["id"],
+        metadata={"old_assigned": old_assigned, "new_assigned": user_id}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc['created_at'] = activity_doc['created_at'].isoformat()
+    await db.activities.insert_one(activity_doc)
+    
+    return {"message": "Lead atribuído", "assigned_to": user_id}
+
+@api_router.get("/leads/{lead_id}/activities", response_model=List[Activity])
+async def get_lead_activities(lead_id: str, current_user: dict = Depends(get_current_user)):
+    """Obter histórico de atividades do lead"""
+    activities = await db.activities.find({"lead_id": lead_id}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return activities
+
+@api_router.get("/leads/{lead_id}/whatsapp-messages")
+async def get_lead_whatsapp_messages(lead_id: str, current_user: dict = Depends(get_current_user)):
+    """Obter histórico de mensagens WhatsApp do lead"""
+    lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead não encontrado")
+    
+    # Buscar transações do WhatsApp com o telefone do lead
+    telefone = lead.get('whatsapp_phone') or lead.get('telefone')
+    transacoes = await db.transacoes.find({
+        "empresa_id": lead['empresa_id'],
+        "origem": {"$in": ["whatsapp", "whatsapp_bot"]}
+    }, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Filtrar por telefone se disponível
+    # Note: Isso é uma aproximação. Idealmente teríamos uma coleção separada de mensagens
+    return {
+        "lead_id": lead_id,
+        "telefone": telefone,
+        "messages": [],  # TODO: Implementar busca real de mensagens WhatsApp
+        "transacoes_relacionadas": transacoes[:10]
+    }
+
+# ==================== END CRM ROUTES ====================
+
 # TRANSACAO ROUTES
 @api_router.post("/empresas/{empresa_id}/transacoes", response_model=Transacao)
 async def create_transacao(empresa_id: str, transacao_data: TransacaoCreate, current_user: dict = Depends(get_current_user)):
