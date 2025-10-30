@@ -107,6 +107,7 @@ function App() {
           
           {/* CRM Route */}
           <Route path="/crm" element={<CRM user={user} token={token} />} />
+          <Route path="/crm/config" element={<ConfiguracoesCRM user={user} token={token} />} />
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
