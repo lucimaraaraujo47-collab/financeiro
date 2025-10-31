@@ -3878,6 +3878,210 @@ async def whatsapp_disconnect(current_user: dict = Depends(get_current_user)):
         logging.error(f"Error disconnecting WhatsApp: {e}")
         raise HTTPException(status_code=500, detail="Erro ao desconectar")
 
+# ==================== GOOGLE DRIVE BACKUP ENDPOINTS ====================
+
+# Helper function to create Google Drive service
+def get_drive_service():
+    """Create and return Google Drive service"""
+    service_account_path = os.environ.get("GOOGLE_SERVICE_ACCOUNT_PATH", "/app/backend/service_account.json")
+    
+    if not os.path.exists(service_account_path):
+        raise HTTPException(status_code=500, detail="Google Service Account não configurado")
+    
+    SCOPES = ['https://www.googleapis.com/auth/drive.file']
+    credentials = service_account.Credentials.from_service_account_file(
+        service_account_path, scopes=SCOPES)
+    
+    return build('drive', 'v3', credentials=credentials)
+
+async def export_all_data():
+    """Export all database data to JSON format"""
+    backup_data = {
+        "backup_date": datetime.now(timezone.utc).isoformat(),
+        "database": os.environ.get("DB_NAME", "finai_database"),
+        "collections": {}
+    }
+    
+    # Collections to backup
+    collections = [
+        "empresas", "users", "categorias_financeiras", "centros_custo",
+        "transacoes", "contas_bancarias", "investimentos", "cartoes_credito",
+        "clientes", "fornecedores", "locais", "categorias_equipamentos",
+        "equipamentos", "equipamentos_serializados", "movimentacoes_estoque",
+        "contatos_crm", "conversas_crm", "mensagens_crm", "agentes_ia",
+        "funil_stages", "templates_mensagem", "automacoes_crm", "auditoria_crm",
+        "consentimentos_crm"
+    ]
+    
+    for collection_name in collections:
+        try:
+            collection = db[collection_name]
+            documents = await collection.find().to_list(length=None)
+            
+            # Convert ObjectId and datetime to strings
+            for doc in documents:
+                if "_id" in doc:
+                    doc["_id"] = str(doc["_id"])
+                for key, value in doc.items():
+                    if isinstance(value, datetime):
+                        doc[key] = value.isoformat()
+            
+            backup_data["collections"][collection_name] = documents
+            logging.info(f"Exported {len(documents)} documents from {collection_name}")
+        except Exception as e:
+            logging.error(f"Error exporting {collection_name}: {e}")
+            backup_data["collections"][collection_name] = []
+    
+    return backup_data
+
+async def upload_to_drive(file_content: bytes, filename: str):
+    """Upload file to Google Drive"""
+    try:
+        service = get_drive_service()
+        folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID")
+        
+        file_metadata = {
+            'name': filename,
+            'mimeType': 'application/json'
+        }
+        
+        if folder_id:
+            file_metadata['parents'] = [folder_id]
+        
+        media = MediaIoBaseUpload(
+            io.BytesIO(file_content),
+            mimetype='application/json',
+            resumable=True
+        )
+        
+        file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id,name,createdTime'
+        ).execute()
+        
+        logging.info(f"File uploaded to Drive: {file.get('name')} (ID: {file.get('id')})")
+        return file
+        
+    except Exception as e:
+        logging.error(f"Error uploading to Drive: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao fazer upload para Google Drive: {str(e)}")
+
+async def cleanup_old_backups(keep_days: int = 30):
+    """Delete backups older than keep_days"""
+    try:
+        service = get_drive_service()
+        folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID")
+        
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=keep_days)
+        cutoff_str = cutoff_date.isoformat()
+        
+        query = f"name contains 'backup_' and createdTime < '{cutoff_str}'"
+        if folder_id:
+            query += f" and '{folder_id}' in parents"
+        
+        results = service.files().list(
+            q=query,
+            fields='files(id, name, createdTime)'
+        ).execute()
+        
+        files = results.get('files', [])
+        deleted_count = 0
+        
+        for file in files:
+            try:
+                service.files().delete(fileId=file['id']).execute()
+                deleted_count += 1
+                logging.info(f"Deleted old backup: {file['name']}")
+            except Exception as e:
+                logging.error(f"Error deleting {file['name']}: {e}")
+        
+        return deleted_count
+        
+    except Exception as e:
+        logging.error(f"Error cleaning up old backups: {e}")
+        return 0
+
+@api_router.post("/backup/create")
+@limiter.limit("5/hour")
+async def create_backup(
+    request: Request,
+    current_user: dict = Depends(get_current_user_admin)
+):
+    """Create a manual backup and upload to Google Drive"""
+    try:
+        # Export all data
+        backup_data = await export_all_data()
+        
+        # Generate filename
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        filename = f"backup_{timestamp}.json"
+        
+        # Convert to JSON bytes
+        json_content = json.dumps(backup_data, indent=2, ensure_ascii=False).encode('utf-8')
+        
+        # Upload to Drive
+        file_info = await upload_to_drive(json_content, filename)
+        
+        # Cleanup old backups
+        deleted_count = await cleanup_old_backups(keep_days=30)
+        
+        return {
+            "success": True,
+            "message": "Backup criado com sucesso",
+            "file": {
+                "id": file_info.get('id'),
+                "name": file_info.get('name'),
+                "created_at": file_info.get('createdTime')
+            },
+            "old_backups_deleted": deleted_count
+        }
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logging.error(f"Error creating backup: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao criar backup: {str(e)}")
+
+@api_router.get("/backup/status")
+async def get_backup_status(current_user: dict = Depends(get_current_user_admin)):
+    """Get backup configuration status"""
+    service_account_path = os.environ.get("GOOGLE_SERVICE_ACCOUNT_PATH", "/app/backend/service_account.json")
+    folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID")
+    
+    status = {
+        "configured": os.path.exists(service_account_path),
+        "service_account_path": service_account_path,
+        "folder_id_configured": folder_id is not None,
+        "last_backup": None
+    }
+    
+    if status["configured"]:
+        try:
+            service = get_drive_service()
+            query = "name contains 'backup_'"
+            if folder_id:
+                query += f" and '{folder_id}' in parents"
+            
+            results = service.files().list(
+                q=query,
+                orderBy='createdTime desc',
+                pageSize=1,
+                fields='files(id, name, createdTime)'
+            ).execute()
+            
+            files = results.get('files', [])
+            if files:
+                status["last_backup"] = {
+                    "name": files[0]['name'],
+                    "created_at": files[0]['createdTime']
+                }
+        except Exception as e:
+            logging.error(f"Error checking backup status: {e}")
+            status["error"] = str(e)
+    
+    return status
+
 # Include router
 app.include_router(api_router)
 
