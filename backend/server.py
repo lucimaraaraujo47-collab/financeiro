@@ -4044,7 +4044,7 @@ async def create_backup(
         raise HTTPException(status_code=500, detail=f"Erro ao criar backup: {str(e)}")
 
 @api_router.get("/backup/status")
-async def get_backup_status(current_user: dict = Depends(get_current_user_admin)):
+async def get_backup_status(current_user: dict = Depends(get_current_user)):
     """Get backup configuration status"""
     service_account_path = os.environ.get("GOOGLE_SERVICE_ACCOUNT_PATH", "/app/backend/service_account.json")
     folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID")
