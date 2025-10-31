@@ -459,9 +459,23 @@
   test_sequence: 3
   run_ui: true
 
+  - task: "Backup Configuration Page"
+    implemented: true
+    working: false
+    file: "frontend/src/components/ConfiguracoesBackup.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: false
+          agent: "testing"
+          comment: "CRITICAL ISSUE: Frontend component fully implemented with comprehensive UI (page title '📦 Backup Automático', status configuration cards, manual backup button, automatic backup info showing 3 AM schedule, detailed setup instructions), but backend API endpoints are missing. Testing shows 404 errors for /api/backup/status and /api/backup/create endpoints. Application gets stuck on loading screen because ConfiguracoesBackup component cannot fetch backup status on mount. Backend has backup automation scripts (automated_backup.py) but lacks REST API endpoints in server.py. Frontend navigation works correctly - Configurações menu expands and Backup menu item is visible for admin users. ROOT CAUSE: Backend endpoints not implemented. REQUIRED: Implement /api/backup/status (GET) and /api/backup/create (POST) endpoints in backend/server.py."
+
 ## test_plan:
-  current_focus: []
-  stuck_tasks: []
+  current_focus: 
+    - "Backup Configuration Page"
+  stuck_tasks: 
+    - "Backup Configuration Page"
   test_all: false
   test_priority: "high_first"
 
