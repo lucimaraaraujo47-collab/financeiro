@@ -112,6 +112,9 @@ function App() {
           <Route path="/crm/config" element={<ConfiguracoesCRM user={user} token={token} />} />
           <Route path="/crm/dashboard" element={<DashboardCRM user={user} token={token} />} />
           
+          {/* Backup Configuration */}
+          <Route path="/backup" element={<ConfiguracoesBackup user={user} token={token} />} />
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
