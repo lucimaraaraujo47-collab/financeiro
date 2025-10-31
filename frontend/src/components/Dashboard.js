@@ -30,7 +30,7 @@ function Dashboard({ user, token }) {
         setDashboard(dashRes.data);
 
         // Get contas bancárias
-        const contasRes = await axios.get(`${API}/empresas/${emp.id}/contas-bancarias`, {
+        const contasRes = await axios.get(`${API}/empresas/${emp.id}/contas`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setContasBancarias(contasRes.data);
