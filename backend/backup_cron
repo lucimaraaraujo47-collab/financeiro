@@ -1,0 +1,5 @@
+# Automated Backup Cron Job for ECHO SHOP FinAI
+# Runs daily at 3:00 AM (server time)
+
+# Minute Hour Day Month DayOfWeek Command
+0 3 * * * cd /app/backend && /root/.venv/bin/python3 /app/backend/automated_backup.py >> /var/log/backup.log 2>&1
