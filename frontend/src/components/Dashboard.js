@@ -5,6 +5,7 @@ import { API } from '../App';
 function Dashboard({ user, token }) {
   const [empresa, setEmpresa] = useState(null);
   const [dashboard, setDashboard] = useState(null);
+  const [contasBancarias, setContasBancarias] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,6 +28,12 @@ function Dashboard({ user, token }) {
           headers: { Authorization: `Bearer ${token}` }
         });
         setDashboard(dashRes.data);
+
+        // Get contas bancárias
+        const contasRes = await axios.get(`${API}/empresas/${emp.id}/contas-bancarias`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setContasBancarias(contasRes.data);
       }
     } catch (error) {
       console.error('Error loading dashboard:', error);
