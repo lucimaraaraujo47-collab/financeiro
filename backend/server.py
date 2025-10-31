@@ -4006,7 +4006,7 @@ async def cleanup_old_backups(keep_days: int = 30):
 @limiter.limit("5/hour")
 async def create_backup(
     request: Request,
-    current_user: dict = Depends(get_current_user_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """Create a manual backup and upload to Google Drive"""
     try:
