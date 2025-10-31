@@ -134,3 +134,4 @@ google-api-core==2.26.0
 google-api-python-client==2.184.0
 google-auth==2.41.1
 google-auth-httplib2==0.2.0
+APScheduler==3.11.0
