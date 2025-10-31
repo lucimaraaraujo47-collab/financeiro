@@ -4126,3 +4126,63 @@ logger = logging.getLogger(__name__)
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+    scheduler.shutdown()
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize scheduled backup on startup"""
+    service_account_path = os.environ.get("GOOGLE_SERVICE_ACCOUNT_PATH", "/app/backend/service_account.json")
+    
+    # Only schedule if Google Drive is configured
+    if os.path.exists(service_account_path):
+        # Schedule daily backup at 3 AM
+        scheduler.add_job(
+            run_scheduled_backup,
+            CronTrigger(hour=3, minute=0),
+            id='daily_backup',
+            name='Daily automated backup to Google Drive',
+            replace_existing=True
+        )
+        scheduler.start()
+        logging.info("✓ Automated backup scheduler started - Daily backups at 3:00 AM")
+    else:
+        logging.warning("⚠ Google Drive not configured - Automated backups disabled")
+        logging.info("See /app/BACKUP_SETUP_INSTRUCTIONS.md for setup instructions")
+
+async def run_scheduled_backup():
+    """Function to run scheduled backup"""
+    try:
+        logging.info("=" * 60)
+        logging.info("SCHEDULED BACKUP STARTING")
+        logging.info("=" * 60)
+        
+        # Export all data
+        backup_data = await export_all_data()
+        
+        # Generate filename
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        filename = f"backup_{timestamp}.json"
+        
+        # Convert to JSON bytes
+        json_content = json.dumps(backup_data, indent=2, ensure_ascii=False).encode('utf-8')
+        file_size_mb = len(json_content) / (1024 * 1024)
+        logging.info(f"Backup file size: {file_size_mb:.2f} MB")
+        
+        # Upload to Drive
+        file_info = await upload_to_drive(json_content, filename)
+        
+        # Cleanup old backups
+        deleted_count = await cleanup_old_backups(keep_days=30)
+        
+        logging.info("=" * 60)
+        logging.info("✓ SCHEDULED BACKUP COMPLETED")
+        logging.info(f"  File: {file_info.get('name')}")
+        logging.info(f"  Drive ID: {file_info.get('id')}")
+        logging.info(f"  Old backups deleted: {deleted_count}")
+        logging.info("=" * 60)
+        
+    except Exception as e:
+        logging.error("=" * 60)
+        logging.error("✗ SCHEDULED BACKUP FAILED")
+        logging.error(f"  Error: {str(e)}")
+        logging.error("=" * 60)
