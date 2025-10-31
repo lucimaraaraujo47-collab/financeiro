@@ -191,6 +191,82 @@ function Dashboard({ user, token }) {
           </div>
         )}
       </div>
+
+      {/* Seção de Contas Bancárias */}
+      {contasBancarias.length > 0 && (
+        <div className="content-card" style={{ marginBottom: '24px' }}>
+          <div className="card-header">
+            <h2 className="card-title">🏦 Minhas Contas Bancárias</h2>
+            <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
+              Saldo individual em cada conta
+            </p>
+          </div>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+            gap: '16px',
+            padding: '8px 0'
+          }}>
+            {contasBancarias.map((conta, idx) => (
+              <div 
+                key={idx}
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  color: 'white',
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                  transition: 'transform 0.2s',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '4px' }}>
+                      {conta.tipo || 'Conta'}
+                    </div>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
+                      {conta.nome}
+                    </div>
+                  </div>
+                  <div style={{ 
+                    background: 'rgba(255,255,255,0.2)', 
+                    borderRadius: '50%', 
+                    width: '40px', 
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '20px'
+                  }}>
+                    💳
+                  </div>
+                </div>
+                
+                <div style={{ fontSize: '13px', opacity: 0.9, marginBottom: '16px' }}>
+                  {conta.banco} • {conta.agencia && `Ag: ${conta.agencia}`} {conta.numero_conta && `C/C: ${conta.numero_conta}`}
+                </div>
+                
+                <div style={{ 
+                  borderTop: '1px solid rgba(255,255,255,0.2)', 
+                  paddingTop: '12px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div style={{ fontSize: '12px', opacity: 0.9 }}>Saldo Atual</div>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                    R$ {(conta.saldo_atual || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
