@@ -130,3 +130,7 @@ reportlab==4.4.4
 pandas==2.3.3
 ofxparse==0.21
 PyPDF2==3.0.1
+google-api-core==2.26.0
+google-api-python-client==2.184.0
+google-auth==2.41.1
+google-auth-httplib2==0.2.0
