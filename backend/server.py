@@ -75,6 +75,9 @@ app = FastAPI()
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+# Initialize APScheduler for automated backups
+scheduler = AsyncIOScheduler()
+
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key')
 JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
 JWT_EXPIRATION = int(os.environ.get('JWT_EXPIRATION_MINUTES', 43200))
