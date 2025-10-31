@@ -25,6 +25,7 @@ import Movimentacoes from './components/Movimentacoes';
 import CRM from './components/CRM';
 import ConfiguracoesCRM from './components/ConfiguracoesCRM';
 import DashboardCRM from './components/DashboardCRM';
+import ConfiguracoesBackup from './components/ConfiguracoesBackup';
 import Layout from './components/Layout';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
