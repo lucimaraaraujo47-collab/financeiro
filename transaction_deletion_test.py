@@ -146,6 +146,25 @@ class TransactionDeletionTestRunner:
             self.log(f"    ❌ Error getting categories: {str(e)}", "ERROR")
             return False
         
+        # Step 4b: Get cost centers for transaction creation
+        self.log("  4b. Getting cost centers...")
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/centros-custo")
+            if response.status_code == 200:
+                centros_custo = response.json()
+                if centros_custo:
+                    centro_custo_id = centros_custo[0].get('id')
+                    self.log(f"     Using cost center: {centro_custo_id}")
+                else:
+                    self.log("    ❌ No cost centers found", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to get cost centers: {response.status_code}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error getting cost centers: {str(e)}", "ERROR")
+            return False
+        
         # Step 5: Create test RECEITA transaction
         self.log("  5. Creating test RECEITA transaction (R$ 500)...")
         
