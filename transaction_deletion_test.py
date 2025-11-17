@@ -108,7 +108,7 @@ class TransactionDeletionTestRunner:
         # Step 3: Get bank accounts and their initial balances
         self.log("  3. Getting bank accounts...")
         try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas-bancarias")
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
             if response.status_code == 200:
                 contas = response.json()
                 if not contas:
@@ -178,7 +178,7 @@ class TransactionDeletionTestRunner:
         
         # Check account balance
         try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas-bancarias")
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
             if response.status_code == 200:
                 contas = response.json()
                 updated_conta = next((c for c in contas if c.get('id') == conta_id), None)
@@ -256,7 +256,7 @@ class TransactionDeletionTestRunner:
         
         # Check account balance reverted
         try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas-bancarias")
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
             if response.status_code == 200:
                 contas = response.json()
                 reverted_conta = next((c for c in contas if c.get('id') == conta_id), None)
@@ -339,7 +339,7 @@ class TransactionDeletionTestRunner:
         
         # Verify account balance decreased
         try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas-bancarias")
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
             if response.status_code == 200:
                 contas = response.json()
                 updated_conta = next((c for c in contas if c.get('id') == conta_id), None)
@@ -382,7 +382,7 @@ class TransactionDeletionTestRunner:
         
         # Verify account balance increased back (reverses the decrease)
         try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas-bancarias")
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
             if response.status_code == 200:
                 contas = response.json()
                 final_conta = next((c for c in contas if c.get('id') == conta_id), None)
