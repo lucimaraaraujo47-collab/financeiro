@@ -506,9 +506,8 @@
 
 ## test_plan:
   current_focus: 
-    - "Backup Configuration Page"
-  stuck_tasks: 
-    - "Backup Configuration Page"
+    - "Transaction Deletion with Balance Recalculation"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
