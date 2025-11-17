@@ -1875,6 +1875,359 @@ class FinAITestRunner:
         
         return True
     
+    def test_transaction_deletion_balance_recalculation(self):
+        """Test Transaction Deletion with Balance Recalculation Fix"""
+        self.log("Testing Transaction Deletion with Balance Recalculation...")
+        
+        if not self.token:
+            self.log("❌ No auth token available", "ERROR")
+            return False
+        
+        # Step 1: Get initial state
+        self.log("  1. Getting initial state...")
+        
+        # Get empresa_id (should be in user data)
+        empresa_id = EMPRESA_ID
+        self.log(f"     Using empresa_id: {empresa_id}")
+        
+        # Get initial dashboard state
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/dashboard")
+            if response.status_code == 200:
+                initial_dashboard = response.json()
+                initial_receitas = initial_dashboard.get('total_receitas', 0)
+                initial_despesas = initial_dashboard.get('total_despesas', 0)
+                initial_saldo = initial_dashboard.get('saldo', 0)
+                initial_saldo_contas = initial_dashboard.get('saldo_contas', 0)
+                
+                self.log(f"     Initial Dashboard - Receitas: R$ {initial_receitas}")
+                self.log(f"     Initial Dashboard - Despesas: R$ {initial_despesas}")
+                self.log(f"     Initial Dashboard - Saldo: R$ {initial_saldo}")
+                self.log(f"     Initial Dashboard - Saldo em Contas: R$ {initial_saldo_contas}")
+            else:
+                self.log(f"    ❌ Failed to get dashboard: {response.status_code} - {response.text}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error getting dashboard: {str(e)}", "ERROR")
+            return False
+        
+        # Get bank accounts and their initial balances
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
+            if response.status_code == 200:
+                contas = response.json()
+                if not contas:
+                    self.log("    ❌ No bank accounts found. Creating test account...")
+                    # Create a test account
+                    account_data = {
+                        "nome": "Conta Teste Transação",
+                        "tipo": "corrente",
+                        "banco": "Banco Teste",
+                        "saldo_inicial": 1000.0
+                    }
+                    response = self.session.post(f"{BACKEND_URL}/empresas/{empresa_id}/contas", json=account_data)
+                    if response.status_code == 200:
+                        test_account = response.json()
+                        conta_id = test_account.get('id')
+                        initial_saldo_conta = test_account.get('saldo_atual', 0)
+                        self.log(f"     Created test account: {conta_id}")
+                        self.log(f"     Initial account balance: R$ {initial_saldo_conta}")
+                    else:
+                        self.log(f"    ❌ Failed to create test account: {response.status_code}", "ERROR")
+                        return False
+                else:
+                    # Use first available account
+                    conta_id = contas[0].get('id')
+                    initial_saldo_conta = contas[0].get('saldo_atual', 0)
+                    self.log(f"     Using existing account: {conta_id}")
+                    self.log(f"     Initial account balance: R$ {initial_saldo_conta}")
+            else:
+                self.log(f"    ❌ Failed to get bank accounts: {response.status_code} - {response.text}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error getting bank accounts: {str(e)}", "ERROR")
+            return False
+        
+        # Get categories for transaction creation
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/categorias")
+            if response.status_code == 200:
+                categorias = response.json()
+                if categorias:
+                    categoria_id = categorias[0].get('id')
+                    self.log(f"     Using category: {categoria_id}")
+                else:
+                    self.log("    ❌ No categories found", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to get categories: {response.status_code}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error getting categories: {str(e)}", "ERROR")
+            return False
+        
+        # Step 2: Create test RECEITA transaction
+        self.log("  2. Creating test RECEITA transaction (R$ 500)...")
+        
+        receita_data = {
+            "empresa_id": empresa_id,
+            "tipo": "receita",
+            "descricao": "Teste Receita para Deletar",
+            "fornecedor": "Cliente Teste",
+            "valor_total": 500.00,
+            "data_competencia": "2025-01-31",
+            "categoria_id": categoria_id,
+            "centro_custo_id": categoria_id,  # Using same ID for simplicity
+            "conta_bancaria_id": conta_id
+        }
+        
+        try:
+            response = self.session.post(f"{BACKEND_URL}/transacoes", json=receita_data)
+            if response.status_code == 200:
+                created_receita = response.json()
+                receita_transacao_id = created_receita.get('id')
+                self.log(f"     ✅ Receita transaction created: {receita_transacao_id}")
+                self.log(f"     Transaction value: R$ {created_receita.get('valor_total')}")
+            else:
+                self.log(f"    ❌ Failed to create receita transaction: {response.status_code} - {response.text}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error creating receita transaction: {str(e)}", "ERROR")
+            return False
+        
+        # Step 3: Verify balance increased
+        self.log("  3. Verifying balance increased after receita...")
+        
+        # Check account balance
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
+            if response.status_code == 200:
+                contas = response.json()
+                updated_conta = next((c for c in contas if c.get('id') == conta_id), None)
+                if updated_conta:
+                    new_saldo_conta = updated_conta.get('saldo_atual', 0)
+                    expected_saldo = initial_saldo_conta + 500.0
+                    
+                    if abs(new_saldo_conta - expected_saldo) < 0.01:  # Allow for floating point precision
+                        self.log(f"     ✅ Account balance increased correctly: R$ {initial_saldo_conta} → R$ {new_saldo_conta}")
+                    else:
+                        self.log(f"     ❌ Account balance not increased correctly: expected R$ {expected_saldo}, got R$ {new_saldo_conta}", "ERROR")
+                        return False
+                else:
+                    self.log("     ❌ Account not found after transaction", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to get updated accounts: {response.status_code}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error checking account balance: {str(e)}", "ERROR")
+            return False
+        
+        # Check dashboard totals
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/dashboard")
+            if response.status_code == 200:
+                updated_dashboard = response.json()
+                new_receitas = updated_dashboard.get('total_receitas', 0)
+                new_saldo = updated_dashboard.get('saldo', 0)
+                
+                expected_receitas = initial_receitas + 500.0
+                expected_saldo = initial_saldo + 500.0
+                
+                if abs(new_receitas - expected_receitas) < 0.01:
+                    self.log(f"     ✅ Dashboard receitas increased correctly: R$ {initial_receitas} → R$ {new_receitas}")
+                else:
+                    self.log(f"     ❌ Dashboard receitas not increased correctly: expected R$ {expected_receitas}, got R$ {new_receitas}", "ERROR")
+                    return False
+                
+                if abs(new_saldo - expected_saldo) < 0.01:
+                    self.log(f"     ✅ Dashboard saldo increased correctly: R$ {initial_saldo} → R$ {new_saldo}")
+                else:
+                    self.log(f"     ❌ Dashboard saldo not increased correctly: expected R$ {expected_saldo}, got R$ {new_saldo}", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to get updated dashboard: {response.status_code}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error checking dashboard: {str(e)}", "ERROR")
+            return False
+        
+        # Step 4: Delete the transaction (MAIN TEST)
+        self.log("  4. Deleting the receita transaction (MAIN TEST)...")
+        
+        try:
+            response = self.session.delete(f"{BACKEND_URL}/transacoes/{receita_transacao_id}")
+            if response.status_code == 200:
+                delete_response = response.json()
+                saldo_revertido = delete_response.get('saldo_revertido', False)
+                
+                if saldo_revertido:
+                    self.log(f"     ✅ Transaction deleted with saldo_revertido: {saldo_revertido}")
+                else:
+                    self.log(f"     ❌ Response missing 'saldo_revertido': true - got {saldo_revertido}", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to delete transaction: {response.status_code} - {response.text}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error deleting transaction: {str(e)}", "ERROR")
+            return False
+        
+        # Step 5: Verify balance reverted (MAIN VERIFICATION)
+        self.log("  5. Verifying balance reverted after deletion (MAIN VERIFICATION)...")
+        
+        # Check account balance reverted
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
+            if response.status_code == 200:
+                contas = response.json()
+                reverted_conta = next((c for c in contas if c.get('id') == conta_id), None)
+                if reverted_conta:
+                    reverted_saldo_conta = reverted_conta.get('saldo_atual', 0)
+                    
+                    if abs(reverted_saldo_conta - initial_saldo_conta) < 0.01:
+                        self.log(f"     ✅ Account balance reverted correctly: R$ {reverted_saldo_conta} (back to initial R$ {initial_saldo_conta})")
+                    else:
+                        self.log(f"     ❌ Account balance not reverted correctly: expected R$ {initial_saldo_conta}, got R$ {reverted_saldo_conta}", "ERROR")
+                        return False
+                else:
+                    self.log("     ❌ Account not found after deletion", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to get accounts after deletion: {response.status_code}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error checking account balance after deletion: {str(e)}", "ERROR")
+            return False
+        
+        # Check dashboard totals reverted
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/dashboard")
+            if response.status_code == 200:
+                reverted_dashboard = response.json()
+                reverted_receitas = reverted_dashboard.get('total_receitas', 0)
+                reverted_saldo = reverted_dashboard.get('saldo', 0)
+                reverted_saldo_contas = reverted_dashboard.get('saldo_contas', 0)
+                
+                if abs(reverted_receitas - initial_receitas) < 0.01:
+                    self.log(f"     ✅ Dashboard receitas reverted correctly: R$ {reverted_receitas} (back to initial R$ {initial_receitas})")
+                else:
+                    self.log(f"     ❌ Dashboard receitas not reverted correctly: expected R$ {initial_receitas}, got R$ {reverted_receitas}", "ERROR")
+                    return False
+                
+                if abs(reverted_saldo - initial_saldo) < 0.01:
+                    self.log(f"     ✅ Dashboard saldo reverted correctly: R$ {reverted_saldo} (back to initial R$ {initial_saldo})")
+                else:
+                    self.log(f"     ❌ Dashboard saldo not reverted correctly: expected R$ {initial_saldo}, got R$ {reverted_saldo}", "ERROR")
+                    return False
+                
+                if abs(reverted_saldo_contas - initial_saldo_contas) < 0.01:
+                    self.log(f"     ✅ Dashboard saldo em contas reverted correctly: R$ {reverted_saldo_contas}")
+                else:
+                    self.log(f"     ❌ Dashboard saldo em contas not reverted correctly: expected R$ {initial_saldo_contas}, got R$ {reverted_saldo_contas}", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to get dashboard after deletion: {response.status_code}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error checking dashboard after deletion: {str(e)}", "ERROR")
+            return False
+        
+        # Step 6: Test with DESPESA transaction
+        self.log("  6. Testing with DESPESA transaction (R$ 300)...")
+        
+        despesa_data = {
+            "empresa_id": empresa_id,
+            "tipo": "despesa",
+            "descricao": "Teste Despesa para Deletar",
+            "fornecedor": "Fornecedor Teste",
+            "valor_total": 300.00,
+            "data_competencia": "2025-01-31",
+            "categoria_id": categoria_id,
+            "centro_custo_id": categoria_id,
+            "conta_bancaria_id": conta_id
+        }
+        
+        try:
+            response = self.session.post(f"{BACKEND_URL}/transacoes", json=despesa_data)
+            if response.status_code == 200:
+                created_despesa = response.json()
+                despesa_transacao_id = created_despesa.get('id')
+                self.log(f"     ✅ Despesa transaction created: {despesa_transacao_id}")
+            else:
+                self.log(f"    ❌ Failed to create despesa transaction: {response.status_code} - {response.text}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error creating despesa transaction: {str(e)}", "ERROR")
+            return False
+        
+        # Verify account balance decreased
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
+            if response.status_code == 200:
+                contas = response.json()
+                updated_conta = next((c for c in contas if c.get('id') == conta_id), None)
+                if updated_conta:
+                    despesa_saldo_conta = updated_conta.get('saldo_atual', 0)
+                    expected_saldo = initial_saldo_conta - 300.0
+                    
+                    if abs(despesa_saldo_conta - expected_saldo) < 0.01:
+                        self.log(f"     ✅ Account balance decreased correctly: R$ {initial_saldo_conta} → R$ {despesa_saldo_conta}")
+                    else:
+                        self.log(f"     ❌ Account balance not decreased correctly: expected R$ {expected_saldo}, got R$ {despesa_saldo_conta}", "ERROR")
+                        return False
+            else:
+                self.log(f"    ❌ Failed to get accounts after despesa: {response.status_code}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error checking account after despesa: {str(e)}", "ERROR")
+            return False
+        
+        # Delete despesa transaction
+        self.log("  7. Deleting despesa transaction...")
+        
+        try:
+            response = self.session.delete(f"{BACKEND_URL}/transacoes/{despesa_transacao_id}")
+            if response.status_code == 200:
+                delete_response = response.json()
+                saldo_revertido = delete_response.get('saldo_revertido', False)
+                
+                if saldo_revertido:
+                    self.log(f"     ✅ Despesa transaction deleted with saldo_revertido: {saldo_revertido}")
+                else:
+                    self.log(f"     ❌ Response missing 'saldo_revertido': true for despesa", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to delete despesa transaction: {response.status_code} - {response.text}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error deleting despesa transaction: {str(e)}", "ERROR")
+            return False
+        
+        # Verify account balance increased back (reverses the decrease)
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
+            if response.status_code == 200:
+                contas = response.json()
+                final_conta = next((c for c in contas if c.get('id') == conta_id), None)
+                if final_conta:
+                    final_saldo_conta = final_conta.get('saldo_atual', 0)
+                    
+                    if abs(final_saldo_conta - initial_saldo_conta) < 0.01:
+                        self.log(f"     ✅ Account balance reverted after despesa deletion: R$ {final_saldo_conta} (back to initial R$ {initial_saldo_conta})")
+                    else:
+                        self.log(f"     ❌ Account balance not reverted after despesa deletion: expected R$ {initial_saldo_conta}, got R$ {final_saldo_conta}", "ERROR")
+                        return False
+            else:
+                self.log(f"    ❌ Failed to get accounts after despesa deletion: {response.status_code}", "ERROR")
+                return False
+        except Exception as e:
+            self.log(f"    ❌ Error checking account after despesa deletion: {str(e)}", "ERROR")
+            return False
+        
+        self.log("  ✅ Transaction deletion with balance recalculation test PASSED!")
+        return True
+    
     def run_all_tests(self):
         """Run all test scenarios"""
         self.log("=" * 80)
