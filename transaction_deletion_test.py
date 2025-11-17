@@ -316,12 +316,13 @@ class TransactionDeletionTestRunner:
         self.log("  9. Testing with DESPESA transaction (R$ 300)...")
         
         despesa_data = {
-            "empresa_id": empresa_id,
             "tipo": "despesa",
+            "fornecedor": "Fornecedor Teste",
             "descricao": "Teste Despesa para Deletar",
             "valor_total": 300.00,
-            "data_transacao": "2025-01-31",
+            "data_competencia": "2025-01-31",
             "categoria_id": categoria_id,
+            "centro_custo_id": categoria_id,  # Using same ID for simplicity
             "conta_bancaria_id": conta_id
         }
         
