@@ -514,3 +514,194 @@ body {
     padding: 0.75rem 0.5rem;
   }
 }
+
+/* ========================================
+   MOBILE RESPONSIVENESS (Added)
+   ======================================== */
+
+/* Tablets and Small Desktops */
+@media (max-width: 1024px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Mobile Devices */
+@media (max-width: 768px) {
+  /* Auth Pages */
+  .auth-container {
+    padding: 1rem;
+  }
+  
+  .auth-box {
+    padding: 1.5rem;
+    border-radius: 16px;
+  }
+  
+  .auth-logo {
+    width: 120px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .auth-title {
+    font-size: 1.5rem;
+  }
+  
+  /* Dashboard & Content */
+  .dashboard-header {
+    padding: 1rem;
+  }
+  
+  .dashboard-title {
+    font-size: 1.5rem;
+  }
+  
+  .dashboard-subtitle {
+    font-size: 0.875rem;
+  }
+  
+  /* Metrics Grid - Single Column on Mobile */
+  .metrics-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+  
+  .metric-card {
+    padding: 1rem;
+  }
+  
+  .metric-value {
+    font-size: 1.75rem;
+  }
+  
+  /* Content Cards */
+  .content-card {
+    margin-bottom: 1rem;
+    border-radius: 12px;
+    padding: 1rem;
+  }
+  
+  .card-title {
+    font-size: 1.125rem;
+  }
+  
+  /* Forms */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  select,
+  textarea {
+    padding: 0.875rem;
+    font-size: 16px; /* Prevents iOS zoom */
+  }
+  
+  /* Buttons */
+  .btn,
+  .btn-primary,
+  .btn-success,
+  .btn-danger,
+  .btn-secondary {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+    min-height: 44px; /* Touch target size */
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .form-actions button {
+    width: 100%;
+  }
+  
+  /* Tables - Horizontal Scroll */
+  .data-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -1rem;
+    padding: 0 1rem;
+  }
+  
+  .data-table {
+    min-width: 600px;
+    font-size: 0.875rem;
+  }
+  
+  .data-table th,
+  .data-table td {
+    padding: 0.75rem 0.5rem;
+    white-space: nowrap;
+  }
+  
+  /* Charts */
+  .chart-container {
+    padding: 0.5rem 0;
+  }
+  
+  .chart-label {
+    font-size: 0.875rem;
+    flex-wrap: wrap;
+  }
+  
+  /* Empty States */
+  .empty-state-icon {
+    font-size: 3rem;
+  }
+  
+  .empty-state-text {
+    font-size: 1rem;
+  }
+  
+  /* Success/Error Messages */
+  .success-message,
+  .error-message {
+    padding: 0.875rem;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Small Mobile Devices */
+@media (max-width: 480px) {
+  .dashboard-title {
+    font-size: 1.25rem;
+  }
+  
+  .metric-value {
+    font-size: 1.5rem;
+  }
+  
+  .btn,
+  .btn-primary,
+  .btn-success,
+  .btn-danger,
+  .btn-secondary {
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+  }
+  
+  .data-table {
+    font-size: 0.8125rem;
+  }
+  
+  .card-title {
+    font-size: 1rem;
+  }
+}
