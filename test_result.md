@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-## user_problem_statement: "Fix WhatsApp QR Code not displaying in deployment environment"
+## user_problem_statement: "Test transaction deletion with balance recalculation fix"
 
 ## backend:
   - task: "WhatsApp QR Code Display in Deployment"
