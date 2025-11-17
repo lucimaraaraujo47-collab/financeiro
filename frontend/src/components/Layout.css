@@ -360,7 +360,7 @@
   
   /* Close button in sidebar for mobile */
   .sidebar-close-btn {
-    display: block;
+    display: block !important;
     position: absolute;
     top: 1rem;
     right: 1rem;
@@ -371,6 +371,7 @@
     cursor: pointer;
     color: #ef4444;
     transition: all 0.2s ease;
+    z-index: 10;
   }
   
   .sidebar-close-btn:hover {
