@@ -175,7 +175,7 @@ class TransactionDeletionTestRunner:
             "valor_total": 500.00,
             "data_competencia": "2025-01-31",
             "categoria_id": categoria_id,
-            "centro_custo_id": categoria_id,  # Using same ID for simplicity
+            "centro_custo_id": centro_custo_id,
             "conta_bancaria_id": conta_id
         }
         
@@ -341,7 +341,7 @@ class TransactionDeletionTestRunner:
             "valor_total": 300.00,
             "data_competencia": "2025-01-31",
             "categoria_id": categoria_id,
-            "centro_custo_id": categoria_id,  # Using same ID for simplicity
+            "centro_custo_id": centro_custo_id,
             "conta_bancaria_id": conta_id
         }
         
