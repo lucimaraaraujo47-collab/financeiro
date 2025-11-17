@@ -1,3 +1,7 @@
+.sidebar-close-btn {
+  display: none;
+}
+
 .layout {
   display: flex;
   min-height: 100vh;
