@@ -2342,10 +2342,56 @@ async def get_transacoes(empresa_id: str, current_user: dict = Depends(get_curre
 
 @api_router.delete("/transacoes/{transacao_id}")
 async def delete_transacao(transacao_id: str, current_user: dict = Depends(get_current_user)):
-    result = await db.transacoes.delete_one({"id": transacao_id})
-    if result.deleted_count == 0:
+    """Delete transaction and reverse balance updates"""
+    
+    # First, fetch the transaction to get its details before deletion
+    transacao = await db.transacoes.find_one({"id": transacao_id})
+    
+    if not transacao:
         raise HTTPException(status_code=404, detail="Transação não encontrada")
-    return {"message": "Transação deletada"}
+    
+    # Verify user has access to this transaction (empresa_id check)
+    empresa_id = transacao.get("empresa_id")
+    if not empresa_id:
+        raise HTTPException(status_code=404, detail="Transação sem empresa associada")
+    
+    # Verify user belongs to this empresa
+    user_empresas = await db.empresas.find({"user_id": current_user["id"]}).to_list(None)
+    user_empresa_ids = [str(emp.get("id")) for emp in user_empresas]
+    
+    if empresa_id not in user_empresa_ids:
+        raise HTTPException(status_code=403, detail="Acesso negado a esta transação")
+    
+    # Reverse the balance update if transaction has conta_bancaria_id
+    conta_bancaria_id = transacao.get("conta_bancaria_id")
+    if conta_bancaria_id:
+        tipo = transacao.get("tipo")
+        valor_total = transacao.get("valor_total", 0)
+        
+        # Reverse the balance change (opposite of what was done on creation)
+        if tipo == "receita":
+            # On creation we added (+), so now subtract (-)
+            await db.contas_bancarias.update_one(
+                {"id": conta_bancaria_id},
+                {"$inc": {"saldo_atual": -valor_total}}
+            )
+        elif tipo == "despesa":
+            # On creation we subtracted (-), so now add back (+)
+            await db.contas_bancarias.update_one(
+                {"id": conta_bancaria_id},
+                {"$inc": {"saldo_atual": valor_total}}
+            )
+    
+    # Now delete the transaction
+    result = await db.transacoes.delete_one({"id": transacao_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=500, detail="Erro ao deletar transação")
+    
+    return {
+        "message": "Transação deletada e saldos atualizados com sucesso",
+        "saldo_revertido": conta_bancaria_id is not None
+    }
 
 @api_router.patch("/transacoes/{transacao_id}/status")
 async def update_transacao_status(
