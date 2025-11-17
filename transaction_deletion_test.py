@@ -150,12 +150,13 @@ class TransactionDeletionTestRunner:
         self.log("  5. Creating test RECEITA transaction (R$ 500)...")
         
         receita_data = {
-            "empresa_id": empresa_id,
             "tipo": "receita",
+            "fornecedor": "Cliente Teste",
             "descricao": "Teste Receita para Deletar",
             "valor_total": 500.00,
-            "data_transacao": "2025-01-31",
+            "data_competencia": "2025-01-31",
             "categoria_id": categoria_id,
+            "centro_custo_id": categoria_id,  # Using same ID for simplicity
             "conta_bancaria_id": conta_id
         }
         
