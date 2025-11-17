@@ -105,6 +105,27 @@
 ## user_problem_statement: "Test transaction deletion with balance recalculation fix"
 
 ## backend:
+  - task: "Transaction Deletion with Balance Recalculation"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "user"
+          comment: "User requested testing of transaction deletion with balance recalculation fix. Test scenario: Create receita transaction (R$ 500), verify balance increase, delete transaction, verify balance reverts. Also test with despesa transaction (R$ 300)."
+        - working: false
+          agent: "testing"
+          comment: "CRITICAL BUG FOUND: Transaction deletion endpoint had incorrect access control logic. The delete function was checking 'user_empresas = await db.empresas.find({\"user_id\": current_user[\"id\"]})' but empresas don't have user_id field. Should use 'current_user.get(\"empresa_ids\", [])' like other endpoints."
+        - working: true
+          agent: "testing"
+          comment: "FIXED: Updated delete_transacao function access control from lines 2359-2363 to use correct logic: 'if empresa_id not in current_user.get(\"empresa_ids\", [])'. Backend restarted successfully."
+        - working: true
+          agent: "testing"
+          comment: "VERIFIED: Comprehensive testing completed successfully. ✅ Created receita transaction (R$ 500) - account balance increased from R$ 5,500 to R$ 6,000, dashboard receitas increased from R$ 4,100 to R$ 4,600. ✅ Deleted receita transaction - response included 'saldo_revertido': true, account balance reverted to R$ 5,500, dashboard totals reverted correctly. ✅ Created despesa transaction (R$ 300) - account balance decreased to R$ 5,200. ✅ Deleted despesa transaction - balance reverted to R$ 5,500. All balance recalculation logic working perfectly."
+
   - task: "WhatsApp QR Code Display in Deployment"
     implemented: true
     working: true
