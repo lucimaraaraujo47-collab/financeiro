@@ -2356,10 +2356,7 @@ async def delete_transacao(transacao_id: str, current_user: dict = Depends(get_c
         raise HTTPException(status_code=404, detail="Transação sem empresa associada")
     
     # Verify user belongs to this empresa
-    user_empresas = await db.empresas.find({"user_id": current_user["id"]}).to_list(None)
-    user_empresa_ids = [str(emp.get("id")) for emp in user_empresas]
-    
-    if empresa_id not in user_empresa_ids:
+    if empresa_id not in current_user.get("empresa_ids", []):
         raise HTTPException(status_code=403, detail="Acesso negado a esta transação")
     
     # Reverse the balance update if transaction has conta_bancaria_id
