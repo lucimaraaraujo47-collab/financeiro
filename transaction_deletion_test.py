@@ -160,7 +160,7 @@ class TransactionDeletionTestRunner:
         }
         
         try:
-            response = self.session.post(f"{BACKEND_URL}/transacoes", json=receita_data)
+            response = self.session.post(f"{BACKEND_URL}/empresas/{empresa_id}/transacoes", json=receita_data)
             if response.status_code == 200:
                 created_receita = response.json()
                 receita_transacao_id = created_receita.get('id')
