@@ -7,15 +7,18 @@ function Layout({ user, onLogout, children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [configOpen, setConfigOpen] = useState(false);
   const [estoqueOpen, setEstoqueOpen] = useState(false);
+  const [vendasOpen, setVendasOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path;
   
   const configPaths = ['/categorias', '/centros-custo', '/financas', '/whatsapp', '/usuarios', '/backup'];
   const estoquePaths = ['/clientes', '/fornecedores', '/locais', '/categorias-equipamentos', '/equipamentos', '/equipamentos-serializados', '/movimentacoes'];
+  const vendasPaths = ['/vendas', '/vendas/dashboard'];
   
   const isConfigActive = configPaths.some(path => location.pathname === path);
   const isEstoqueActive = estoquePaths.some(path => location.pathname === path);
+  const isVendasActive = vendasPaths.some(path => location.pathname === path);
 
   // Close mobile menu when route changes
   useEffect(() => {
