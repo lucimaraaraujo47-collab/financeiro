@@ -4564,7 +4564,7 @@ async def get_configuracao_cobranca(empresa_id: str, current_user: dict = Depend
 async def create_or_update_configuracao_cobranca(
     empresa_id: str,
     config: ConfiguracaoCobrancaCreate,
-    current_user: dict = Depends(get_current_user_admin)
+    current_user: dict = Depends(get_current_user)
 ):
     """Create or update billing configuration"""
     config_dict = config.dict()
