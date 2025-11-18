@@ -620,6 +620,150 @@ class CRMMetrics(BaseModel):
 
 # ==================== END CRM MODELS ====================
 
+# ==================== VENDAS E PLANOS MODELS ====================
+
+# PLANO DE INTERNET
+class PlanoInternet(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str  # Ex: "100MB Fibra"
+    velocidade_download: str  # Ex: "100 Mbps"
+    velocidade_upload: str  # Ex: "50 Mbps"
+    preco_mensal: float
+    descricao: Optional[str] = None
+    beneficios: List[str] = []  # ["WiFi grátis", "Instalação grátis"]
+    ativo: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class PlanoInternetCreate(BaseModel):
+    nome: str
+    velocidade_download: str
+    velocidade_upload: str
+    preco_mensal: float
+    descricao: Optional[str] = None
+    beneficios: List[str] = []
+
+# CLIENTE DE VENDAS
+class ClienteVenda(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome_completo: str
+    cpf: str
+    email: str
+    telefone: str
+    # Endereço
+    cep: str
+    logradouro: str
+    numero: str
+    complemento: Optional[str] = None
+    bairro: str
+    cidade: str
+    estado: str
+    # Status
+    status: str = "ativo"  # ativo, suspenso, cancelado
+    inadimplente: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ClienteVendaCreate(BaseModel):
+    nome_completo: str
+    cpf: str
+    email: str
+    telefone: str
+    cep: str
+    logradouro: str
+    numero: str
+    complemento: Optional[str] = None
+    bairro: str
+    cidade: str
+    estado: str
+
+# VENDA / CONTRATO
+class Venda(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    cliente_id: str
+    plano_id: str
+    # Dados do contrato
+    data_contratacao: str  # ISO date
+    dia_vencimento: int  # 1-31
+    status: str = "ativo"  # ativo, suspenso, cancelado
+    valor_mensalidade: float
+    # Observações
+    observacoes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class VendaCreate(BaseModel):
+    cliente_id: str
+    plano_id: str
+    data_contratacao: str
+    dia_vencimento: int
+    observacoes: Optional[str] = None
+
+# FATURA / COBRANÇA
+class Fatura(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    venda_id: str
+    cliente_id: str
+    # Dados da fatura
+    mes_referencia: str  # "2025-02" formato YYYY-MM
+    data_vencimento: str  # ISO date
+    valor: float
+    multa: float = 0.0
+    juros: float = 0.0
+    valor_total: float  # valor + multa + juros
+    # Status e pagamento
+    status: str = "pendente"  # pendente, pago, vencido, cancelado
+    data_pagamento: Optional[str] = None
+    # Boleto Galax Pay
+    boleto_id: Optional[str] = None  # ID no Galax Pay
+    boleto_url: Optional[str] = None
+    boleto_linha_digitavel: Optional[str] = None
+    boleto_codigo_barras: Optional[str] = None
+    # Envios
+    emails_enviados: List[Dict[str, Any]] = []  # [{"data": "2025-01-01", "tipo": "primeira_cobranca"}]
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class FaturaCreate(BaseModel):
+    venda_id: str
+    mes_referencia: str
+    data_vencimento: str
+    valor: float
+
+# CONFIGURAÇÕES DE COBRANÇA
+class ConfiguracaoCobranca(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    # Galax Pay
+    galax_id: str
+    galax_hash: str
+    ambiente: str = "sandbox"  # sandbox, producao
+    # Multa e juros
+    percentual_multa: float = 2.0  # 2%
+    percentual_juros_dia: float = 0.033  # 0.033% ao dia = 1% ao mês
+    # Envios de email
+    dias_envio_antecipado: List[int] = [15, 10, 5, 0]  # Enviar 15, 10, 5 dias antes e no dia
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ConfiguracaoCobrancaCreate(BaseModel):
+    galax_id: str
+    galax_hash: str
+    ambiente: str = "sandbox"
+    percentual_multa: float = 2.0
+    percentual_juros_dia: float = 0.033
+    dias_envio_antecipado: List[int] = [15, 10, 5, 0]
+
+# ==================== END VENDAS MODELS ====================
+
 class Transacao(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
