@@ -116,6 +116,9 @@ function App() {
           {/* Backup Configuration */}
           <Route path="/backup" element={<ConfiguracoesBackup user={user} token={token} />} />
           
+          {/* Vendas */}
+          <Route path="/vendas" element={<Vendas user={user} token={token} />} />
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
