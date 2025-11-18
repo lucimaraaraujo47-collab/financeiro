@@ -4544,7 +4544,7 @@ async def update_status_fatura(
 
 # CONFIGURAÇÃO DE COBRANÇA
 @api_router.get("/empresas/{empresa_id}/configuracao-cobranca")
-async def get_configuracao_cobranca(empresa_id: str, current_user: dict = Depends(get_current_user_admin)):
+async def get_configuracao_cobranca(empresa_id: str, current_user: dict = Depends(get_current_user)):
     """Get billing configuration"""
     config = await db.configuracao_cobranca.find_one({"empresa_id": empresa_id}, {"_id": 0})
     
