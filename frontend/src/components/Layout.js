@@ -124,14 +124,37 @@ function Layout({ user, onLogout, children }) {
             {sidebarOpen && <span className="nav-text">Análise IA</span>}
           </Link>
 
-          <Link 
-            to="/vendas" 
-            className={`nav-item ${isActive('/vendas') ? 'active' : ''}`}
-            data-testid="nav-vendas"
+          {/* Vendas Submenu */}
+          <div
+            className={`nav-item nav-submenu-toggle ${isVendasActive ? 'active' : ''}`}
+            onClick={() => setVendasOpen(!vendasOpen)}
           >
             <span className="nav-icon">💼</span>
-            {sidebarOpen && <span className="nav-text">Vendas</span>}
-          </Link>
+            {sidebarOpen && (
+              <>
+                <span className="nav-text">Vendas</span>
+                <span className={`nav-arrow ${vendasOpen ? 'open' : ''}`}>▼</span>
+              </>
+            )}
+          </div>
+          
+          <div className={`nav-submenu ${vendasOpen ? 'open' : ''}`}>
+            <Link 
+              to="/vendas/dashboard" 
+              className={`nav-item nav-subitem ${isActive('/vendas/dashboard') ? 'active' : ''}`}
+            >
+              <span className="nav-icon">📊</span>
+              <span className="nav-text">Dashboard</span>
+            </Link>
+            
+            <Link 
+              to="/vendas" 
+              className={`nav-item nav-subitem ${isActive('/vendas') ? 'active' : ''}`}
+            >
+              <span className="nav-icon">📝</span>
+              <span className="nav-text">Gerenciar</span>
+            </Link>
+          </div>
 
           <Link 
             to="/crm" 
