@@ -119,6 +119,7 @@ function App() {
           
           {/* Vendas */}
           <Route path="/vendas" element={<Vendas user={user} token={token} />} />
+          <Route path="/vendas/dashboard" element={<DashboardVendas user={user} token={token} />} />
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
