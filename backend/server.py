@@ -4274,6 +4274,322 @@ async def get_backup_status(current_user: dict = Depends(get_current_user)):
     
     return status
 
+# ==================== VENDAS ENDPOINTS ====================
+
+# PLANOS DE INTERNET
+@api_router.get("/empresas/{empresa_id}/planos-internet")
+async def get_planos_internet(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    """List all internet plans"""
+    planos = await db.planos_internet.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(100)
+    return planos
+
+@api_router.post("/empresas/{empresa_id}/planos-internet")
+async def create_plano_internet(
+    empresa_id: str,
+    plano: PlanoInternetCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create new internet plan"""
+    plano_dict = plano.dict()
+    plano_dict["empresa_id"] = empresa_id
+    plano_dict["id"] = str(uuid.uuid4())
+    plano_dict["created_at"] = datetime.now(timezone.utc)
+    plano_dict["ativo"] = True
+    
+    await db.planos_internet.insert_one(plano_dict)
+    return plano_dict
+
+@api_router.put("/planos-internet/{plano_id}")
+async def update_plano_internet(
+    plano_id: str,
+    plano: PlanoInternetCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update internet plan"""
+    result = await db.planos_internet.update_one(
+        {"id": plano_id},
+        {"$set": plano.dict()}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Plano não encontrado")
+    
+    return {"message": "Plano atualizado com sucesso"}
+
+@api_router.delete("/planos-internet/{plano_id}")
+async def delete_plano_internet(plano_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete internet plan"""
+    result = await db.planos_internet.delete_one({"id": plano_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Plano não encontrado")
+    
+    return {"message": "Plano deletado com sucesso"}
+
+# CLIENTES DE VENDAS
+@api_router.get("/empresas/{empresa_id}/clientes-venda")
+async def get_clientes_venda(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    """List all sales clients"""
+    clientes = await db.clientes_venda.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(1000)
+    return clientes
+
+@api_router.post("/empresas/{empresa_id}/clientes-venda")
+async def create_cliente_venda(
+    empresa_id: str,
+    cliente: ClienteVendaCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create new sales client"""
+    cliente_dict = cliente.dict()
+    cliente_dict["empresa_id"] = empresa_id
+    cliente_dict["id"] = str(uuid.uuid4())
+    cliente_dict["status"] = "ativo"
+    cliente_dict["inadimplente"] = False
+    cliente_dict["created_at"] = datetime.now(timezone.utc)
+    cliente_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.clientes_venda.insert_one(cliente_dict)
+    return cliente_dict
+
+@api_router.get("/clientes-venda/{cliente_id}")
+async def get_cliente_venda(cliente_id: str, current_user: dict = Depends(get_current_user)):
+    """Get single sales client"""
+    cliente = await db.clientes_venda.find_one({"id": cliente_id}, {"_id": 0})
+    
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    return cliente
+
+@api_router.put("/clientes-venda/{cliente_id}")
+async def update_cliente_venda(
+    cliente_id: str,
+    cliente: ClienteVendaCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update sales client"""
+    cliente_dict = cliente.dict()
+    cliente_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    result = await db.clientes_venda.update_one(
+        {"id": cliente_id},
+        {"$set": cliente_dict}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    return {"message": "Cliente atualizado com sucesso"}
+
+@api_router.patch("/clientes-venda/{cliente_id}/status")
+async def update_status_cliente(
+    cliente_id: str,
+    status: str = Body(..., embed=True),
+    current_user: dict = Depends(get_current_user)
+):
+    """Update client status (ativo, suspenso, cancelado)"""
+    if status not in ["ativo", "suspenso", "cancelado"]:
+        raise HTTPException(status_code=400, detail="Status inválido")
+    
+    result = await db.clientes_venda.update_one(
+        {"id": cliente_id},
+        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    return {"message": f"Status atualizado para {status}"}
+
+# VENDAS / CONTRATOS
+@api_router.get("/empresas/{empresa_id}/vendas")
+async def get_vendas(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    """List all sales/contracts with client and plan details"""
+    vendas = await db.vendas.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(1000)
+    
+    # Enrich with client and plan data
+    for venda in vendas:
+        cliente = await db.clientes_venda.find_one({"id": venda["cliente_id"]}, {"_id": 0})
+        plano = await db.planos_internet.find_one({"id": venda["plano_id"]}, {"_id": 0})
+        venda["cliente"] = cliente
+        venda["plano"] = plano
+    
+    return vendas
+
+@api_router.post("/empresas/{empresa_id}/vendas")
+async def create_venda(
+    empresa_id: str,
+    venda: VendaCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create new sale/contract"""
+    # Verify client and plan exist
+    cliente = await db.clientes_venda.find_one({"id": venda.cliente_id})
+    plano = await db.planos_internet.find_one({"id": venda.plano_id})
+    
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    if not plano:
+        raise HTTPException(status_code=404, detail="Plano não encontrado")
+    
+    venda_dict = venda.dict()
+    venda_dict["empresa_id"] = empresa_id
+    venda_dict["id"] = str(uuid.uuid4())
+    venda_dict["status"] = "ativo"
+    venda_dict["valor_mensalidade"] = plano["preco_mensal"]
+    venda_dict["created_at"] = datetime.now(timezone.utc)
+    venda_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.vendas.insert_one(venda_dict)
+    
+    return {
+        **venda_dict,
+        "cliente": cliente,
+        "plano": plano
+    }
+
+@api_router.patch("/vendas/{venda_id}/status")
+async def update_status_venda(
+    venda_id: str,
+    status: str = Body(..., embed=True),
+    current_user: dict = Depends(get_current_user)
+):
+    """Update sale status (ativo, suspenso, cancelado)"""
+    if status not in ["ativo", "suspenso", "cancelado"]:
+        raise HTTPException(status_code=400, detail="Status inválido")
+    
+    result = await db.vendas.update_one(
+        {"id": venda_id},
+        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Venda não encontrada")
+    
+    return {"message": f"Status da venda atualizado para {status}"}
+
+# FATURAS
+@api_router.get("/empresas/{empresa_id}/faturas")
+async def get_faturas(
+    empresa_id: str,
+    status: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """List all invoices"""
+    query = {"empresa_id": empresa_id}
+    if status:
+        query["status"] = status
+    
+    faturas = await db.faturas.find(query, {"_id": 0}).sort("data_vencimento", -1).to_list(1000)
+    
+    # Enrich with client data
+    for fatura in faturas:
+        cliente = await db.clientes_venda.find_one({"id": fatura["cliente_id"]}, {"_id": 0})
+        fatura["cliente"] = cliente
+    
+    return faturas
+
+@api_router.post("/empresas/{empresa_id}/faturas")
+async def create_fatura(
+    empresa_id: str,
+    fatura: FaturaCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create new invoice"""
+    # Verify sale exists
+    venda = await db.vendas.find_one({"id": fatura.venda_id})
+    
+    if not venda:
+        raise HTTPException(status_code=404, detail="Venda não encontrada")
+    
+    fatura_dict = fatura.dict()
+    fatura_dict["empresa_id"] = empresa_id
+    fatura_dict["id"] = str(uuid.uuid4())
+    fatura_dict["cliente_id"] = venda["cliente_id"]
+    fatura_dict["status"] = "pendente"
+    fatura_dict["multa"] = 0.0
+    fatura_dict["juros"] = 0.0
+    fatura_dict["valor_total"] = fatura.valor
+    fatura_dict["emails_enviados"] = []
+    fatura_dict["created_at"] = datetime.now(timezone.utc)
+    fatura_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.faturas.insert_one(fatura_dict)
+    return fatura_dict
+
+@api_router.patch("/faturas/{fatura_id}/status")
+async def update_status_fatura(
+    fatura_id: str,
+    status: str = Body(..., embed=True),
+    current_user: dict = Depends(get_current_user)
+):
+    """Update invoice status"""
+    if status not in ["pendente", "pago", "vencido", "cancelado"]:
+        raise HTTPException(status_code=400, detail="Status inválido")
+    
+    update_data = {"status": status, "updated_at": datetime.now(timezone.utc)}
+    
+    if status == "pago":
+        update_data["data_pagamento"] = datetime.now(timezone.utc).date().isoformat()
+    
+    result = await db.faturas.update_one(
+        {"id": fatura_id},
+        {"$set": update_data}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Fatura não encontrada")
+    
+    return {"message": f"Status da fatura atualizado para {status}"}
+
+# CONFIGURAÇÃO DE COBRANÇA
+@api_router.get("/empresas/{empresa_id}/configuracao-cobranca")
+async def get_configuracao_cobranca(empresa_id: str, current_user: dict = Depends(get_current_user_admin)):
+    """Get billing configuration"""
+    config = await db.configuracao_cobranca.find_one({"empresa_id": empresa_id}, {"_id": 0})
+    
+    if not config:
+        # Return default config
+        return {
+            "empresa_id": empresa_id,
+            "ambiente": "sandbox",
+            "percentual_multa": 2.0,
+            "percentual_juros_dia": 0.033,
+            "dias_envio_antecipado": [15, 10, 5, 0]
+        }
+    
+    return config
+
+@api_router.post("/empresas/{empresa_id}/configuracao-cobranca")
+async def create_or_update_configuracao_cobranca(
+    empresa_id: str,
+    config: ConfiguracaoCobrancaCreate,
+    current_user: dict = Depends(get_current_user_admin)
+):
+    """Create or update billing configuration"""
+    config_dict = config.dict()
+    config_dict["empresa_id"] = empresa_id
+    config_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    # Check if exists
+    existing = await db.configuracao_cobranca.find_one({"empresa_id": empresa_id})
+    
+    if existing:
+        # Update
+        await db.configuracao_cobranca.update_one(
+            {"empresa_id": empresa_id},
+            {"$set": config_dict}
+        )
+        return {"message": "Configuração atualizada com sucesso"}
+    else:
+        # Create
+        config_dict["id"] = str(uuid.uuid4())
+        config_dict["created_at"] = datetime.now(timezone.utc)
+        await db.configuracao_cobranca.insert_one(config_dict)
+        return {"message": "Configuração criada com sucesso"}
+
+# ==================== END VENDAS ENDPOINTS ====================
+
 # Include router
 app.include_router(api_router)
 
