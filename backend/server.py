@@ -3957,9 +3957,8 @@ async def process_whatsapp_message(request: WhatsAppMessageRequest):
         
         # ==================== CRM: Criar/Atualizar Lead ====================
         try:
-                try:
-                    # Buscar lead existente pelo telefone
-                    existing_lead = await db.leads.find_one({
+            # Buscar lead existente pelo telefone
+            existing_lead = await db.leads.find_one({
                         "empresa_id": empresa["id"],
                         "$or": [
                             {"telefone": request.phone_number},
