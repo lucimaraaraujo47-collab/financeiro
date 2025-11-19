@@ -4392,6 +4392,252 @@ async def download_backup(
             }
         )
         
+
+# ==================== GOOGLE DRIVE OAUTH ENDPOINTS ====================
+
+@api_router.get("/oauth/drive/connect")
+async def connect_drive(current_user: dict = Depends(get_current_user)):
+    """Initiate Google Drive OAuth flow"""
+    try:
+        redirect_uri = os.environ.get("GOOGLE_DRIVE_REDIRECT_URI")
+        
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": os.environ.get("GOOGLE_CLIENT_ID"),
+                    "client_secret": os.environ.get("GOOGLE_CLIENT_SECRET"),
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [redirect_uri]
+                }
+            },
+            scopes=['https://www.googleapis.com/auth/drive.file'],
+            redirect_uri=redirect_uri
+        )
+        
+        authorization_url, state = flow.authorization_url(
+            access_type='offline',
+            include_granted_scopes='true',
+            prompt='consent',
+            state=current_user.get("id")
+        )
+        
+        logging.info(f"Drive OAuth initiated for user {current_user.get('id')}")
+        return {"authorization_url": authorization_url}
+    
+    except Exception as e:
+        logging.error(f"Failed to initiate OAuth: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Falha ao iniciar OAuth: {str(e)}")
+
+@api_router.get("/oauth/drive/callback")
+async def drive_callback(code: str, state: str):
+    """Handle Google Drive OAuth callback"""
+    try:
+        redirect_uri = os.environ.get("GOOGLE_DRIVE_REDIRECT_URI")
+        
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": os.environ.get("GOOGLE_CLIENT_ID"),
+                    "client_secret": os.environ.get("GOOGLE_CLIENT_SECRET"),
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "redirect_uris": [redirect_uri]
+                }
+            },
+            scopes=None,
+            redirect_uri=redirect_uri
+        )
+        
+        flow.fetch_token(code=code)
+        credentials = flow.credentials
+        
+        logging.info(f"Drive credentials obtained for user {state}, scopes: {credentials.scopes}")
+
+        # Validate required scopes
+        required_scopes = {"https://www.googleapis.com/auth/drive.file"}
+        granted_scopes = set(credentials.scopes or [])
+        if not required_scopes.issubset(granted_scopes):
+            missing = required_scopes - granted_scopes
+            logging.error(f"Missing required Drive scopes: {missing}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Escopos necessários não concedidos: {', '.join(missing)}"
+            )
+        
+        # Store credentials in database
+        await db.drive_credentials.update_one(
+            {"user_id": state},
+            {"$set": {
+                "user_id": state,
+                "access_token": credentials.token,
+                "refresh_token": credentials.refresh_token,
+                "token_uri": credentials.token_uri,
+                "client_id": credentials.client_id,
+                "client_secret": credentials.client_secret,
+                "scopes": credentials.scopes,
+                "expiry": credentials.expiry.isoformat() if credentials.expiry else None,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }},
+            upsert=True
+        )
+        
+        logging.info(f"Drive credentials stored for user {state}")
+        
+        # Redirect to frontend
+        frontend_url = os.environ.get("FRONTEND_URL")
+        return RedirectResponse(url=f"{frontend_url}/configuracoes/backup?drive_connected=true")
+    
+    except Exception as e:
+        logging.error(f"OAuth callback failed: {str(e)}")
+        frontend_url = os.environ.get("FRONTEND_URL")
+        return RedirectResponse(url=f"{frontend_url}/configuracoes/backup?drive_error={str(e)}")
+
+async def get_drive_service(user_id: str):
+    """Get Google Drive service with auto-refresh credentials"""
+    creds_doc = await db.drive_credentials.find_one({"user_id": user_id})
+    if not creds_doc:
+        raise HTTPException(
+            status_code=400, 
+            detail="Google Drive não conectado. Por favor, conecte sua conta primeiro."
+        )
+    
+    # Create credentials object
+    creds = Credentials(
+        token=creds_doc["access_token"],
+        refresh_token=creds_doc.get("refresh_token"),
+        token_uri=creds_doc["token_uri"],
+        client_id=creds_doc["client_id"],
+        client_secret=creds_doc["client_secret"],
+        scopes=creds_doc["scopes"]
+    )
+    
+    # Auto-refresh if expired
+    if creds.expired and creds.refresh_token:
+        logging.info(f"Refreshing expired token for user {user_id}")
+        creds.refresh(GoogleRequest())
+        
+        # Update in database
+        await db.drive_credentials.update_one(
+            {"user_id": user_id},
+            {"$set": {
+                "access_token": creds.token,
+                "expiry": creds.expiry.isoformat() if creds.expiry else None,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    
+    return build('drive', 'v3', credentials=creds)
+
+@api_router.get("/oauth/drive/status")
+async def drive_status(current_user: dict = Depends(get_current_user)):
+    """Check if user has connected Google Drive"""
+    try:
+        creds_doc = await db.drive_credentials.find_one({"user_id": current_user.get("id")})
+        
+        if not creds_doc:
+            return {
+                "connected": False,
+                "email": None
+            }
+        
+        # Try to get user email from Drive API
+        try:
+            service = await get_drive_service(current_user.get("id"))
+            about = service.about().get(fields="user").execute()
+            email = about.get('user', {}).get('emailAddress')
+            
+            return {
+                "connected": True,
+                "email": email,
+                "expires_at": creds_doc.get("expiry")
+            }
+        except Exception as e:
+            logging.error(f"Failed to get Drive user info: {e}")
+            return {
+                "connected": True,
+                "email": None,
+                "expires_at": creds_doc.get("expiry")
+            }
+    
+    except Exception as e:
+        logging.error(f"Error checking drive status: {e}")
+        return {"connected": False, "email": None}
+
+@api_router.post("/backup/upload-to-drive")
+@limiter.limit("5/hour")
+async def upload_backup_to_drive(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload backup to user's Google Drive"""
+    try:
+        # Get Drive service
+        service = await get_drive_service(current_user.get("id"))
+        
+        # Export all data
+        backup_data = await export_all_data()
+        
+        # Generate filename with timestamp
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        filename = f"backup_echoshop_{timestamp}.json"
+        
+        # Convert to JSON bytes
+        json_content = json.dumps(backup_data, indent=2, ensure_ascii=False).encode('utf-8')
+        
+        # Create file metadata
+        file_metadata = {
+            'name': filename,
+            'mimeType': 'application/json'
+        }
+        
+        # Upload to Drive
+        media = MediaIoBaseUpload(
+            io.BytesIO(json_content),
+            mimetype='application/json',
+            resumable=True
+        )
+        
+        file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id,name,createdTime,webViewLink'
+        ).execute()
+        
+        logging.info(f"Backup uploaded to Drive: {file.get('name')} (ID: {file.get('id')})")
+        
+        return {
+            "success": True,
+            "message": "Backup enviado para o Google Drive com sucesso!",
+            "file": {
+                "id": file.get('id'),
+                "name": file.get('name'),
+                "created_at": file.get('createdTime'),
+                "link": file.get('webViewLink')
+            }
+        }
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logging.error(f"Error uploading backup to Drive: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao enviar backup para Drive: {str(e)}")
+
+@api_router.delete("/oauth/drive/disconnect")
+async def disconnect_drive(current_user: dict = Depends(get_current_user)):
+    """Disconnect user's Google Drive"""
+    try:
+        result = await db.drive_credentials.delete_one({"user_id": current_user.get("id")})
+        
+        if result.deleted_count > 0:
+            return {"success": True, "message": "Google Drive desconectado com sucesso"}
+        else:
+            return {"success": False, "message": "Nenhuma conexão encontrada"}
+    
+    except Exception as e:
+        logging.error(f"Error disconnecting Drive: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao desconectar: {str(e)}")
+
     except Exception as e:
         logging.error(f"Error creating backup download: {e}")
         raise HTTPException(status_code=500, detail=f"Erro ao gerar backup: {str(e)}")
