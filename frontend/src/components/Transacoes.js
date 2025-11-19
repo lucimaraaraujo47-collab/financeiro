@@ -155,6 +155,50 @@ function Transacoes({ user, token }) {
     }
   };
 
+  const handleTransferencia = async (e) => {
+    e.preventDefault();
+    if (!empresa) return;
+
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const response = await axios.post(
+        `${API}/empresas/${empresa.id}/transferencias`,
+        {
+          ...formTransferencia,
+          valor: parseFloat(formTransferencia.valor)
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setMessage(`✅ ${response.data.message}`);
+      setShowTransferencia(false);
+      setFormTransferencia({
+        conta_origem_id: '',
+        conta_destino_id: '',
+        valor: '',
+        descricao: '',
+        data_transferencia: new Date().toISOString().split('T')[0]
+      });
+      loadData();
+      
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage('❌ ' + (error.response?.data?.detail || error.message));
+      setTimeout(() => setMessage(''), 5000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
   if (!empresa) {
     return (
       <div className="dashboard">
