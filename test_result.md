@@ -482,15 +482,30 @@
 
   - task: "Backup Configuration Page"
     implemented: true
-    working: false
-    file: "frontend/src/components/ConfiguracoesBackup.js"
-    stuck_count: 1
+    working: "NA"
+    file: "frontend/src/components/ConfiguracoesBackup.js, backend/server.py"
+    stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: false
           agent: "testing"
           comment: "CRITICAL ISSUE: Frontend component fully implemented with comprehensive UI (page title '📦 Backup Automático', status configuration cards, manual backup button, automatic backup info showing 3 AM schedule, detailed setup instructions), but backend API endpoints are missing. Testing shows 404 errors for /api/backup/status and /api/backup/create endpoints. Application gets stuck on loading screen because ConfiguracoesBackup component cannot fetch backup status on mount. Backend has backup automation scripts (automated_backup.py) but lacks REST API endpoints in server.py. Frontend navigation works correctly - Configurações menu expands and Backup menu item is visible for admin users. ROOT CAUSE: Backend endpoints not implemented. REQUIRED: Implement /api/backup/status (GET) and /api/backup/create (POST) endpoints in backend/server.py."
+        - working: "NA"
+          agent: "main"
+          comment: "IMPLEMENTED: Simplified backup system to direct JSON download. Backend changes: 1) Modified /api/backup/status to return simple status without Google Drive dependency. 2) Created new endpoint /api/backup/download (POST, rate limited 10/hour) that generates complete JSON backup and returns as downloadable file using FastAPI Response with Content-Disposition header. 3) Added 'vendas_clientes', 'planos_internet', 'assinaturas' collections to export_all_data() function. 4) Added Response import from FastAPI. Frontend already correctly implemented calling /api/backup/download. Backend compiled successfully and restarted. Ready for testing."
+  
+  - task: "Transfer Funds Button in Transacoes Page"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/Transacoes.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "IMPLEMENTED: Added fund transfer functionality to Transacoes page for better visibility. Changes: 1) Added showTransferencia state and formTransferencia state with conta_origem_id, conta_destino_id, valor, descricao, data_transferencia fields. 2) Created handleTransferencia function to process transfers (calls /empresas/{empresa_id}/transferencias endpoint). 3) Created formatCurrency helper function. 4) Added '🔄 Transferir Entre Contas' button in card header (visible only when 2+ accounts exist, styled with gradient). 5) Created complete transfer form with origem/destino dropdowns showing balances, valor input, date picker, description field. Form has beautiful gradient blue design consistent with Financas page. Backend endpoint already exists and working. Ready for testing."
 
   - task: "Mobile Responsiveness - Login Page and Layout"
     implemented: true
