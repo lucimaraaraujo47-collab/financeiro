@@ -7,9 +7,11 @@ function ConfiguracoesBackup({ token }) {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [message, setMessage] = useState('');
+  const [backupHistory, setBackupHistory] = useState([]);
 
   useEffect(() => {
     loadStatus();
+    loadBackupHistory();
   }, []);
 
   const loadStatus = async () => {
@@ -27,19 +29,58 @@ function ConfiguracoesBackup({ token }) {
     }
   };
 
+  const loadBackupHistory = async () => {
+    try {
+      // Load last backups from local storage or API
+      const history = JSON.parse(localStorage.getItem('backup_history') || '[]');
+      setBackupHistory(history.slice(0, 10)); // Last 10 backups
+    } catch (error) {
+      console.error('Error loading history:', error);
+    }
+  };
+
   const createBackup = async () => {
     try {
       setCreating(true);
-      setMessage('');
-      const response = await axios.post(`${API}/backup/create`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+      setMessage('⏳ Gerando backup...');
+      
+      const response = await axios.post(`${API}/backup/download`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
       });
-      setMessage('✅ Backup criado com sucesso! Arquivo: ' + response.data.file.name);
-      await loadStatus();
+      
+      // Create download link
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const filename = `backup_echoshop_${timestamp}.json`;
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      // Save to history
+      const newBackup = {
+        filename,
+        date: new Date().toISOString(),
+        size: response.data.size
+      };
+      
+      const history = JSON.parse(localStorage.getItem('backup_history') || '[]');
+      history.unshift(newBackup);
+      localStorage.setItem('backup_history', JSON.stringify(history.slice(0, 10)));
+      
+      setMessage('✅ Backup baixado com sucesso! Arquivo: ' + filename);
+      await loadBackupHistory();
+      setTimeout(() => setMessage(''), 5000);
     } catch (error) {
       console.error('Error creating backup:', error);
       const errorMsg = error.response?.data?.detail || error.message;
       setMessage('❌ Erro ao criar backup: ' + errorMsg);
+      setTimeout(() => setMessage(''), 5000);
     } finally {
       setCreating(false);
     }
