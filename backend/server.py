@@ -2568,17 +2568,36 @@ async def criar_transferencia(
     if conta_origem.get("saldo_atual", 0) < transferencia.valor:
         raise HTTPException(status_code=400, detail="Saldo insuficiente na conta de origem")
     
+    # Get or create default categoria and centro_custo for transfers
+    categoria_transferencia = await db.categorias_financeiras.find_one(
+        {"empresa_id": empresa_id, "nome": "Transferências"}
+    )
+    if not categoria_transferencia:
+        categoria_transferencia = {
+            "id": str(uuid.uuid4()),
+            "empresa_id": empresa_id,
+            "nome": "Transferências",
+            "tipo": "despesa",
+            "created_at": datetime.now(timezone.utc)
+        }
+        await db.categorias_financeiras.insert_one(categoria_transferencia)
+    
+    centro_custo_default = await db.centros_custo.find_one({"empresa_id": empresa_id})
+    centro_custo_id = centro_custo_default.get("id") if centro_custo_default else "default"
+    
     # Create two transactions: one despesa (origem) and one receita (destino)
     # Transaction 1: Despesa na conta origem
     transacao_saida = {
         "id": str(uuid.uuid4()),
         "empresa_id": empresa_id,
+        "usuario_id": current_user.get("id", "system"),
         "tipo": "despesa",
+        "fornecedor": "Transferência",
         "descricao": f"Transferência para {conta_destino.get('nome', 'conta')} - {transferencia.descricao}",
         "valor_total": transferencia.valor,
-        "data_transacao": transferencia.data_transferencia,
-        "categoria_id": None,
-        "centro_custo_id": None,
+        "data_competencia": transferencia.data_transferencia,
+        "categoria_id": categoria_transferencia["id"],
+        "centro_custo_id": centro_custo_id,
         "conta_bancaria_id": transferencia.conta_origem_id,
         "is_transferencia": True,
         "transferencia_relacionada_id": None,  # Will be updated
@@ -2590,12 +2609,14 @@ async def criar_transferencia(
     transacao_entrada = {
         "id": str(uuid.uuid4()),
         "empresa_id": empresa_id,
+        "usuario_id": current_user.get("id", "system"),
         "tipo": "receita",
+        "fornecedor": "Transferência",
         "descricao": f"Transferência de {conta_origem.get('nome', 'conta')} - {transferencia.descricao}",
         "valor_total": transferencia.valor,
-        "data_transacao": transferencia.data_transferencia,
-        "categoria_id": None,
-        "centro_custo_id": None,
+        "data_competencia": transferencia.data_transferencia,
+        "categoria_id": categoria_transferencia["id"],
+        "centro_custo_id": centro_custo_id,
         "conta_bancaria_id": transferencia.conta_destino_id,
         "is_transferencia": True,
         "transferencia_relacionada_id": transacao_saida["id"],
