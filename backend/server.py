@@ -4039,8 +4039,6 @@ async def process_whatsapp_message(request: WhatsAppMessageRequest):
     except Exception as e:
         logging.error(f"Error processing WhatsApp message: {e}")
         return {
-            "dados_extraidos": {},
-            "classificacao_sugerida": None,
             "response_message": f"❌ Erro ao processar mensagem: {str(e)}"
         }
 
