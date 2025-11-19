@@ -97,7 +97,90 @@ function ConfiguracoesBackup({ token }) {
   return (
     <div className="dashboard">
       <div className="dashboard-header">
-        <h1 className="dashboard-title">📦 Backup Automático</h1>
+        <h1 className="dashboard-title">📦 Sistema de Backup</h1>
+        <p className="dashboard-subtitle">Faça backup de todos os seus dados facilmente</p>
+      </div>
+
+      {message && (
+        <div className={message.includes('✅') ? 'success-message' : 'error-message'}>
+          {message}
+        </div>
+      )}
+
+      {/* Ação Principal */}
+      <div className="content-card" style={{ marginBottom: '24px', textAlign: 'center', padding: '3rem' }}>
+        <div style={{ fontSize: '64px', marginBottom: '1rem' }}>💾</div>
+        <h2 style={{ fontSize: '24px', marginBottom: '1rem' }}>Criar Backup Agora</h2>
+        <p style={{ color: '#6b7280', marginBottom: '2rem', maxWidth: '600px', margin: '0 auto 2rem' }}>
+          Gere um backup completo de todos os seus dados (transações, clientes, vendas, CRM, estoque) 
+          em formato JSON e baixe diretamente para o seu computador.
+        </p>
+        <button
+          onClick={createBackup}
+          disabled={creating}
+          className="btn-success"
+          style={{
+            fontSize: '18px',
+            padding: '16px 48px',
+            minHeight: '56px'
+          }}
+        >
+          {creating ? '⏳ Gerando Backup...' : '📥 Baixar Backup Completo'}
+        </button>
+      </div>
+
+      {/* Histórico */}
+      {backupHistory.length > 0 && (
+        <div className="content-card">
+          <h2 className="card-title">📋 Histórico de Backups</h2>
+          <div className="data-table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Arquivo</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                {backupHistory.map((backup, idx) => (
+                  <tr key={idx}>
+                    <td>{backup.filename}</td>
+                    <td>{new Date(backup.date).toLocaleString('pt-BR')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Info Box */}
+      <div className="content-card" style={{ background: '#f0f9ff', border: '2px solid #3b82f6' }}>
+        <h2 className="card-title" style={{ color: '#1e40af' }}>ℹ️ Informações Importantes</h2>
+        <div style={{ color: '#1e40af', lineHeight: '1.8' }}>
+          <p><strong>📊 O que está incluído no backup:</strong></p>
+          <ul style={{ marginLeft: '20px', marginTop: '8px' }}>
+            <li>Todas as transações financeiras</li>
+            <li>Contas bancárias, investimentos e cartões</li>
+            <li>Clientes, fornecedores e locais</li>
+            <li>Equipamentos e movimentações de estoque</li>
+            <li>Todos os dados do CRM (contatos, conversas, funil)</li>
+            <li>Vendas, planos e faturas</li>
+            <li>Empresas, usuários e configurações</li>
+          </ul>
+          
+          <p style={{ marginTop: '16px' }}><strong>💡 Dicas:</strong></p>
+          <ul style={{ marginLeft: '20px', marginTop: '8px' }}>
+            <li>Faça backups regulares (recomendado: semanalmente)</li>
+            <li>Guarde os arquivos de backup em local seguro</li>
+            <li>Mantenha múltiplas cópias em locais diferentes</li>
+            <li>O arquivo está em formato JSON e pode ser restaurado quando necessário</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
         <p className="dashboard-subtitle">Gerencie backups do sistema para Google Drive</p>
       </div>
 
