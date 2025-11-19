@@ -2534,6 +2534,100 @@ async def delete_transacao(transacao_id: str, current_user: dict = Depends(get_c
         "saldo_revertido": conta_bancaria_id is not None
     }
 
+# Transferência entre contas
+class TransferenciaRequest(BaseModel):
+    conta_origem_id: str
+    conta_destino_id: str
+    valor: float
+    descricao: str
+    data_transferencia: str
+
+@api_router.post("/empresas/{empresa_id}/transferencias")
+async def criar_transferencia(
+    empresa_id: str,
+    transferencia: TransferenciaRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create transfer between accounts"""
+    
+    # Validate accounts exist
+    conta_origem = await db.contas_bancarias.find_one({"id": transferencia.conta_origem_id}, {"_id": 0})
+    conta_destino = await db.contas_bancarias.find_one({"id": transferencia.conta_destino_id}, {"_id": 0})
+    
+    if not conta_origem:
+        raise HTTPException(status_code=404, detail="Conta de origem não encontrada")
+    if not conta_destino:
+        raise HTTPException(status_code=404, detail="Conta de destino não encontrada")
+    
+    if transferencia.valor <= 0:
+        raise HTTPException(status_code=400, detail="Valor deve ser maior que zero")
+    
+    # Check if origem has sufficient balance
+    if conta_origem.get("saldo_atual", 0) < transferencia.valor:
+        raise HTTPException(status_code=400, detail="Saldo insuficiente na conta de origem")
+    
+    # Create two transactions: one despesa (origem) and one receita (destino)
+    # Transaction 1: Despesa na conta origem
+    transacao_saida = {
+        "id": str(uuid.uuid4()),
+        "empresa_id": empresa_id,
+        "tipo": "despesa",
+        "descricao": f"Transferência para {conta_destino.get('nome', 'conta')} - {transferencia.descricao}",
+        "valor_total": transferencia.valor,
+        "data_transacao": transferencia.data_transferencia,
+        "categoria_id": None,
+        "centro_custo_id": None,
+        "conta_bancaria_id": transferencia.conta_origem_id,
+        "is_transferencia": True,
+        "transferencia_relacionada_id": None,  # Will be updated
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    # Transaction 2: Receita na conta destino
+    transacao_entrada = {
+        "id": str(uuid.uuid4()),
+        "empresa_id": empresa_id,
+        "tipo": "receita",
+        "descricao": f"Transferência de {conta_origem.get('nome', 'conta')} - {transferencia.descricao}",
+        "valor_total": transferencia.valor,
+        "data_transacao": transferencia.data_transferencia,
+        "categoria_id": None,
+        "centro_custo_id": None,
+        "conta_bancaria_id": transferencia.conta_destino_id,
+        "is_transferencia": True,
+        "transferencia_relacionada_id": transacao_saida["id"],
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    # Link transactions
+    transacao_saida["transferencia_relacionada_id"] = transacao_entrada["id"]
+    
+    # Update balances
+    await db.contas_bancarias.update_one(
+        {"id": transferencia.conta_origem_id},
+        {"$inc": {"saldo_atual": -transferencia.valor}}
+    )
+    
+    await db.contas_bancarias.update_one(
+        {"id": transferencia.conta_destino_id},
+        {"$inc": {"saldo_atual": transferencia.valor}}
+    )
+    
+    # Insert transactions
+    await db.transacoes.insert_one(transacao_saida)
+    await db.transacoes.insert_one(transacao_entrada)
+    
+    return {
+        "message": "Transferência realizada com sucesso",
+        "transacao_saida_id": transacao_saida["id"],
+        "transacao_entrada_id": transacao_entrada["id"],
+        "valor": transferencia.valor,
+        "conta_origem": conta_origem.get("nome"),
+        "conta_destino": conta_destino.get("nome")
+    }
+
 @api_router.patch("/transacoes/{transacao_id}/status")
 async def update_transacao_status(
     transacao_id: str, 
