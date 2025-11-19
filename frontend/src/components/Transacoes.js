@@ -237,13 +237,35 @@ function Transacoes({ user, token }) {
       <div className="content-card">
         <div className="card-header">
           <h2 className="card-title">Minhas Transações</h2>
-          <button 
-            className="btn-success" 
-            onClick={() => setShowForm(!showForm)}
-            data-testid="toggle-transacao-form-button"
-          >
-            {showForm ? 'Cancelar' : '+ Nova Transação'}
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button 
+              className="btn-success" 
+              onClick={() => {
+                setShowForm(!showForm);
+                if (!showForm) setShowTransferencia(false);
+              }}
+              data-testid="toggle-transacao-form-button"
+            >
+              {showForm ? 'Cancelar' : '+ Nova Transação'}
+            </button>
+            
+            {contas.length >= 2 && !showForm && (
+              <button 
+                className="btn-primary" 
+                onClick={() => {
+                  setShowTransferencia(!showTransferencia);
+                  setShowForm(false);
+                }}
+                data-testid="toggle-transferencia-button"
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  border: 'none'
+                }}
+              >
+                {showTransferencia ? 'Cancelar' : '🔄 Transferir Entre Contas'}
+              </button>
+            )}
+          </div>
         </div>
 
         {showForm && (
