@@ -4393,6 +4393,9 @@ async def download_backup(
             }
         )
         
+    except Exception as e:
+        logging.error(f"Error creating backup download: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao gerar backup: {str(e)}")
 
 # ==================== GOOGLE DRIVE OAUTH ENDPOINTS ====================
 
