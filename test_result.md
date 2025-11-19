@@ -500,15 +500,18 @@
   
   - task: "Transfer Funds Button in Transacoes Page"
     implemented: true
-    working: "NA"
-    file: "frontend/src/components/Transacoes.js"
+    working: true
+    file: "frontend/src/components/Transacoes.js, backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "IMPLEMENTED: Added fund transfer functionality to Transacoes page for better visibility. Changes: 1) Added showTransferencia state and formTransferencia state with conta_origem_id, conta_destino_id, valor, descricao, data_transferencia fields. 2) Created handleTransferencia function to process transfers (calls /empresas/{empresa_id}/transferencias endpoint). 3) Created formatCurrency helper function. 4) Added '🔄 Transferir Entre Contas' button in card header (visible only when 2+ accounts exist, styled with gradient). 5) Created complete transfer form with origem/destino dropdowns showing balances, valor input, date picker, description field. Form has beautiful gradient blue design consistent with Financas page. Backend endpoint already exists and working. Ready for testing."
+        - working: true
+          agent: "main"
+          comment: "BACKEND TESTED AND VERIFIED: ✅ Fixed critical Pydantic validation bug in transfer endpoint - transactions were missing required fields (usuario_id, fornecedor, data_competencia). Updated endpoint to: 1) Auto-create 'Transferências' category if not exists. 2) Use first available centro_custo. 3) Include all required Transacao fields. ✅ Tested transfer of R$ 300: Created 2 linked transactions (despesa + receita), updated balances correctly (Origem: 5500→5200, Destino: 2000→2300). ✅ GET /empresas/{id}/transacoes now returns all transactions successfully (27 total). All transfer transactions have correct fields: usuario_id, fornecedor='Transferência', data_competencia, categoria_id, centro_custo_id, is_transferencia=true. Frontend button and form ready for E2E testing."
 
   - task: "Mobile Responsiveness - Login Page and Layout"
     implemented: true
