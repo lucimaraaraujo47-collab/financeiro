@@ -3930,117 +3930,33 @@ async def process_whatsapp_message(request: WhatsAppMessageRequest):
         
         if not empresa:
             return {
-                "dados_extraidos": {},
-                "classificacao_sugerida": None,
                 "response_message": "❌ Nenhuma empresa cadastrada no sistema. Configure uma empresa primeiro."
             }
         
-        # Extract data with AI
-        dados = await extrair_dados_com_ai(request.message, empresa["id"])
+        # WhatsApp agora é usado APENAS para CRM - Não cria mais transações financeiras
+        response_text = "✅ Mensagem recebida!\\n\\n"
+        response_text += "Olá! Sua mensagem foi registrada no nosso sistema.\\n"
+        response_text += "Nossa equipe entrará em contato em breve.\\n"
         
-        if not dados or not dados.get("valor_total"):
-            return {
-                "dados_extraidos": {},
-                "classificacao_sugerida": None,
-                "response_message": "❌ Não consegui extrair informações financeiras da mensagem. Tente incluir: fornecedor, valor e descrição."
+        # Get or create empresa-specific WhatsApp user for CRM
+        whatsapp_email = f"whatsapp-bot-{empresa['id'][:8]}@echoshop.com"
+        default_user = await db.users.find_one({"email": whatsapp_email}, {"_id": 0})
+        if not default_user:
+            # Create empresa-specific WhatsApp bot user
+            default_user = {
+                "id": str(uuid.uuid4()),
+                "nome": f"WhatsApp Bot - {empresa.get('razao_social', 'ECHO SHOP')}",
+                "email": whatsapp_email,
+                "telefone": request.phone_number,
+                "perfil": "crm",
+                "empresa_ids": [empresa["id"]],
+                "senha_hash": pwd_context.hash("whatsapp-bot-user"),
+                "created_at": datetime.now(timezone.utc).isoformat()
             }
+            await db.users.insert_one(default_user)
         
-        # Classify with AI
-        classificacao = None
-        if dados.get("descricao") and dados.get("fornecedor") and dados.get("valor_total"):
-            classificacao = await classificar_com_ai(
-                dados["descricao"],
-                dados["fornecedor"],
-                dados["valor_total"],
-                empresa["id"]
-            )
-        
-        # Build response message
-        response_text = "✅ Dados extraídos com sucesso!\\n\\n"
-        response_text += f"📊 Tipo: {dados.get('tipo', 'despesa')}\\n"
-        response_text += f"🏢 Fornecedor: {dados.get('fornecedor', 'N/A')}\\n"
-        response_text += f"💵 Valor: R$ {float(dados.get('valor_total', 0)):.2f}\\n"
-        response_text += f"📅 Data: {dados.get('data_competencia', 'N/A')}\\n"
-        response_text += f"📝 Descrição: {dados.get('descricao', 'N/A')}\\n"
-        
-        if classificacao:
-            response_text += f"\\n🎯 Classificação sugerida:\\n"
-            response_text += f"   Categoria: {classificacao.categoria_nome} ({int(classificacao.confidence * 100)}% confiança)\\n"
-            response_text += f"   Centro de Custo: {classificacao.centro_custo_nome}\\n"
-        
-        # Auto-create transaction
+        # ==================== CRM: Criar/Atualizar Lead ====================
         try:
-            categorias = await db.categorias.find({"empresa_id": empresa["id"]}, {"_id": 0}).to_list(10)
-            centros = await db.centros_custo.find({"empresa_id": empresa["id"]}, {"_id": 0}).to_list(10)
-            
-            if not categorias or not centros:
-                response_text += "\\n⚠️ Configure categorias e centros de custo primeiro."
-            else:
-                # Use classified or first available
-                categoria_id = classificacao.categoria_id if classificacao else categorias[0]["id"]
-                centro_id = classificacao.centro_custo_id if classificacao else centros[0]["id"]
-                
-                # Get or create empresa-specific WhatsApp user
-                whatsapp_email = f"whatsapp-{empresa['id'][:8]}@echoshop.com"
-                default_user = await db.users.find_one({"email": whatsapp_email}, {"_id": 0})
-                if not default_user:
-                    # Create empresa-specific WhatsApp user
-                    default_user = {
-                        "id": str(uuid.uuid4()),
-                        "nome": f"WhatsApp Bot - {empresa.get('razao_social', 'ECHO SHOP')}",
-                        "email": whatsapp_email,
-                        "telefone": request.phone_number,
-                        "perfil": "financeiro",
-                        "empresa_ids": [empresa["id"]],
-                        "senha_hash": pwd_context.hash("whatsapp-bot-user"),
-                        "created_at": datetime.now(timezone.utc).isoformat()
-                    }
-                    await db.users.insert_one(default_user)
-                else:
-                    # Update phone number if changed and ensure empresa is in list
-                    update_needed = False
-                    updates = {}
-                    if default_user.get("telefone") != request.phone_number:
-                        updates["telefone"] = request.phone_number
-                        update_needed = True
-                    if empresa["id"] not in default_user.get("empresa_ids", []):
-                        updates["$addToSet"] = {"empresa_ids": empresa["id"]}
-                        update_needed = True
-                    
-                    if update_needed:
-                        await db.users.update_one(
-                            {"email": whatsapp_email},
-                            {"$set": updates} if "$addToSet" not in updates else {**{"$set": {k: v for k, v in updates.items() if k != "$addToSet"}}, "$addToSet": updates["$addToSet"]}
-                        )
-                        default_user = await db.users.find_one({"email": whatsapp_email}, {"_id": 0})
-                
-                # Create transaction
-                transacao = {
-                    "id": str(uuid.uuid4()),
-                    "empresa_id": empresa["id"],
-                    "usuario_id": default_user["id"],
-                    "tipo": dados.get("tipo", "despesa"),
-                    "fornecedor": dados.get("fornecedor", "Desconhecido"),
-                    "cnpj_cpf": dados.get("cnpj_cpf"),
-                    "descricao": dados.get("descricao", "Lançamento via WhatsApp"),
-                    "valor_total": float(dados.get("valor_total", 0)),
-                    "data_competencia": dados.get("data_competencia", datetime.now(timezone.utc).strftime("%Y-%m-%d")),
-                    "data_pagamento": dados.get("data_pagamento"),
-                    "categoria_id": categoria_id,
-                    "centro_custo_id": centro_id,
-                    "metodo_pagamento": dados.get("metodo_pagamento"),
-                    "conta_origem": None,
-                    "impostos": {},
-                    "parcelas": None,
-                    "comprovante_url": None,
-                    "status": "pendente",
-                    "origem": "whatsapp",
-                    "created_at": datetime.now(timezone.utc).isoformat()
-                }
-                
-                await db.transacoes.insert_one(transacao)
-                
-                # ==================== CRM: Criar/Atualizar Lead ====================
                 try:
                     # Buscar lead existente pelo telefone
                     existing_lead = await db.leads.find_one({
