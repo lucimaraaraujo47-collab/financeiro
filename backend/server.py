@@ -4027,21 +4027,12 @@ async def process_whatsapp_message(request: WhatsAppMessageRequest):
                         if ai_response:
                             response_text += f"\\n\\n🤖 {ai_response}"
                 
-                except Exception as e:
-                    logging.error(f"Error creating/updating lead: {e}")
-                    response_text += f"\\n⚠️ Lead não foi criado automaticamente."
-                # ==================== END CRM ====================
-                
-                response_text += f"\\n✅ Transação registrada automaticamente!\\nID: TRX-{transacao['id'][:8]}"
-                response_text += f"\\n\\nEnvie mais mensagens para continuar registrando transações! 🚀"
-        
         except Exception as e:
-            logging.error(f"Error creating transaction: {e}")
-            response_text += f"\\n⚠️ Dados extraídos mas não foi possível criar a transação automaticamente."
+            logging.error(f"Error creating/updating lead: {e}")
+            response_text += f"\\n⚠️ Lead não foi criado automaticamente."
+        # ==================== END CRM ====================
         
         return {
-            "dados_extraidos": dados,
-            "classificacao_sugerida": classificacao.model_dump() if classificacao else None,
             "response_message": response_text
         }
         
