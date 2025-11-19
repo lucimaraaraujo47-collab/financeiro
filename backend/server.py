@@ -4198,7 +4198,7 @@ async def export_all_data():
         "equipamentos", "equipamentos_serializados", "movimentacoes_estoque",
         "contatos_crm", "conversas_crm", "mensagens_crm", "agentes_ia",
         "funil_stages", "templates_mensagem", "automacoes_crm", "auditoria_crm",
-        "consentimentos_crm"
+        "consentimentos_crm", "vendas_clientes", "planos_internet", "assinaturas"
     ]
     
     for collection_name in collections:
