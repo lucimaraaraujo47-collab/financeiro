@@ -3959,72 +3959,72 @@ async def process_whatsapp_message(request: WhatsAppMessageRequest):
         try:
             # Buscar lead existente pelo telefone
             existing_lead = await db.leads.find_one({
-                        "empresa_id": empresa["id"],
-                        "$or": [
-                            {"telefone": request.phone_number},
-                            {"whatsapp_phone": request.phone_number}
-                        ]
-                    }, {"_id": 0})
-                    
-                    if existing_lead:
-                        # Atualizar lead existente
-                        await db.leads.update_one(
-                            {"id": existing_lead["id"]},
-                            {"$set": {
-                                "last_contact_at": datetime.now(timezone.utc).isoformat(),
-                                "updated_at": datetime.now(timezone.utc).isoformat()
-                            }}
-                        )
-                        lead_id = existing_lead["id"]
-                        response_text += f"\\n👤 Lead atualizado!"
-                    else:
-                        # Criar novo lead
-                        lead_data = {
-                            "id": str(uuid.uuid4()),
-                            "empresa_id": empresa["id"],
-                            "nome": request.contact_name or f"Contato {request.phone_number}",
-                            "telefone": request.phone_number,
-                            "whatsapp_phone": request.phone_number,
-                            "email": None,
-                            "origem": "whatsapp",
-                            "status_funil": "novo",
-                            "tags": ["whatsapp"],
-                            "valor_estimado": 0.0,
-                            "assigned_to": None,
-                            "last_contact_at": datetime.now(timezone.utc).isoformat(),
-                            "notes": f"Lead criado automaticamente via WhatsApp. Primeira mensagem: {request.message[:100]}",
-                            "created_at": datetime.now(timezone.utc).isoformat(),
-                            "updated_at": datetime.now(timezone.utc).isoformat()
-                        }
-                        
-                        await db.leads.insert_one(lead_data)
-                        lead_id = lead_data["id"]
-                        
-                        # Aplicar roteamento automático
-                        assigned_user = await apply_routing(empresa["id"], lead_id)
-                        
-                        # Registrar atividade
-                        activity = {
-                            "id": str(uuid.uuid4()),
-                            "lead_id": lead_id,
-                            "empresa_id": empresa["id"],
-                            "tipo": "whatsapp",
-                            "descricao": f"Lead criado via WhatsApp: {request.message[:100]}",
-                            "user_id": default_user["id"],
-                            "metadata": {"telefone": request.phone_number, "primeira_mensagem": request.message},
-                            "created_at": datetime.now(timezone.utc).isoformat()
-                        }
-                        await db.activities.insert_one(activity)
-                        
-                        if assigned_user:
-                            response_text += f"\\n🎯 Novo lead criado e atribuído automaticamente!"
-                        else:
-                            response_text += f"\\n🎯 Novo lead criado!"
-                        
-                        # Tentar resposta automática do agente IA
-                        ai_response = await process_ai_response(empresa["id"], lead_id, request.message)
-                        if ai_response:
-                            response_text += f"\\n\\n🤖 {ai_response}"
+                "empresa_id": empresa["id"],
+                "$or": [
+                    {"telefone": request.phone_number},
+                    {"whatsapp_phone": request.phone_number}
+                ]
+            }, {"_id": 0})
+            
+            if existing_lead:
+                # Atualizar lead existente
+                await db.leads.update_one(
+                    {"id": existing_lead["id"]},
+                    {"$set": {
+                        "last_contact_at": datetime.now(timezone.utc).isoformat(),
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+                lead_id = existing_lead["id"]
+                response_text += f"\\n👤 Lead atualizado!"
+            else:
+                # Criar novo lead
+                lead_data = {
+                    "id": str(uuid.uuid4()),
+                    "empresa_id": empresa["id"],
+                    "nome": request.contact_name or f"Contato {request.phone_number}",
+                    "telefone": request.phone_number,
+                    "whatsapp_phone": request.phone_number,
+                    "email": None,
+                    "origem": "whatsapp",
+                    "status_funil": "novo",
+                    "tags": ["whatsapp"],
+                    "valor_estimado": 0.0,
+                    "assigned_to": None,
+                    "last_contact_at": datetime.now(timezone.utc).isoformat(),
+                    "notes": f"Lead criado automaticamente via WhatsApp. Primeira mensagem: {request.message[:100]}",
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                await db.leads.insert_one(lead_data)
+                lead_id = lead_data["id"]
+                
+                # Aplicar roteamento automático
+                assigned_user = await apply_routing(empresa["id"], lead_id)
+                
+                # Registrar atividade
+                activity = {
+                    "id": str(uuid.uuid4()),
+                    "lead_id": lead_id,
+                    "empresa_id": empresa["id"],
+                    "tipo": "whatsapp",
+                    "descricao": f"Lead criado via WhatsApp: {request.message[:100]}",
+                    "user_id": default_user["id"],
+                    "metadata": {"telefone": request.phone_number, "primeira_mensagem": request.message},
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.activities.insert_one(activity)
+                
+                if assigned_user:
+                    response_text += f"\\n🎯 Novo lead criado e atribuído automaticamente!"
+                else:
+                    response_text += f"\\n🎯 Novo lead criado!"
+                
+                # Tentar resposta automática do agente IA
+                ai_response = await process_ai_response(empresa["id"], lead_id, request.message)
+                if ai_response:
+                    response_text += f"\\n\\n🤖 {ai_response}"
                 
         except Exception as e:
             logging.error(f"Error creating/updating lead: {e}")
