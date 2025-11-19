@@ -221,6 +221,109 @@ function Financas({ user, token }) {
           ➕ Adicionar {activeTab === 'contas' ? 'Conta' : activeTab === 'investimentos' ? 'Investimento' : 'Cartão'}
         </button>
       )}
+      
+      {!showForm && activeTab === 'contas' && contas.length >= 2 && (
+        <button 
+          className="btn-primary" 
+          onClick={() => {
+            setShowTransferencia(true);
+            if (contas.length > 0) loadData(); // Reload to ensure fresh data
+          }} 
+          style={{ marginBottom: '1rem', marginLeft: '0.5rem' }}
+        >
+          🔄 Transferir Entre Contas
+        </button>
+      )}
+
+      {/* Formulário de Transferência */}
+      {showTransferencia && (
+        <div className="content-card" style={{ marginBottom: '2rem', background: '#f0f9ff', border: '2px solid #3b82f6' }}>
+          <h3 className="card-title" style={{ color: '#1e40af' }}>🔄 Transferência Entre Contas</h3>
+          <form onSubmit={handleTransferencia} style={{ marginTop: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+              <div className="form-group">
+                <label>Conta de Origem *</label>
+                <select 
+                  className="form-input" 
+                  value={formTransferencia.conta_origem_id}
+                  onChange={(e) => setFormTransferencia({...formTransferencia, conta_origem_id: e.target.value})}
+                  required
+                >
+                  <option value="">Selecione a conta</option>
+                  {contas.map(conta => (
+                    <option key={conta.id} value={conta.id}>
+                      {conta.nome} - Saldo: {formatCurrency(conta.saldo_atual || 0)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <label>Conta de Destino *</label>
+                <select 
+                  className="form-input" 
+                  value={formTransferencia.conta_destino_id}
+                  onChange={(e) => setFormTransferencia({...formTransferencia, conta_destino_id: e.target.value})}
+                  required
+                >
+                  <option value="">Selecione a conta</option>
+                  {contas
+                    .filter(c => c.id !== formTransferencia.conta_origem_id)
+                    .map(conta => (
+                      <option key={conta.id} value={conta.id}>
+                        {conta.nome} - Saldo: {formatCurrency(conta.saldo_atual || 0)}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <label>Valor (R$) *</label>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  min="0.01"
+                  className="form-input" 
+                  value={formTransferencia.valor}
+                  onChange={(e) => setFormTransferencia({...formTransferencia, valor: e.target.value})}
+                  placeholder="0.00"
+                  required 
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Data da Transferência *</label>
+                <input 
+                  type="date" 
+                  className="form-input" 
+                  value={formTransferencia.data_transferencia}
+                  onChange={(e) => setFormTransferencia({...formTransferencia, data_transferencia: e.target.value})}
+                  required 
+                />
+              </div>
+              
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label>Descrição *</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  value={formTransferencia.descricao}
+                  onChange={(e) => setFormTransferencia({...formTransferencia, descricao: e.target.value})}
+                  placeholder="Ex: Transferência para conta poupança"
+                  required 
+                />
+              </div>
+            </div>
+            
+            <div className="form-actions" style={{ marginTop: '1rem' }}>
+              <button type="submit" className="btn-success">Realizar Transferência</button>
+              <button type="button" className="btn-secondary" onClick={() => setShowTransferencia(false)}>
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Forms */}
       {showForm && (
