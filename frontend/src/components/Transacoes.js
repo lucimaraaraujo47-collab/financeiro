@@ -268,6 +268,129 @@ function Transacoes({ user, token }) {
           </div>
         </div>
 
+        {showTransferencia && (
+          <div style={{ 
+            marginTop: '2rem', 
+            padding: '2rem', 
+            background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', 
+            borderRadius: '12px',
+            border: '2px solid #3b82f6',
+            boxShadow: '0 4px 6px rgba(59, 130, 246, 0.1)'
+          }}>
+            <h3 style={{ 
+              color: '#1e40af', 
+              fontSize: '1.5rem', 
+              fontWeight: '600', 
+              marginBottom: '1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <span style={{ fontSize: '2rem' }}>🔄</span>
+              Transferência Entre Contas
+            </h3>
+            <form onSubmit={handleTransferencia}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Conta de Origem *</label>
+                  <select 
+                    className="form-select" 
+                    value={formTransferencia.conta_origem_id}
+                    onChange={(e) => setFormTransferencia({...formTransferencia, conta_origem_id: e.target.value})}
+                    required
+                    data-testid="transferencia-origem-select"
+                  >
+                    <option value="">Selecione a conta de origem</option>
+                    {contas.map(conta => (
+                      <option key={conta.id} value={conta.id}>
+                        {conta.nome} - {conta.banco} (Saldo: {formatCurrency(conta.saldo_atual || 0)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Conta de Destino *</label>
+                  <select 
+                    className="form-select" 
+                    value={formTransferencia.conta_destino_id}
+                    onChange={(e) => setFormTransferencia({...formTransferencia, conta_destino_id: e.target.value})}
+                    required
+                    data-testid="transferencia-destino-select"
+                  >
+                    <option value="">Selecione a conta de destino</option>
+                    {contas
+                      .filter(c => c.id !== formTransferencia.conta_origem_id)
+                      .map(conta => (
+                        <option key={conta.id} value={conta.id}>
+                          {conta.nome} - {conta.banco} (Saldo: {formatCurrency(conta.saldo_atual || 0)})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Valor (R$) *</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    min="0.01"
+                    className="form-input" 
+                    value={formTransferencia.valor}
+                    onChange={(e) => setFormTransferencia({...formTransferencia, valor: e.target.value})}
+                    placeholder="0.00"
+                    required 
+                    data-testid="transferencia-valor-input"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Data da Transferência *</label>
+                  <input 
+                    type="date" 
+                    className="form-input" 
+                    value={formTransferencia.data_transferencia}
+                    onChange={(e) => setFormTransferencia({...formTransferencia, data_transferencia: e.target.value})}
+                    required 
+                    data-testid="transferencia-data-input"
+                  />
+                </div>
+                
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label className="form-label">Descrição *</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={formTransferencia.descricao}
+                    onChange={(e) => setFormTransferencia({...formTransferencia, descricao: e.target.value})}
+                    placeholder="Ex: Transferência para conta poupança"
+                    required 
+                    data-testid="transferencia-descricao-input"
+                  />
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem' }}>
+                <button 
+                  type="submit" 
+                  className="btn-success"
+                  disabled={loading}
+                  data-testid="transferencia-submit-button"
+                >
+                  {loading ? '⏳ Processando...' : '✅ Realizar Transferência'}
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-secondary" 
+                  onClick={() => setShowTransferencia(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {showForm && (
           <form onSubmit={handleSubmit} style={{ marginTop: '2rem' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
