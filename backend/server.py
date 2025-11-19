@@ -4333,42 +4333,44 @@ async def create_backup(
 
 @api_router.get("/backup/status")
 async def get_backup_status(current_user: dict = Depends(get_current_user)):
-    """Get backup configuration status"""
-    service_account_path = os.environ.get("GOOGLE_SERVICE_ACCOUNT_PATH", "/app/backend/service_account.json")
-    folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID")
-    
-    status = {
-        "configured": os.path.exists(service_account_path),
-        "service_account_path": service_account_path,
-        "folder_id_configured": folder_id is not None,
-        "last_backup": None
+    """Get backup system status - simplified for direct download"""
+    return {
+        "configured": True,
+        "system": "direct_download",
+        "message": "Sistema de backup por download direto ativado"
     }
-    
-    if status["configured"]:
-        try:
-            service = get_drive_service()
-            query = "name contains 'backup_'"
-            if folder_id:
-                query += f" and '{folder_id}' in parents"
-            
-            results = service.files().list(
-                q=query,
-                orderBy='createdTime desc',
-                pageSize=1,
-                fields='files(id, name, createdTime)'
-            ).execute()
-            
-            files = results.get('files', [])
-            if files:
-                status["last_backup"] = {
-                    "name": files[0]['name'],
-                    "created_at": files[0]['createdTime']
-                }
-        except Exception as e:
-            logging.error(f"Error checking backup status: {e}")
-            status["error"] = str(e)
-    
-    return status
+
+@api_router.post("/backup/download")
+@limiter.limit("10/hour")
+async def download_backup(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate and download complete backup as JSON file"""
+    try:
+        # Export all data
+        backup_data = await export_all_data()
+        
+        # Generate filename with timestamp
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        filename = f"backup_echoshop_{timestamp}.json"
+        
+        # Convert to JSON string
+        json_content = json.dumps(backup_data, indent=2, ensure_ascii=False)
+        
+        # Return as downloadable file
+        return Response(
+            content=json_content,
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Content-Type": "application/json; charset=utf-8"
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Error creating backup download: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao gerar backup: {str(e)}")
 
 # ==================== VENDAS ENDPOINTS ====================
 
