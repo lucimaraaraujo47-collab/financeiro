@@ -787,6 +787,8 @@ class Transacao(BaseModel):
     comprovante_url: Optional[str] = None
     status: str = "pendente"  # pendente, conciliada, contestada
     origem: str = "manual"  # manual, whatsapp, upload, api
+    is_transferencia: bool = False  # Flag para identificar transferências
+    transferencia_relacionada_id: Optional[str] = None  # ID da transação relacionada
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class TransacaoCreate(BaseModel):
