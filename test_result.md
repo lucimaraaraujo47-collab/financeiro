@@ -521,7 +521,8 @@
 
 ## test_plan:
   current_focus: 
-    - "Transaction Deletion with Balance Recalculation"
+    - "Backup Configuration Page"
+    - "Transfer Funds Button in Transacoes Page"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
