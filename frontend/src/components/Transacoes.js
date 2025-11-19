@@ -10,6 +10,7 @@ function Transacoes({ user, token }) {
   const [contas, setContas] = useState([]);
   const [cartoes, setCartoes] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [showTransferencia, setShowTransferencia] = useState(false);
   const [formData, setFormData] = useState({
     tipo: 'despesa',
     fornecedor: '',
@@ -26,6 +27,13 @@ function Transacoes({ user, token }) {
     conta_origem: '',
     status: 'pendente',
     origem: 'manual'
+  });
+  const [formTransferencia, setFormTransferencia] = useState({
+    conta_origem_id: '',
+    conta_destino_id: '',
+    valor: '',
+    descricao: '',
+    data_transferencia: new Date().toISOString().split('T')[0]
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
