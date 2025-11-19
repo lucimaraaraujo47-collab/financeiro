@@ -296,9 +296,9 @@ app.post('/reconnect', async (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 WhatsApp Service rodando na porta ${PORT}`);
+// Start server - Bind to 0.0.0.0 (IPv4) to ensure compatibility with backend IPv4 connections
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 WhatsApp Service rodando na porta ${PORT} (IPv4: 0.0.0.0)`);
   console.log('📱 Iniciando conexão com WhatsApp...');
   connectToWhatsApp();
 });
