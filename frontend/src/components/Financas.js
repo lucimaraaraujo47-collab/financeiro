@@ -9,6 +9,7 @@ function Financas({ user, token }) {
   const [investimentos, setInvestimentos] = useState([]);
   const [cartoes, setCartoes] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [showTransferencia, setShowTransferencia] = useState(false);
   const [message, setMessage] = useState('');
   
   // Forms
@@ -21,6 +22,13 @@ function Financas({ user, token }) {
   });
   const [formCartao, setFormCartao] = useState({
     nome: '', bandeira: 'Visa', limite_total: 0, dia_fechamento: 10, dia_vencimento: 15
+  });
+  const [formTransferencia, setFormTransferencia] = useState({
+    conta_origem_id: '',
+    conta_destino_id: '',
+    valor: '',
+    descricao: '',
+    data_transferencia: new Date().toISOString().split('T')[0]
   });
 
   useEffect(() => {
