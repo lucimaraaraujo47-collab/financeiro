@@ -54,6 +54,11 @@ function WhatsAppReal({ user, token }) {
       }
     } catch (error) {
       console.error('Error checking status:', error);
+      // Check if it's an authentication error
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        console.error('Authentication error - token may be invalid or expired');
+        setMessage('❌ Erro de autenticação. Por favor, faça login novamente.');
+      }
       setStatus('service_offline');
     }
   };
