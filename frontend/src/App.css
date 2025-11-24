@@ -6,13 +6,14 @@ body.light {
   --bg-secondary: #f8fafc;
   --bg-tertiary: #f1f5f9;
   --bg-card: #ffffff;
-  --bg-sidebar: #ffffff;
-  --bg-hover: #e2e8f0;
+  --bg-sidebar: #1e293b;
+  --bg-hover: #334155;
   
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-tertiary: #64748b;
   --text-on-dark: #ffffff;
+  --text-sidebar: #cbd5e1;
   
   --border-color: #e2e8f0;
   --border-light: #f1f5f9;
