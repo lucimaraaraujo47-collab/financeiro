@@ -124,12 +124,23 @@
   transition: transform 0.3s ease;
 }
 
+.nav-arrow.open {
+  transform: rotate(180deg);
+}
+
 .nav-submenu {
   display: flex;
   flex-direction: column;
   background: rgba(15, 23, 42, 0.3);
   border-left: 2px solid rgba(59, 130, 246, 0.3);
   margin-left: 1.5rem;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.nav-submenu.open {
+  max-height: 500px;
 }
 
 .nav-subitem {
