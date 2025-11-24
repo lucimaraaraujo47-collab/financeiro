@@ -32,14 +32,14 @@
 .layout {
   display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background: var(--gradient-primary);
 }
 
 .sidebar {
-  background: rgba(30, 41, 59, 0.8);
+  background: var(--bg-sidebar);
   backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(148, 163, 184, 0.1);
-  transition: width 0.3s ease;
+  border-right: 1px solid var(--border-color);
+  transition: width 0.3s ease, background 0.3s ease;
   display: flex;
   flex-direction: column;
   position: sticky;
