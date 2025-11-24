@@ -77,55 +77,65 @@ function App() {
   };
 
   if (loading) {
-    return <div className="loading-screen">Carregando...</div>;
+    return (
+      <ThemeProvider>
+        <div className="loading-screen">Carregando...</div>
+      </ThemeProvider>
+    );
   }
 
   if (!token || !user) {
-    return <Login onLogin={handleLogin} />;
+    return (
+      <ThemeProvider>
+        <Login onLogin={handleLogin} />
+      </ThemeProvider>
+    );
   }
 
   return (
-    <BrowserRouter>
-      <Layout user={user} onLogout={handleLogout}>
-        <Routes>
-          <Route path="/" element={<Dashboard user={user} token={token} />} />
-          <Route path="/empresas" element={<EmpresaSetup user={user} token={token} onUpdate={loadUser} />} />
-          <Route path="/categorias" element={<Categorias user={user} token={token} />} />
-          <Route path="/centros-custo" element={<CentrosCusto user={user} token={token} />} />
-          <Route path="/financas" element={<Financas user={user} token={token} />} />
-          <Route path="/transacoes" element={<Transacoes user={user} token={token} />} />
-          <Route path="/relatorios" element={<Relatorios user={user} token={token} />} />
-          <Route path="/importar" element={<ImportarTransacoes user={user} token={token} />} />
-          <Route path="/analise-ia" element={<AnaliseIA user={user} token={token} />} />
-          <Route path="/whatsapp" element={<WhatsAppReal user={user} token={token} />} />
-          <Route path="/whatsapp-mock" element={<MockWhatsApp user={user} token={token} />} />
-          <Route path="/usuarios" element={<GerenciarUsuarios user={user} token={token} />} />
-          
-          {/* Estoque Routes */}
-          <Route path="/clientes" element={<Clientes user={user} token={token} />} />
-          <Route path="/fornecedores" element={<Fornecedores user={user} token={token} />} />
-          <Route path="/locais" element={<Locais user={user} token={token} />} />
-          <Route path="/categorias-equipamentos" element={<CategoriasEquipamentos user={user} token={token} />} />
-          <Route path="/equipamentos" element={<Equipamentos user={user} token={token} />} />
-          <Route path="/equipamentos-serializados" element={<EquipamentosSerializados user={user} token={token} />} />
-          <Route path="/movimentacoes" element={<Movimentacoes user={user} token={token} />} />
-          
-          {/* CRM Route */}
-          <Route path="/crm" element={<CRM user={user} token={token} />} />
-          <Route path="/crm/config" element={<ConfiguracoesCRM user={user} token={token} />} />
-          <Route path="/crm/dashboard" element={<DashboardCRM user={user} token={token} />} />
-          
-          {/* Backup Configuration */}
-          <Route path="/backup" element={<ConfiguracoesBackup user={user} token={token} />} />
-          
-          {/* Vendas */}
-          <Route path="/vendas" element={<Vendas user={user} token={token} />} />
-          <Route path="/vendas/dashboard" element={<DashboardVendas user={user} token={token} />} />
-          
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Layout user={user} onLogout={handleLogout}>
+          <Routes>
+            <Route path="/" element={<Dashboard user={user} token={token} />} />
+            <Route path="/empresas" element={<EmpresaSetup user={user} token={token} onUpdate={loadUser} />} />
+            <Route path="/categorias" element={<Categorias user={user} token={token} />} />
+            <Route path="/centros-custo" element={<CentrosCusto user={user} token={token} />} />
+            <Route path="/financas" element={<Financas user={user} token={token} />} />
+            <Route path="/transacoes" element={<Transacoes user={user} token={token} />} />
+            <Route path="/relatorios" element={<Relatorios user={user} token={token} />} />
+            <Route path="/importar" element={<ImportarTransacoes user={user} token={token} />} />
+            <Route path="/analise-ia" element={<AnaliseIA user={user} token={token} />} />
+            <Route path="/whatsapp" element={<WhatsAppReal user={user} token={token} />} />
+            <Route path="/whatsapp-mock" element={<MockWhatsApp user={user} token={token} />} />
+            <Route path="/usuarios" element={<GerenciarUsuarios user={user} token={token} />} />
+            
+            {/* Estoque Routes */}
+            <Route path="/clientes" element={<Clientes user={user} token={token} />} />
+            <Route path="/fornecedores" element={<Fornecedores user={user} token={token} />} />
+            <Route path="/locais" element={<Locais user={user} token={token} />} />
+            <Route path="/categorias-equipamentos" element={<CategoriasEquipamentos user={user} token={token} />} />
+            <Route path="/equipamentos" element={<Equipamentos user={user} token={token} />} />
+            <Route path="/equipamentos-serializados" element={<EquipamentosSerializados user={user} token={token} />} />
+            <Route path="/movimentacoes" element={<Movimentacoes user={user} token={token} />} />
+            
+            {/* CRM Route */}
+            <Route path="/crm" element={<CRM user={user} token={token} />} />
+            <Route path="/crm/config" element={<ConfiguracoesCRM user={user} token={token} />} />
+            <Route path="/crm/dashboard" element={<DashboardCRM user={user} token={token} />} />
+            
+            {/* Backup Configuration */}
+            <Route path="/backup" element={<ConfiguracoesBackup user={user} token={token} />} />
+            
+            {/* Vendas */}
+            <Route path="/vendas" element={<Vendas user={user} token={token} />} />
+            <Route path="/vendas/dashboard" element={<DashboardVendas user={user} token={token} />} />
+            
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Layout>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 
