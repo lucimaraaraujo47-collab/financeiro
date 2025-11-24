@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '@/App.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import EmpresaSetup from './components/EmpresaSetup';
