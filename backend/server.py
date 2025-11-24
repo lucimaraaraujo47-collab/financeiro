@@ -2777,17 +2777,24 @@ async def get_dashboard(empresa_id: str, current_user: dict = Depends(get_curren
     despesas_por_centro_custo = [{"centro_custo": v["nome"], "valor": v["valor"]} for v in cc_map.values()]
     despesas_por_centro_custo.sort(key=lambda x: x["valor"], reverse=True)
     
-    # Recent transactions - handle mixed datetime/string types
+    # Recent transactions - handle mixed datetime/string types and timezone awareness
     def get_created_at_timestamp(x):
         created = x.get("created_at", "")
         if isinstance(created, datetime):
+            # Make timezone-aware if naive
+            if created.tzinfo is None:
+                return created.replace(tzinfo=timezone.utc)
             return created
         elif isinstance(created, str):
             try:
-                return datetime.fromisoformat(created.replace('Z', '+00:00'))
+                dt = datetime.fromisoformat(created.replace('Z', '+00:00'))
+                # Make timezone-aware if naive
+                if dt.tzinfo is None:
+                    return dt.replace(tzinfo=timezone.utc)
+                return dt
             except:
-                return datetime.min
-        return datetime.min
+                return datetime.min.replace(tzinfo=timezone.utc)
+        return datetime.min.replace(tzinfo=timezone.utc)
     
     transacoes_recentes = sorted(transacoes, key=get_created_at_timestamp, reverse=True)[:10]
     
