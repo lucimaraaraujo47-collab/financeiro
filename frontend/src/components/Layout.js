@@ -5,6 +5,7 @@ import './Layout.css';
 
 function Layout({ user, onLogout, children }) {
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [configOpen, setConfigOpen] = useState(false);
   const [estoqueOpen, setEstoqueOpen] = useState(false);
