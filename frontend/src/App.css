@@ -352,12 +352,13 @@ body {
 }
 
 .content-card {
-  background: rgba(30, 41, 59, 0.6);
+  background: var(--bg-card);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .card-header {
@@ -366,13 +367,13 @@ body {
   align-items: center;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .card-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--text-primary);
 }
 
 .chart-container {
