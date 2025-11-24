@@ -2777,8 +2777,19 @@ async def get_dashboard(empresa_id: str, current_user: dict = Depends(get_curren
     despesas_por_centro_custo = [{"centro_custo": v["nome"], "valor": v["valor"]} for v in cc_map.values()]
     despesas_por_centro_custo.sort(key=lambda x: x["valor"], reverse=True)
     
-    # Recent transactions
-    transacoes_recentes = sorted(transacoes, key=lambda x: x.get("created_at", ""), reverse=True)[:10]
+    # Recent transactions - handle mixed datetime/string types
+    def get_created_at_timestamp(x):
+        created = x.get("created_at", "")
+        if isinstance(created, datetime):
+            return created
+        elif isinstance(created, str):
+            try:
+                return datetime.fromisoformat(created.replace('Z', '+00:00'))
+            except:
+                return datetime.min
+        return datetime.min
+    
+    transacoes_recentes = sorted(transacoes, key=get_created_at_timestamp, reverse=True)[:10]
     
     return DashboardMetrics(
         total_receitas=total_receitas,
