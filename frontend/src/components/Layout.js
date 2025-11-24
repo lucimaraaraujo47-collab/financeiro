@@ -348,6 +348,14 @@ function Layout({ user, onLogout, children }) {
             <h2 className="page-title">Sistema Financeiro</h2>
           </div>
           <div className="top-bar-right">
+            <button 
+              className="btn-theme-toggle" 
+              onClick={toggleTheme}
+              title={theme === 'light' ? 'Modo Escuro' : 'Modo Claro'}
+              aria-label="Toggle theme"
+            >
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
             <div className="user-info">
               <span className="user-name">{user.nome}</span>
               <span className="user-badge">{user.perfil}</span>
