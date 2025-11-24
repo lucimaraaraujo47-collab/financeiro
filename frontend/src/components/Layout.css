@@ -95,7 +95,7 @@
   align-items: center;
   gap: 1rem;
   padding: 0.875rem 1.5rem;
-  color: var(--text-on-dark);
+  color: var(--text-sidebar);
   text-decoration: none;
   transition: all 0.3s ease;
   border-left: 3px solid transparent;
@@ -104,7 +104,7 @@
 
 .nav-item:hover {
   background: var(--bg-hover);
-  color: var(--text-on-dark);
+  color: #f1f5f9;
 }
 
 .nav-item.active {
