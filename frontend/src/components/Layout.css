@@ -95,7 +95,7 @@
   align-items: center;
   gap: 1rem;
   padding: 0.875rem 1.5rem;
-  color: #cbd5e1;
+  color: var(--text-on-dark);
   text-decoration: none;
   transition: all 0.3s ease;
   border-left: 3px solid transparent;
@@ -103,8 +103,8 @@
 }
 
 .nav-item:hover {
-  background: rgba(148, 163, 184, 0.1);
-  color: #f1f5f9;
+  background: var(--bg-hover);
+  color: var(--text-on-dark);
 }
 
 .nav-item.active {
