@@ -1175,6 +1175,56 @@ async def initialize_system(request: Request):
                 "instrucoes": "Faça login com as credenciais acima e configure sua empresa em Configurações > Empresas"
             }
         }
+
+
+@api_router.post("/setup/reset-admin-password")
+@limiter.limit("3/hour")
+async def reset_admin_password(request: Request):
+    """
+    Reset admin user password to default (admin123).
+    Use this if you forgot your admin password.
+    Only resets password for user with email admin@echoshop.com
+    """
+    try:
+        # Find admin user
+        admin_user = await db.users.find_one({"email": "admin@echoshop.com"}, {"_id": 0})
+        
+        if not admin_user:
+            raise HTTPException(
+                status_code=404,
+                detail="Usuário admin@echoshop.com não encontrado. Crie um usuário admin primeiro."
+            )
+        
+        # Reset password to default
+        new_password_hash = pwd_context.hash("admin123")
+        
+        await db.users.update_one(
+            {"email": "admin@echoshop.com"},
+            {"$set": {
+                "senha_hash": new_password_hash,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        logging.info(f"Admin password reset for user: {admin_user['id']}")
+        
+        return {
+            "success": True,
+            "message": "✅ Senha do admin resetada com sucesso!",
+            "details": {
+                "email": "admin@echoshop.com",
+                "nova_senha": "admin123",
+                "instrucoes": "Faça login e mude a senha imediatamente!"
+            }
+        }
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logging.error(f"Error resetting admin password: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao resetar senha: {str(e)}")
+
+
         
     except HTTPException as he:
         raise he
