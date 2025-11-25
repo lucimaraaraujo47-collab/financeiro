@@ -1218,6 +1218,38 @@ async def reset_admin_password(request: Request):
             }
         }
         
+
+
+@api_router.get("/setup/list-users")
+@limiter.limit("10/hour")
+async def list_users_for_recovery(request: Request):
+    """
+    Emergency endpoint to list user emails (WITHOUT passwords).
+    Use this to discover which users exist in the database.
+    Only shows: email, name, profile - NO sensitive data.
+    """
+    try:
+        users = await db.users.find({}, {"_id": 0, "email": 1, "nome": 1, "perfil": 1}).to_list(100)
+        
+        if not users:
+            return {
+                "success": False,
+                "message": "Nenhum usuário encontrado no banco de dados",
+                "users": []
+            }
+        
+        return {
+            "success": True,
+            "message": f"Encontrados {len(users)} usuários",
+            "users": users,
+            "instrucoes": "Use o endpoint /setup/reset-admin-password para resetar a senha do admin@echoshop.com"
+        }
+        
+    except Exception as e:
+        logging.error(f"Error listing users: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao listar usuários: {str(e)}")
+
+
     except HTTPException as he:
         raise he
     except Exception as e:
