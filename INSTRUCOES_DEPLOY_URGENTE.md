@@ -18,11 +18,15 @@ O erro 502 e a falha do Kaniko build acontecem porque:
 
 ## ✅ CORREÇÕES JÁ APLICADAS NO CÓDIGO
 
-1. ✅ Erro de sintaxe corrigido (bloco try/except faltando)
+1. ✅ Erro de sintaxe corrigido (blocos try/except faltando)
 2. ✅ Imports duplicados removidos
 3. ✅ Funções duplicadas removidas
 4. ✅ Endpoint `/api/health` adicionado para monitoramento
-5. ✅ Validação obrigatória de `JWT_SECRET` e `WHATSAPP_SERVICE_KEY`
+5. ✅ Validação de variáveis críticas movida para RUNTIME (startup event)
+   - Agora o Docker build não falha se as env vars não estiverem disponíveis
+   - Validação acontece quando o app inicia (fail-fast em produção)
+6. ✅ MongoDB e outras configs usam valores padrão temporários durante build
+7. ✅ Todas as variáveis obrigatórias são validadas no startup do FastAPI
 
 ---
 
