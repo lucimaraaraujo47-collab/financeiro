@@ -67,7 +67,9 @@ Execute este comando no seu terminal para testar:
 curl https://fintracker-117.emergent.host/api/health
 ```
 
-Se retornar algo como `{"status":"healthy"}`, o backend está funcionando! ✅
+Se retornar algo como `{"status":"healthy","service":"finai-backend"}`, o backend está funcionando! ✅
+
+Se ainda receber erro 502, aguarde 1-2 minutos após o deploy e tente novamente.
 
 ---
 
