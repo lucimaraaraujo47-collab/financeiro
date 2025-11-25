@@ -82,11 +82,15 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Initialize APScheduler for automated backups
 scheduler = AsyncIOScheduler()
 
-JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key')
+JWT_SECRET = os.environ.get('JWT_SECRET')
+if not JWT_SECRET:
+    raise ValueError("JWT_SECRET environment variable is required")
 JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
 JWT_EXPIRATION = int(os.environ.get('JWT_EXPIRATION_MINUTES', 43200))
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
-WHATSAPP_SERVICE_KEY = os.environ.get('WHATSAPP_SERVICE_KEY', 'internal-service-key-123')
+WHATSAPP_SERVICE_KEY = os.environ.get('WHATSAPP_SERVICE_KEY')
+if not WHATSAPP_SERVICE_KEY:
+    raise ValueError("WHATSAPP_SERVICE_KEY environment variable is required")
 
 # API Router
 api_router = APIRouter(prefix="/api")
