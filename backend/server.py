@@ -1224,7 +1224,9 @@ async def reset_admin_password(request: Request):
                 "instrucoes": "Faça login e mude a senha imediatamente!"
             }
         }
-        
+    except Exception as e:
+        logging.error(f"Erro ao resetar senha do admin: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao resetar senha: {str(e)}")
 
 
 @api_router.get("/setup/list-users")
