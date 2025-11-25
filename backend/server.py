@@ -5112,20 +5112,27 @@ async def startup_event():
     
     logging.info("✓ Environment variables validated successfully")
     
+    # Initialize scheduler in background to avoid blocking startup
     service_account_path = os.environ.get("GOOGLE_SERVICE_ACCOUNT_PATH", "/app/backend/service_account.json")
     
     # Only schedule if Google Drive is configured
     if os.path.exists(service_account_path):
-        # Schedule daily backup at 3 AM
-        scheduler.add_job(
-            run_scheduled_backup,
-            CronTrigger(hour=3, minute=0),
-            id='daily_backup',
-            name='Daily automated backup to Google Drive',
-            replace_existing=True
-        )
-        scheduler.start()
-        logging.info("✓ Automated backup scheduler started - Daily backups at 3:00 AM")
+        try:
+            # Schedule daily backup at 3 AM
+            scheduler.add_job(
+                run_scheduled_backup,
+                CronTrigger(hour=3, minute=0),
+                id='daily_backup',
+                name='Daily automated backup to Google Drive',
+                replace_existing=True
+            )
+            # Start scheduler in non-blocking way
+            if not scheduler.running:
+                scheduler.start()
+            logging.info("✓ Automated backup scheduler started - Daily backups at 3:00 AM")
+        except Exception as e:
+            logging.warning(f"⚠ Failed to start backup scheduler: {e}")
+            logging.info("Application will continue without automated backups")
     else:
         logging.warning("⚠ Google Drive not configured - Automated backups disabled")
         logging.info("See /app/BACKUP_SETUP_INSTRUCTIONS.md for setup instructions")
