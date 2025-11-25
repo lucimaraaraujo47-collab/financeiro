@@ -5045,11 +5045,31 @@ async def create_or_update_configuracao_cobranca(
 # Include router
 app.include_router(api_router)
 
-# Health check endpoint
+# Health check endpoints
+@app.get("/")
+async def root():
+    """Root endpoint - redirects to health check"""
+    return {"status": "ok", "message": "ECHO SHOP FinAI Backend", "version": "1.0"}
+
+@app.get("/health")
+async def health_check_root():
+    """Health check endpoint at root level for K8s probes"""
+    return {"status": "healthy", "service": "finai-backend", "timestamp": datetime.now(timezone.utc).isoformat()}
+
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint for monitoring"""
-    return {"status": "healthy", "service": "finai-backend"}
+    return {"status": "healthy", "service": "finai-backend", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+@app.get("/readiness")
+async def readiness_check():
+    """Readiness probe endpoint - checks if app is ready to serve traffic"""
+    try:
+        # Quick DB connectivity check
+        await db.command('ping')
+        return {"status": "ready", "database": "connected"}
+    except Exception as e:
+        return {"status": "not_ready", "database": "disconnected", "error": str(e)}
 
 
 # Security headers middleware
