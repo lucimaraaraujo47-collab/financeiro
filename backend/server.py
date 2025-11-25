@@ -5095,7 +5095,22 @@ async def shutdown_db_client():
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize scheduled backup on startup"""
+    """Initialize scheduled backup on startup and validate critical environment variables"""
+    # Validate critical environment variables at runtime
+    if JWT_SECRET == 'temp-build-secret':
+        raise RuntimeError(
+            "JWT_SECRET environment variable is required for production. "
+            "Please set it in your deployment configuration."
+        )
+    
+    if WHATSAPP_SERVICE_KEY == 'temp-build-key':
+        raise RuntimeError(
+            "WHATSAPP_SERVICE_KEY environment variable is required for production. "
+            "Please set it in your deployment configuration."
+        )
+    
+    logging.info("✓ Environment variables validated successfully")
+    
     service_account_path = os.environ.get("GOOGLE_SERVICE_ACCOUNT_PATH", "/app/backend/service_account.json")
     
     # Only schedule if Google Drive is configured
