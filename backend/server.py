@@ -4273,9 +4273,10 @@ async def whatsapp_disconnect(current_user: dict = Depends(get_current_user)):
 
 # ==================== GOOGLE DRIVE BACKUP ENDPOINTS ====================
 
-# Helper function to create Google Drive service
-def get_drive_service():
-    """Create and return Google Drive service"""
+# DEPRECATED: Old service account method - no longer used
+# Kept for reference only. Use get_drive_service(user_id) with OAuth instead.
+def get_drive_service_deprecated():
+    """DEPRECATED: Create and return Google Drive service using service account"""
     service_account_path = os.environ.get("GOOGLE_SERVICE_ACCOUNT_PATH", "/app/backend/service_account.json")
     
     if not os.path.exists(service_account_path):
