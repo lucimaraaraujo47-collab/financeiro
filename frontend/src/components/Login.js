@@ -39,7 +39,9 @@ function Login({ onLogin }) {
       <div className="auth-box">
         <div className="auth-header">
           <div className="auth-logo">
-            <img src="/echo-shop-logo.jpg" alt="ECHO SHOP" style={{ maxWidth: '200px', height: 'auto' }} />
+            <h1 style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
+              📦 ECHO SHOP
+            </h1>
           </div>
           <p className="auth-subtitle" style={{ marginTop: '1.5rem' }}>
             Entre na sua conta
