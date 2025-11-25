@@ -9,9 +9,10 @@
 
 ## 🔍 PROBLEMA IDENTIFICADO
 
-O erro 502 acontece porque:
-1. Os arquivos `.env` não estão configurados no ambiente de produção
-2. Havia erros de sintaxe no código que foram corrigidos
+O erro 502 e a falha do Kaniko build acontecem porque:
+1. As variáveis de ambiente não estão configuradas na plataforma de deployment
+2. O código estava validando variáveis obrigatórias durante o BUILD (corrigido - agora valida em RUNTIME)
+3. Havia erros de sintaxe no código (já corrigidos)
 
 ---
 
