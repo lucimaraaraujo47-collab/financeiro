@@ -27,8 +27,19 @@ function Login({ onLogin }) {
       });
       onLogin(response.data.access_token, response.data.user);
     } catch (err) {
-      const errorMsg = err.response?.data?.detail || 'Erro ao processar solicitação';
-      setError(Array.isArray(errorMsg) ? errorMsg[0]?.msg || 'Erro desconhecido' : errorMsg);
+      console.error('Login error:', err);
+      
+      if (err.response) {
+        // Server responded with error
+        const errorMsg = err.response?.data?.detail || `Erro ${err.response.status}: ${err.response.statusText}`;
+        setError(Array.isArray(errorMsg) ? errorMsg[0]?.msg || 'Erro desconhecido' : errorMsg);
+      } else if (err.request) {
+        // Request was made but no response
+        setError('❌ Erro de conexão: Servidor não responde. Verifique se o backend está rodando.');
+      } else {
+        // Something else happened
+        setError('❌ Erro ao processar solicitação: ' + err.message);
+      }
     } finally {
       setLoading(false);
     }
