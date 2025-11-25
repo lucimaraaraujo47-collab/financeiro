@@ -5057,6 +5057,13 @@ async def create_or_update_configuracao_cobranca(
 # Include router
 app.include_router(api_router)
 
+# Health check endpoint
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    return {"status": "healthy", "service": "finai-backend"}
+
+
 # Security headers middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
