@@ -1259,21 +1259,6 @@ async def list_users_for_recovery(request: Request):
         raise HTTPException(status_code=500, detail=f"Erro ao listar usuários: {str(e)}")
 
 
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        logging.error(f"Error resetting admin password: {e}")
-        raise HTTPException(status_code=500, detail=f"Erro ao resetar senha: {str(e)}")
-
-
-        
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        logging.error(f"Error initializing system: {e}")
-        raise HTTPException(status_code=500, detail=f"Erro ao inicializar sistema: {str(e)}")
-
-
 @api_router.post("/auth/login", response_model=TokenResponse)
 @limiter.limit("10/minute")
 async def login(request: Request, credentials: UserLogin):
