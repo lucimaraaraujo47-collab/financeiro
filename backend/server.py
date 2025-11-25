@@ -1179,6 +1179,9 @@ async def initialize_system(request: Request):
                 "instrucoes": "Faça login com as credenciais acima e configure sua empresa em Configurações > Empresas"
             }
         }
+    except Exception as e:
+        logging.error(f"Erro ao inicializar sistema: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao inicializar sistema: {str(e)}")
 
 
 @api_router.post("/setup/reset-admin-password")
