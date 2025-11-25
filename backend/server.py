@@ -1089,6 +1089,100 @@ async def list_users(current_user: dict = Depends(get_current_user)):
     users = await db.users.find({}, {"_id": 0, "senha_hash": 0}).to_list(100)
     return users
 
+
+# ==================== SETUP / SEED ENDPOINT ====================
+
+@api_router.post("/setup/initialize")
+@limiter.limit("5/hour")
+async def initialize_system(request: Request):
+    """
+    Initialize system with default admin user and company.
+    Only works if no users exist in database.
+    Use this endpoint ONCE when deploying to a new environment.
+    """
+    try:
+        # Check if any users already exist
+        existing_users = await db.users.count_documents({})
+        if existing_users > 0:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Sistema já inicializado! Existem {existing_users} usuários cadastrados. Este endpoint só pode ser usado em um banco de dados vazio."
+            )
+        
+        # Create default empresa
+        empresa_id = str(uuid.uuid4())
+        empresa = {
+            "id": empresa_id,
+            "razao_social": "ECHO SHOP - Empresa Padrão",
+            "nome_fantasia": "ECHO SHOP",
+            "cnpj": "00.000.000/0001-00",
+            "email": "contato@echoshop.com",
+            "telefone": "(00) 0000-0000",
+            "endereco": "Endereço Padrão",
+            "cidade": "Cidade",
+            "estado": "UF",
+            "cep": "00000-000",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.empresas.insert_one(empresa)
+        
+        # Create default admin user
+        admin_id = str(uuid.uuid4())
+        admin_user = {
+            "id": admin_id,
+            "nome": "Administrador",
+            "email": "admin@echoshop.com",
+            "telefone": "(00) 00000-0000",
+            "perfil": "admin",
+            "empresa_ids": [empresa_id],
+            "senha_hash": pwd_context.hash("admin123"),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.users.insert_one(admin_user)
+        
+        # Create default categoria
+        categoria_id = str(uuid.uuid4())
+        categoria = {
+            "id": categoria_id,
+            "empresa_id": empresa_id,
+            "nome": "Geral",
+            "tipo": "despesa",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.categorias_financeiras.insert_one(categoria)
+        
+        # Create default centro de custo
+        centro_id = str(uuid.uuid4())
+        centro = {
+            "id": centro_id,
+            "empresa_id": empresa_id,
+            "nome": "Administrativo",
+            "descricao": "Centro de custo padrão",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.centros_custo.insert_one(centro)
+        
+        logging.info(f"Sistema inicializado com sucesso! Empresa: {empresa_id}, Admin: {admin_id}")
+        
+        return {
+            "success": True,
+            "message": "✅ Sistema inicializado com sucesso!",
+            "details": {
+                "empresa_id": empresa_id,
+                "empresa_nome": "ECHO SHOP - Empresa Padrão",
+                "admin_email": "admin@echoshop.com",
+                "admin_senha": "admin123",
+                "instrucoes": "Faça login com as credenciais acima e configure sua empresa em Configurações > Empresas"
+            }
+        }
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logging.error(f"Error initializing system: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao inicializar sistema: {str(e)}")
+
+
 @api_router.post("/auth/login", response_model=TokenResponse)
 @limiter.limit("10/minute")
 async def login(request: Request, credentials: UserLogin):
