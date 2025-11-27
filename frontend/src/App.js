@@ -31,9 +31,8 @@ import Vendas from './components/Vendas';
 import DashboardVendas from './components/DashboardVendas';
 import Layout from './components/Layout';
 
-// Auto-detect backend URL based on environment
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
-const API = `${BACKEND_URL}/api`;
+// Use relative URL - Kubernetes Ingress will route /api to backend
+const API = '/api';
 
 export { API };
 
