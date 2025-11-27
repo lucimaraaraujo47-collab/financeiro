@@ -128,6 +128,7 @@ function Transacoes({ user, token }) {
     setFormData({
       tipo: 'despesa',
       fornecedor: '',
+      fornecedor_id: '',
       cnpj_cpf: '',
       descricao: '',
       valor_total: '',
@@ -136,11 +137,76 @@ function Transacoes({ user, token }) {
       categoria_id: '',
       centro_custo_id: '',
       metodo_pagamento: '',
+      conta_bancaria_id: '',
+      cartao_credito_id: '',
       conta_origem: '',
       status: 'pendente',
       origem: 'manual'
     });
   };
+
+  // Aplicar filtros localmente
+  const aplicarFiltros = () => {
+    let resultado = [...transacoes];
+
+    if (filtros.categoria_id) {
+      resultado = resultado.filter(t => t.categoria_id === filtros.categoria_id);
+    }
+    if (filtros.centro_custo_id) {
+      resultado = resultado.filter(t => t.centro_custo_id === filtros.centro_custo_id);
+    }
+    if (filtros.conta_bancaria_id) {
+      resultado = resultado.filter(t => t.conta_bancaria_id === filtros.conta_bancaria_id);
+    }
+    if (filtros.fornecedor_id) {
+      resultado = resultado.filter(t => t.fornecedor_id === filtros.fornecedor_id);
+    }
+    if (filtros.tipo) {
+      resultado = resultado.filter(t => t.tipo === filtros.tipo);
+    }
+    if (filtros.status) {
+      resultado = resultado.filter(t => t.status === filtros.status);
+    }
+
+    setTransacoesFiltradas(resultado);
+  };
+
+  const limparFiltros = () => {
+    setFiltros({
+      categoria_id: '',
+      centro_custo_id: '',
+      conta_bancaria_id: '',
+      fornecedor_id: '',
+      tipo: '',
+      status: ''
+    });
+    setTransacoesFiltradas(transacoes);
+  };
+
+  // Quando fornecedor é selecionado, preencher os dados automaticamente
+  const handleFornecedorChange = (fornecedorId) => {
+    const fornecedor = fornecedores.find(f => f.id === fornecedorId);
+    if (fornecedor) {
+      setFormData({
+        ...formData,
+        fornecedor_id: fornecedorId,
+        fornecedor: fornecedor.nome,
+        cnpj_cpf: fornecedor.cnpj || ''
+      });
+    } else {
+      setFormData({
+        ...formData,
+        fornecedor_id: '',
+        fornecedor: '',
+        cnpj_cpf: ''
+      });
+    }
+  };
+
+  // Atualizar transações filtradas quando transações ou filtros mudam
+  useEffect(() => {
+    aplicarFiltros();
+  }, [filtros, transacoes]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Tem certeza que deseja deletar esta transação?')) return;
