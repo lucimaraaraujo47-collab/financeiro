@@ -13,6 +13,13 @@ function Transacoes({ user, token }) {
   const [fornecedores, setFornecedores] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [showTransferencia, setShowTransferencia] = useState(false);
+  const [showFornecedorModal, setShowFornecedorModal] = useState(false);
+  const [fornecedorForm, setFornecedorForm] = useState({
+    nome: '',
+    cnpj: '',
+    email: '',
+    telefone: ''
+  });
   const [filtros, setFiltros] = useState({
     categoria_id: '',
     centro_custo_id: '',
@@ -21,6 +28,7 @@ function Transacoes({ user, token }) {
     tipo: '',
     status: ''
   });
+  const [showFiltros, setShowFiltros] = useState(false);
   const [formData, setFormData] = useState({
     tipo: 'despesa',
     fornecedor: '',
