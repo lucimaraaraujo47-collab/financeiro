@@ -123,7 +123,7 @@ Você pode testar fazendo um backup manual:
 
 **Via API (Postman ou curl):**
 ```bash
-curl -X POST https://fintech-revival.preview.emergentagent.com/api/backup/create \
+curl -X POST https://echoshop-finance.preview.emergentagent.com/api/backup/create \
   -H "Authorization: Bearer SEU_TOKEN_ADMIN"
 ```
 
@@ -138,7 +138,7 @@ cd /app/backend
 Após configurar, verifique o status via API:
 
 ```bash
-curl -X GET https://fintech-revival.preview.emergentagent.com/api/backup/status \
+curl -X GET https://echoshop-finance.preview.emergentagent.com/api/backup/status \
   -H "Authorization: Bearer SEU_TOKEN_ADMIN"
 ```
 

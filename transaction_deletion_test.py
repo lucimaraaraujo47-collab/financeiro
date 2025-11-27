@@ -11,7 +11,7 @@ from datetime import datetime
 import uuid
 
 # Configuration
-BACKEND_URL = "https://fintech-revival.preview.emergentagent.com/api"
+BACKEND_URL = "https://echoshop-finance.preview.emergentagent.com/api"
 ADMIN_EMAIL = "admin@echoshop.com"
 ADMIN_PASSWORD = "admin123"
 
