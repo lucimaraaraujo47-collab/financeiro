@@ -223,7 +223,7 @@ Se após seguir TODOS os passos acima o sistema ainda não funcionar:
 
 | Ambiente | URL | Banco de Dados | Quando usar |
 |----------|-----|----------------|-------------|
-| **Preview** | `https://echo-finances.preview.emergentagent.com` | MongoDB Interno (Preview) | Para testar durante desenvolvimento |
+| **Preview** | `https://vendor-flow-1.preview.emergentagent.com` | MongoDB Interno (Preview) | Para testar durante desenvolvimento |
 | **Produção** | `https://fintracker-117.emergent.host` | MongoDB Isolado (Produção) | Para uso real do sistema |
 
 ⚠️ **Mudanças no Preview NÃO aparecem automaticamente em Produção!**  
