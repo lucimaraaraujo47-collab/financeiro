@@ -153,9 +153,15 @@ Forneça os seguintes arquivos deste repositório:
 
 ## 📞 CANAIS DE SUPORTE EMERGENT
 
-- **Email**: support@emergent.host (ou o email oficial da plataforma)
-- **Chat**: Dentro da plataforma Emergent (se disponível)
-- **Discord**: Canal de suporte (se a plataforma tiver)
+- **Discord**: https://discord.gg/VzKfwCXC4A (RECOMENDADO - resposta mais rápida)
+- **Email**: support@emergent.sh
+
+**IMPORTANTE**: Ao contatar o suporte, inclua:
+- Seu Job ID (clique no botão "i" no canto superior direito do chat)
+- Screenshot do erro de deployment
+- Mencione que a aplicação funciona perfeitamente no preview
+- Informe que os health endpoints (/health, /readiness) estão funcionando
+- Compartilhe o arquivo: `/app/DIAGNOSTICO_DEFINITIVO_DEPLOYMENT.md`
 
 **Prioridade**: URGENTE - Aplicação em produção não funciona
 
