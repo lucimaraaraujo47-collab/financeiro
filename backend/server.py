@@ -2642,11 +2642,36 @@ async def create_transacao(empresa_id: str, transacao_data: TransacaoCreate, cur
     return transacao_obj
 
 @api_router.get("/empresas/{empresa_id}/transacoes", response_model=List[Transacao])
-async def get_transacoes(empresa_id: str, current_user: dict = Depends(get_current_user)):
+async def get_transacoes(
+    empresa_id: str, 
+    current_user: dict = Depends(get_current_user),
+    categoria_id: Optional[str] = None,
+    centro_custo_id: Optional[str] = None,
+    conta_bancaria_id: Optional[str] = None,
+    fornecedor_id: Optional[str] = None,
+    tipo: Optional[str] = None,
+    status: Optional[str] = None
+):
     if empresa_id not in current_user.get("empresa_ids", []):
         raise HTTPException(status_code=403, detail="Acesso negado")
     
-    transacoes = await db.transacoes.find({"empresa_id": empresa_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    # Build query with filters
+    query = {"empresa_id": empresa_id}
+    
+    if categoria_id:
+        query["categoria_id"] = categoria_id
+    if centro_custo_id:
+        query["centro_custo_id"] = centro_custo_id
+    if conta_bancaria_id:
+        query["conta_bancaria_id"] = conta_bancaria_id
+    if fornecedor_id:
+        query["fornecedor_id"] = fornecedor_id
+    if tipo:
+        query["tipo"] = tipo
+    if status:
+        query["status"] = status
+    
+    transacoes = await db.transacoes.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return transacoes
 
 @api_router.delete("/transacoes/{transacao_id}")
