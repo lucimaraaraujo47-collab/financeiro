@@ -31,7 +31,8 @@ import Vendas from './components/Vendas';
 import DashboardVendas from './components/DashboardVendas';
 import Layout from './components/Layout';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+// Auto-detect backend URL based on environment
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
 const API = `${BACKEND_URL}/api`;
 
 export { API };
