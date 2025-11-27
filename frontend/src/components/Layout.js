@@ -267,8 +267,8 @@ function Layout({ user, onLogout, children }) {
               )}
             </div>
             
-            {sidebarOpen && configOpen && (
-              <div className="nav-submenu">
+            {sidebarOpen && (
+              <div className={`nav-submenu ${configOpen ? 'open' : ''}`}>
                 <Link 
                   to="/categorias" 
                   className={`nav-item nav-subitem ${isActive('/categorias') ? 'active' : ''}`}
