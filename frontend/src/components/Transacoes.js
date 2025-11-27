@@ -691,7 +691,28 @@ function Transacoes({ user, token }) {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Fornecedor/Cliente Cadastrado</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <label className="form-label" style={{ marginBottom: 0 }}>Fornecedor/Cliente Cadastrado</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowFornecedorModal(true)}
+                    style={{
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.8rem',
+                      background: '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}
+                  >
+                    <span>+</span> Novo Fornecedor
+                  </button>
+                </div>
                 <select
                   className="form-select"
                   value={formData.fornecedor_id}
