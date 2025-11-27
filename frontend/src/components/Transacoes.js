@@ -211,6 +211,36 @@ function Transacoes({ user, token }) {
     }
   };
 
+  // Criar fornecedor rápido
+  const handleCreateFornecedor = async (e) => {
+    e.preventDefault();
+    if (!empresa) return;
+
+    try {
+      setLoading(true);
+      const response = await axios.post(
+        `${API}/empresas/${empresa.id}/fornecedores`,
+        fornecedorForm,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Atualizar lista de fornecedores
+      setFornecedores([...fornecedores, response.data]);
+      
+      // Selecionar o fornecedor recém-criado
+      handleFornecedorChange(response.data.id);
+      
+      // Limpar e fechar modal
+      setFornecedorForm({ nome: '', cnpj: '', email: '', telefone: '' });
+      setShowFornecedorModal(false);
+      setMessage('Fornecedor cadastrado com sucesso!');
+    } catch (error) {
+      setMessage(error.response?.data?.detail || 'Erro ao cadastrar fornecedor');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Atualizar transações filtradas quando transações ou filtros mudam
   useEffect(() => {
     aplicarFiltros();
