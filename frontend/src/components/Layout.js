@@ -183,8 +183,8 @@ function Layout({ user, onLogout, children }) {
               )}
             </div>
             
-            {sidebarOpen && estoqueOpen && (
-              <div className="nav-submenu">
+            {sidebarOpen && (
+              <div className={`nav-submenu ${estoqueOpen ? 'open' : ''}`}>
                 <Link 
                   to="/clientes" 
                   className={`nav-item nav-subitem ${isActive('/clientes') ? 'active' : ''}`}
