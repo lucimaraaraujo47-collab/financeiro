@@ -350,6 +350,123 @@ function Transacoes({ user, token }) {
           </div>
         </div>
 
+        {/* Filtros */}
+        <div style={{ 
+          marginTop: '1.5rem', 
+          padding: '1.5rem', 
+          background: 'var(--card-bg)', 
+          borderRadius: '8px',
+          border: '1px solid var(--border-color)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>🔍 Filtros</h3>
+            <button 
+              type="button"
+              onClick={limparFiltros}
+              style={{
+                padding: '0.4rem 0.8rem',
+                fontSize: '0.85rem',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              Limpar Filtros
+            </button>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontSize: '0.85rem' }}>Categoria</label>
+              <select 
+                className="form-select"
+                value={filtros.categoria_id}
+                onChange={(e) => setFiltros({...filtros, categoria_id: e.target.value})}
+              >
+                <option value="">Todas</option>
+                {categorias.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.nome}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontSize: '0.85rem' }}>Centro de Custo</label>
+              <select 
+                className="form-select"
+                value={filtros.centro_custo_id}
+                onChange={(e) => setFiltros({...filtros, centro_custo_id: e.target.value})}
+              >
+                <option value="">Todos</option>
+                {centrosCusto.map(cc => (
+                  <option key={cc.id} value={cc.id}>{cc.nome}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontSize: '0.85rem' }}>Conta</label>
+              <select 
+                className="form-select"
+                value={filtros.conta_bancaria_id}
+                onChange={(e) => setFiltros({...filtros, conta_bancaria_id: e.target.value})}
+              >
+                <option value="">Todas</option>
+                {contas.map(conta => (
+                  <option key={conta.id} value={conta.id}>{conta.nome}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontSize: '0.85rem' }}>Fornecedor</label>
+              <select 
+                className="form-select"
+                value={filtros.fornecedor_id}
+                onChange={(e) => setFiltros({...filtros, fornecedor_id: e.target.value})}
+              >
+                <option value="">Todos</option>
+                {fornecedores.map(forn => (
+                  <option key={forn.id} value={forn.id}>{forn.nome}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontSize: '0.85rem' }}>Tipo</label>
+              <select 
+                className="form-select"
+                value={filtros.tipo}
+                onChange={(e) => setFiltros({...filtros, tipo: e.target.value})}
+              >
+                <option value="">Todos</option>
+                <option value="despesa">Despesa</option>
+                <option value="receita">Receita</option>
+              </select>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontSize: '0.85rem' }}>Status</label>
+              <select 
+                className="form-select"
+                value={filtros.status}
+                onChange={(e) => setFiltros({...filtros, status: e.target.value})}
+              >
+                <option value="">Todos</option>
+                <option value="pendente">Pendente</option>
+                <option value="conciliada">Conciliada</option>
+                <option value="contestada">Contestada</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            Mostrando {transacoesFiltradas.length} de {transacoes.length} transações
+          </div>
+        </div>
+
         {showTransferencia && (
           <div style={{ 
             marginTop: '2rem', 
