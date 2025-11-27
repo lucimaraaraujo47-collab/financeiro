@@ -978,6 +978,123 @@ function Transacoes({ user, token }) {
           </div>
         )}
       </div>
+
+      {/* Modal de Cadastro Rápido de Fornecedor */}
+      {showFornecedorModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+          onClick={() => setShowFornecedorModal(false)}
+        >
+          <div 
+            style={{
+              background: 'var(--card-bg)',
+              borderRadius: '12px',
+              padding: '2rem',
+              maxWidth: '500px',
+              width: '90%',
+              maxHeight: '90vh',
+              overflow: 'auto'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: '600', margin: 0 }}>
+                Cadastrar Fornecedor
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowFornecedorModal(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateFornecedor}>
+              <div className="form-group">
+                <label className="form-label">Nome *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={fornecedorForm.nome}
+                  onChange={(e) => setFornecedorForm({...fornecedorForm, nome: e.target.value})}
+                  required
+                  placeholder="Nome do fornecedor"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">CNPJ *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={fornecedorForm.cnpj}
+                  onChange={(e) => setFornecedorForm({...fornecedorForm, cnpj: e.target.value})}
+                  required
+                  placeholder="00.000.000/0001-00"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input
+                  type="email"
+                  className="form-input"
+                  value={fornecedorForm.email}
+                  onChange={(e) => setFornecedorForm({...fornecedorForm, email: e.target.value})}
+                  placeholder="email@exemplo.com"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Telefone</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={fornecedorForm.telefone}
+                  onChange={(e) => setFornecedorForm({...fornecedorForm, telefone: e.target.value})}
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
+                <button 
+                  type="submit" 
+                  className="btn-success"
+                  disabled={loading}
+                  style={{ flex: 1 }}
+                >
+                  {loading ? 'Salvando...' : 'Salvar Fornecedor'}
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-secondary"
+                  onClick={() => setShowFornecedorModal(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
