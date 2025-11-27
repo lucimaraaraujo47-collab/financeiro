@@ -799,7 +799,7 @@ function Transacoes({ user, token }) {
           </form>
         )}
 
-        {transacoes.length > 0 ? (
+        {transacoesFiltradas.length > 0 ? (
           <div style={{ overflowX: 'auto', marginTop: '2rem' }}>
             <table className="data-table">
               <thead>
@@ -816,7 +816,7 @@ function Transacoes({ user, token }) {
                 </tr>
               </thead>
               <tbody data-testid="transacoes-table">
-                {transacoes.map((t) => (
+                {transacoesFiltradas.map((t) => (
                   <tr key={t.id}>
                     <td>{new Date(t.data_competencia).toLocaleDateString('pt-BR')}</td>
                     <td><span className={`badge badge-${t.tipo}`}>{t.tipo}</span></td>
