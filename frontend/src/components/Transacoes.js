@@ -607,13 +607,31 @@ function Transacoes({ user, token }) {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Fornecedor/Cliente</label>
+                <label className="form-label">Fornecedor/Cliente Cadastrado</label>
+                <select
+                  className="form-select"
+                  value={formData.fornecedor_id}
+                  onChange={(e) => handleFornecedorChange(e.target.value)}
+                  data-testid="transacao-fornecedor-select"
+                >
+                  <option value="">Selecione ou digite manualmente abaixo</option>
+                  {fornecedores.map(forn => (
+                    <option key={forn.id} value={forn.id}>
+                      {forn.nome} - {forn.cnpj}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Fornecedor/Cliente (Manual)</label>
                 <input
                   type="text"
                   className="form-input"
                   value={formData.fornecedor}
-                  onChange={(e) => setFormData({ ...formData, fornecedor: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, fornecedor: e.target.value, fornecedor_id: '' })}
                   required
+                  placeholder="Digite o nome se não estiver na lista"
                   data-testid="transacao-fornecedor-input"
                 />
               </div>
