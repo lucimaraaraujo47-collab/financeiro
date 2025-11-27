@@ -34,6 +34,10 @@ import Layout from './components/Layout';
 // Use relative URL - Kubernetes Ingress will route /api to backend
 const API = '/api';
 
+// Debug: Log the API URL being used
+console.log('API URL configured:', API);
+console.log('Current origin:', window.location.origin);
+
 export { API };
 
 function App() {
