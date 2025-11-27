@@ -777,6 +777,7 @@ class Transacao(BaseModel):
     usuario_id: str
     tipo: str  # despesa, receita
     fornecedor: str
+    fornecedor_id: Optional[str] = None  # ID do fornecedor cadastrado
     cnpj_cpf: Optional[str] = None
     descricao: str
     valor_total: float
@@ -800,6 +801,7 @@ class Transacao(BaseModel):
 class TransacaoCreate(BaseModel):
     tipo: str
     fornecedor: str
+    fornecedor_id: Optional[str] = None  # ID do fornecedor cadastrado
     cnpj_cpf: Optional[str] = None
     descricao: str
     valor_total: float
