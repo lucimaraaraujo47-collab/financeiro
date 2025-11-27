@@ -5,15 +5,26 @@ import { API } from '../App';
 function Transacoes({ user, token }) {
   const [empresa, setEmpresa] = useState(null);
   const [transacoes, setTransacoes] = useState([]);
+  const [transacoesFiltradas, setTransacoesFiltradas] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [centrosCusto, setCentrosCusto] = useState([]);
   const [contas, setContas] = useState([]);
   const [cartoes, setCartoes] = useState([]);
+  const [fornecedores, setFornecedores] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [showTransferencia, setShowTransferencia] = useState(false);
+  const [filtros, setFiltros] = useState({
+    categoria_id: '',
+    centro_custo_id: '',
+    conta_bancaria_id: '',
+    fornecedor_id: '',
+    tipo: '',
+    status: ''
+  });
   const [formData, setFormData] = useState({
     tipo: 'despesa',
     fornecedor: '',
+    fornecedor_id: '',
     cnpj_cpf: '',
     descricao: '',
     valor_total: '',
