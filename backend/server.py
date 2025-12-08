@@ -186,6 +186,31 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     user: Dict[str, Any]
 
+# Sistema de Logs
+class LogAcao(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_email: str
+    empresa_id: str
+    acao: str  # login, logout, criar_transacao, editar_cliente, etc
+    modulo: str  # financeiro, vendas, estoque, etc
+    detalhes: dict = {}  # Dados adicionais da ação
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class LogSessao(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_email: str
+    empresa_id: str
+    login_at: datetime
+    logout_at: Optional[datetime] = None
+    duracao_segundos: Optional[int] = None
+    ip_address: Optional[str] = None
+
 class Empresa(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
