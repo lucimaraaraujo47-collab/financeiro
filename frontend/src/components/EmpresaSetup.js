@@ -241,6 +241,34 @@ function EmpresaSetup({ user, token, onUpdate }) {
                 </div>
               </div>
 
+              {!editingEmpresa && (
+                <div style={{
+                  marginTop: '1.5rem',
+                  padding: '1.25rem',
+                  backgroundColor: '#fff3cd',
+                  borderRadius: '8px',
+                  border: '2px solid #ffc107'
+                }}>
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontWeight: '500', marginBottom: '0.5rem', display: 'block' }}>
+                      🔐 Senha de Administrador Master *
+                    </label>
+                    <input
+                      type="password"
+                      className="form-input"
+                      value={senhaAdmin}
+                      onChange={(e) => setSenhaAdmin(e.target.value)}
+                      required
+                      placeholder="Apenas administrador master pode criar empresas"
+                      style={{ fontSize: '0.9375rem' }}
+                    />
+                    <div style={{ fontSize: '0.8125rem', color: '#856404', marginTop: '0.5rem' }}>
+                      ⚠️ Apenas o administrador master do sistema pode cadastrar novas empresas
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {editingEmpresa && (
                 <div style={{
                   marginTop: '1.5rem',
