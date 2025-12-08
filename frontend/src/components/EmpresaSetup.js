@@ -46,11 +46,19 @@ function EmpresaSetup({ user, token, onUpdate }) {
         });
         setMessage('✅ Empresa atualizada com sucesso!');
       } else {
-        // Criar nova empresa
+        // Criar nova empresa - requer senha admin
+        if (!senhaAdmin) {
+          setMessage('❌ Senha de administrador obrigatória para criar empresa');
+          setLoading(false);
+          return;
+        }
+        
         await axios.post(`${API}/empresas`, formData, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
+          params: { senha_admin: senhaAdmin }
         });
         setMessage('✅ Empresa cadastrada com sucesso!');
+        setSenhaAdmin('');
       }
       
       setShowForm(false);
