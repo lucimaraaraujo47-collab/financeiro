@@ -1774,6 +1774,172 @@ async def get_relatorio_logs(
         "total_sessoes": len(sessoes)
     }
 
+# ==================== LICENCIAMENTO ====================
+
+@api_router.post("/licencas")
+async def criar_licenca(empresa_id: str, plano: str, current_user: dict = Depends(get_current_user)):
+    """Cria licença e assinatura no Asaas"""
+    if current_user.get("email") != "faraujoneto2005@gmail.com":
+        raise HTTPException(status_code=403, detail="Apenas admin master pode criar licenças")
+    
+    empresa = await db.empresas.find_one({"id": empresa_id}, {"_id": 0})
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
+    valor = 99.90 if plano == "basico" else 139.90
+    
+    # Criar cliente no Asaas
+    customer_data = {
+        "name": empresa["razao_social"],
+        "cpfCnpj": empresa["cnpj"],
+        "email": empresa.get("email_cobranca", ""),
+        "phone": empresa.get("telefone_cobranca", "")
+    }
+    asaas_customer = await asaas_request("POST", "customers", customer_data)
+    
+    # Criar assinatura no Asaas
+    subscription_data = {
+        "customer": asaas_customer["id"],
+        "billingType": "BOLETO",
+        "value": valor,
+        "cycle": "MONTHLY",
+        "nextDueDate": (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
+    }
+    asaas_subscription = await asaas_request("POST", "subscriptions", subscription_data)
+    
+    # Salvar licença
+    licenca = Licenca(
+        empresa_id=empresa_id,
+        plano=plano,
+        valor_mensal=valor,
+        asaas_customer_id=asaas_customer["id"],
+        asaas_subscription_id=asaas_subscription["id"],
+        data_vencimento=datetime.now() + timedelta(days=7)
+    )
+    
+    doc = licenca.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    doc['data_vencimento'] = doc['data_vencimento'].isoformat()
+    await db.licencas.insert_one(doc)
+    
+    # Atualizar empresa
+    await db.empresas.update_one(
+        {"id": empresa_id},
+        {"$set": {"asaas_customer_id": asaas_customer["id"]}}
+    )
+    
+    return licenca
+
+@api_router.get("/licencas/{empresa_id}")
+async def get_licenca(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    """Retorna licença da empresa"""
+    licenca = await db.licencas.find_one({"empresa_id": empresa_id}, {"_id": 0})
+    if not licenca:
+        return None
+    return licenca
+
+@api_router.get("/cobrancas/{empresa_id}")
+async def get_cobrancas(empresa_id: str, limit: int = 50, current_user: dict = Depends(get_current_user)):
+    """Lista cobranças da empresa"""
+    cobrancas = await db.cobrancas.find(
+        {"empresa_id": empresa_id},
+        {"_id": 0}
+    ).sort("data_vencimento", -1).limit(limit).to_list(limit)
+    return cobrancas
+
+@api_router.post("/webhooks/asaas")
+async def webhook_asaas(request: Request):
+    """Recebe notificações do Asaas"""
+    payload = await request.json()
+    event = payload.get("event")
+    
+    if event in ["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]:
+        payment_id = payload.get("payment", {}).get("id")
+        
+        # Atualizar cobrança
+        await db.cobrancas.update_one(
+            {"asaas_payment_id": payment_id},
+            {"$set": {
+                "status": "pago",
+                "data_pagamento": datetime.now().isoformat()
+            }}
+        )
+        
+        # Reativar licença se estava bloqueada
+        cobranca = await db.cobrancas.find_one({"asaas_payment_id": payment_id}, {"_id": 0})
+        if cobranca:
+            await db.licencas.update_one(
+                {"id": cobranca["licenca_id"]},
+                {"$set": {
+                    "status": "ativa",
+                    "dias_atraso": 0,
+                    "bloqueada_em": None,
+                    "updated_at": datetime.now().isoformat()
+                }}
+            )
+            
+            # Desbloquear empresa
+            await db.empresas.update_one(
+                {"id": cobranca["empresa_id"]},
+                {"$set": {"bloqueada": False, "motivo_bloqueio": ""}}
+            )
+    
+    elif event == "PAYMENT_OVERDUE":
+        payment_id = payload.get("payment", {}).get("id")
+        await db.cobrancas.update_one(
+            {"asaas_payment_id": payment_id},
+            {"$set": {"status": "atrasado"}}
+        )
+    
+    return {"status": "ok"}
+
+@api_router.post("/licencas/verificar-atrasos")
+async def verificar_atrasos():
+    """Job para verificar licenças atrasadas e bloquear após 5 dias"""
+    hoje = datetime.now()
+    
+    # Buscar licenças ativas com vencimento passado
+    licencas = await db.licencas.find({
+        "status": "ativa",
+        "data_vencimento": {"$lt": hoje.isoformat()}
+    }, {"_id": 0}).to_list(1000)
+    
+    for licenca in licencas:
+        vencimento = datetime.fromisoformat(licenca["data_vencimento"])
+        dias_atraso = (hoje - vencimento).days
+        
+        if dias_atraso >= 5:
+            # Bloquear licença e empresa
+            await db.licencas.update_one(
+                {"id": licenca["id"]},
+                {"$set": {
+                    "status": "bloqueada",
+                    "dias_atraso": dias_atraso,
+                    "bloqueada_em": hoje.isoformat(),
+                    "motivo_bloqueio": f"Pagamento em atraso há {dias_atraso} dias"
+                }}
+            )
+            
+            await db.empresas.update_one(
+                {"id": licenca["empresa_id"]},
+                {"$set": {
+                    "bloqueada": True,
+                    "motivo_bloqueio": f"Licença bloqueada por inadimplência ({dias_atraso} dias de atraso)"
+                }}
+            )
+            
+            # Enviar notificações
+            empresa = await db.empresas.find_one({"id": licenca["empresa_id"]}, {"_id": 0})
+            if empresa and empresa.get("email_cobranca"):
+                await enviar_email(
+                    empresa["email_cobranca"],
+                    "⚠️ Acesso Bloqueado - Pagamento Pendente",
+                    f"<p>Sua licença foi bloqueada devido ao não pagamento há {dias_atraso} dias.</p>"
+                )
+    
+    return {"licencas_processadas": len(licencas)}
+
 @api_router.delete("/users/{user_id}")
 async def delete_user(user_id: str, current_user: dict = Depends(get_current_user)):
     """
