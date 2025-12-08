@@ -164,6 +164,12 @@ class UserCreate(BaseModel):
             raise ValueError('Número de telefone inválido')
         return v
     
+    @validator('perfil')
+    def validate_perfil(cls, v):
+        if v not in PERFIS_PERMISSOES:
+            raise ValueError(f'Perfil inválido. Opções: {", ".join(PERFIS_PERMISSOES.keys())}')
+        return v
+    
     @validator('senha')
     def validate_senha_strength(cls, v):
         is_valid, error_msg = validate_password_strength(v)
