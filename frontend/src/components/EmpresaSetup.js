@@ -174,8 +174,12 @@ function EmpresaSetup({ user, token, onUpdate }) {
 
         {showForm && (
           <form onSubmit={handleSubmit} style={{ marginTop: '2rem' }}>
+            <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>
+              {editingEmpresa ? '✏️ Editar Empresa' : '➕ Nova Empresa'}
+            </h3>
+            
             <div className="form-group">
-              <label className="form-label">Razão Social</label>
+              <label className="form-label">Razão Social *</label>
               <input
                 type="text"
                 className="form-input"
@@ -187,7 +191,7 @@ function EmpresaSetup({ user, token, onUpdate }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label">CNPJ</label>
+              <label className="form-label">CNPJ *</label>
               <input
                 type="text"
                 className="form-input"
@@ -199,14 +203,53 @@ function EmpresaSetup({ user, token, onUpdate }) {
               />
             </div>
 
-            <button 
-              type="submit" 
-              className="btn-primary" 
-              disabled={loading}
-              data-testid="empresa-submit-button"
-            >
-              {loading ? 'Cadastrando...' : 'Cadastrar Empresa'}
-            </button>
+            {editingEmpresa && (
+              <>
+                <div className="form-group">
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.bloqueada}
+                      onChange={(e) => setFormData({ ...formData, bloqueada: e.target.checked })}
+                      style={{ width: 'auto' }}
+                    />
+                    🔒 Empresa Bloqueada (não poderá acessar o sistema)
+                  </label>
+                </div>
+
+                {formData.bloqueada && (
+                  <div className="form-group">
+                    <label className="form-label">Motivo do Bloqueio</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={formData.motivo_bloqueio}
+                      onChange={(e) => setFormData({ ...formData, motivo_bloqueio: e.target.value })}
+                      placeholder="Ex: Inadimplência, Pagamento pendente..."
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+              <button 
+                type="submit" 
+                className="btn-primary" 
+                disabled={loading}
+                data-testid="empresa-submit-button"
+              >
+                {loading ? 'Salvando...' : (editingEmpresa ? 'Salvar Alterações' : 'Cadastrar Empresa')}
+              </button>
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                onClick={handleCancelEdit}
+                disabled={loading}
+              >
+                Cancelar
+              </button>
+            </div>
           </form>
         )}
 
