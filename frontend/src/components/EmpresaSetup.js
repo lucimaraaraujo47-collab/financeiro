@@ -198,30 +198,39 @@ function EmpresaSetup({ user, token, onUpdate }) {
                 </h3>
               </div>
             
-            <div className="form-group">
-              <label className="form-label">Razão Social *</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.razao_social}
-                onChange={(e) => setFormData({ ...formData, razao_social: e.target.value })}
-                required
-                data-testid="empresa-razao-input"
-              />
-            </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: '500', marginBottom: '0.5rem', display: 'block' }}>
+                    🏢 Razão Social *
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.razao_social}
+                    onChange={(e) => setFormData({ ...formData, razao_social: e.target.value })}
+                    required
+                    placeholder="Nome da empresa"
+                    data-testid="empresa-razao-input"
+                    style={{ fontSize: '0.9375rem' }}
+                  />
+                </div>
 
-            <div className="form-group">
-              <label className="form-label">CNPJ *</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.cnpj}
-                onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
-                required
-                placeholder="00.000.000/0001-00"
-                data-testid="empresa-cnpj-input"
-              />
-            </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: '500', marginBottom: '0.5rem', display: 'block' }}>
+                    📄 CNPJ *
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.cnpj}
+                    onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                    required
+                    placeholder="00.000.000/0001-00"
+                    data-testid="empresa-cnpj-input"
+                    style={{ fontSize: '0.9375rem' }}
+                  />
+                </div>
+              </div>
 
             {editingEmpresa && (
               <>
