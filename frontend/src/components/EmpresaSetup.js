@@ -5,10 +5,14 @@ import { API } from '../App';
 function EmpresaSetup({ user, token, onUpdate }) {
   const [empresas, setEmpresas] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingEmpresa, setEditingEmpresa] = useState(null);
   const [formData, setFormData] = useState({
     razao_social: '',
     cnpj: '',
-    contas_bancarias: []
+    contas_bancarias: [],
+    ativa: true,
+    bloqueada: false,
+    motivo_bloqueio: ''
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
