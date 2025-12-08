@@ -125,6 +125,10 @@ function App() {
             {/* Backup Configuration */}
             <Route path="/backup" element={<ConfiguracoesBackup user={user} token={token} />} />
             
+            {/* Usuários e Logs */}
+            <Route path="/usuarios" element={<Usuarios user={user} token={token} />} />
+            <Route path="/logs" element={<Logs user={user} token={token} />} />
+            
             {/* Vendas */}
             <Route path="/vendas" element={<Vendas user={user} token={token} />} />
             <Route path="/vendas/dashboard" element={<DashboardVendas user={user} token={token} />} />
