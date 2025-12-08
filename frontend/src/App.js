@@ -24,6 +24,8 @@ import Equipamentos from './components/Equipamentos';
 import EquipamentosSerializados from './components/EquipamentosSerializados';
 import Movimentacoes from './components/Movimentacoes';
 import ConfiguracoesBackup from './components/ConfiguracoesBackup';
+import Usuarios from './components/Usuarios';
+import Logs from './components/Logs';
 import Vendas from './components/Vendas';
 import DashboardVendas from './components/DashboardVendas';
 import Layout from './components/Layout';
