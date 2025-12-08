@@ -985,6 +985,93 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+# ==================== PERMISSÕES ====================
+
+def verificar_permissao(user: dict, permissao: str) -> bool:
+    """Verifica se o usuário tem a permissão necessária"""
+    perfil = user.get("perfil", "consulta")
+    
+    # Admin tem todas as permissões
+    if perfil == "admin":
+        return True
+    
+    # Pega as permissões do perfil
+    permissoes = PERFIS_PERMISSOES.get(perfil, {}).get("permissoes", [])
+    
+    # Verifica se tem a permissão específica ou todas (*)
+    return "*" in permissoes or permissao in permissoes
+
+def requer_permissao(permissao: str):
+    """Decorator para verificar permissão em rotas"""
+    def decorator(func):
+        async def wrapper(*args, current_user: dict = None, **kwargs):
+            if current_user and not verificar_permissao(current_user, permissao):
+                raise HTTPException(
+                    status_code=403, 
+                    detail=f"Permissão negada. Necessário: {permissao}"
+                )
+            return await func(*args, current_user=current_user, **kwargs)
+        return wrapper
+    return decorator
+
+# ==================== LOGS ====================
+
+async def registrar_acao(
+    user_id: str,
+    user_email: str,
+    empresa_id: str,
+    acao: str,
+    modulo: str,
+    detalhes: dict = {},
+    request: Request = None
+):
+    """Registra uma ação do usuário no log"""
+    log = LogAcao(
+        user_id=user_id,
+        user_email=user_email,
+        empresa_id=empresa_id,
+        acao=acao,
+        modulo=modulo,
+        detalhes=detalhes,
+        ip_address=request.client.host if request else None,
+        user_agent=request.headers.get("user-agent") if request else None
+    )
+    
+    doc = log.model_dump()
+    doc['timestamp'] = doc['timestamp'].isoformat()
+    await db.logs_acoes.insert_one(doc)
+
+async def iniciar_sessao(user_id: str, user_email: str, empresa_id: str, ip_address: str = None):
+    """Inicia uma nova sessão de usuário"""
+    sessao = LogSessao(
+        user_id=user_id,
+        user_email=user_email,
+        empresa_id=empresa_id,
+        login_at=datetime.now(timezone.utc),
+        ip_address=ip_address
+    )
+    
+    doc = sessao.model_dump()
+    doc['login_at'] = doc['login_at'].isoformat()
+    await db.logs_sessoes.insert_one(doc)
+    return sessao.id
+
+async def finalizar_sessao(sessao_id: str):
+    """Finaliza uma sessão de usuário"""
+    sessao = await db.logs_sessoes.find_one({"id": sessao_id}, {"_id": 0})
+    if sessao:
+        logout_at = datetime.now(timezone.utc)
+        login_at = datetime.fromisoformat(sessao['login_at'])
+        duracao = int((logout_at - login_at).total_seconds())
+        
+        await db.logs_sessoes.update_one(
+            {"id": sessao_id},
+            {"$set": {
+                "logout_at": logout_at.isoformat(),
+                "duracao_segundos": duracao
+            }}
+        )
+
 # ==================== AI HELPERS ====================
 
 async def extrair_dados_com_ai(texto: str, empresa_id: str) -> Dict[str, Any]:
