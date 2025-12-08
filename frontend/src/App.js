@@ -73,10 +73,20 @@ function App() {
     setUser(userData);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
+  const handleLogout = async () => {
+    try {
+      // Chamar endpoint de logout para registrar sessão
+      await axios.post(`${API}/auth/logout`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    } finally {
+      // Limpar dados locais
+      localStorage.removeItem('token');
+      setToken(null);
+      setUser(null);
+    }
   };
 
   if (loading) {
