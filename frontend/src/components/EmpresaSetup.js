@@ -14,6 +14,7 @@ function EmpresaSetup({ user, token, onUpdate }) {
     bloqueada: false,
     motivo_bloqueio: ''
   });
+  const [senhaAdmin, setSenhaAdmin] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
