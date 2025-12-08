@@ -157,6 +157,9 @@ class Empresa(BaseModel):
     razao_social: str
     cnpj: str
     contas_bancarias: List[str] = []
+    ativa: bool = True
+    bloqueada: bool = False
+    motivo_bloqueio: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class EmpresaCreate(BaseModel):
