@@ -38,19 +38,105 @@ function EmpresaSetup({ user, token, onUpdate }) {
     setMessage('');
 
     try {
-      await axios.post(`${API}/empresas`, formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setMessage('Empresa cadastrada com sucesso!');
+      if (editingEmpresa) {
+        // Atualizar empresa existente
+        await axios.put(`${API}/empresas/${editingEmpresa.id}`, formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setMessage('✅ Empresa atualizada com sucesso!');
+      } else {
+        // Criar nova empresa
+        await axios.post(`${API}/empresas`, formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setMessage('✅ Empresa cadastrada com sucesso!');
+      }
+      
       setShowForm(false);
-      setFormData({ razao_social: '', cnpj: '', contas_bancarias: [] });
+      setEditingEmpresa(null);
+      resetForm();
       loadEmpresas();
       if (onUpdate) onUpdate();
     } catch (error) {
-      setMessage('Erro ao cadastrar empresa');
+      setMessage('❌ Erro ao salvar empresa: ' + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      razao_social: '',
+      cnpj: '',
+      contas_bancarias: [],
+      ativa: true,
+      bloqueada: false,
+      motivo_bloqueio: ''
+    });
+  };
+
+  const handleEdit = (empresa) => {
+    setEditingEmpresa(empresa);
+    setFormData({
+      razao_social: empresa.razao_social,
+      cnpj: empresa.cnpj,
+      contas_bancarias: empresa.contas_bancarias || [],
+      ativa: empresa.ativa !== undefined ? empresa.ativa : true,
+      bloqueada: empresa.bloqueada || false,
+      motivo_bloqueio: empresa.motivo_bloqueio || ''
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id, razaoSocial) => {
+    if (!window.confirm(`Tem certeza que deseja excluir a empresa "${razaoSocial}"?\n\nEsta ação não pode ser desfeita!`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await axios.delete(`${API}/empresas/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessage('✅ Empresa excluída com sucesso!');
+      loadEmpresas();
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      setMessage('❌ Erro ao excluir empresa: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleBlock = async (empresa) => {
+    const novoStatus = !empresa.bloqueada;
+    const motivo = novoStatus ? prompt('Motivo do bloqueio (ex: Inadimplência):') : '';
+    
+    if (novoStatus && !motivo) {
+      return; // Cancelou
+    }
+
+    try {
+      setLoading(true);
+      await axios.patch(`${API}/empresas/${empresa.id}/status`, {
+        bloqueada: novoStatus,
+        motivo_bloqueio: motivo
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessage(novoStatus ? '🔒 Empresa bloqueada!' : '✅ Empresa desbloqueada!');
+      loadEmpresas();
+    } catch (error) {
+      setMessage('❌ Erro ao atualizar status: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowForm(false);
+    setEditingEmpresa(null);
+    resetForm();
   };
 
   return (
