@@ -117,6 +117,35 @@ class UserResponse(BaseModel):
     empresa_ids: List[str] = []
     created_at: datetime
 
+# Perfis de usuário e suas permissões
+PERFIS_PERMISSOES = {
+    "admin": {
+        "nome": "Admin da Empresa",
+        "descricao": "Acesso total ao sistema",
+        "permissoes": ["*"]  # Todas as permissões
+    },
+    "financeiro": {
+        "nome": "Financeiro",
+        "descricao": "Acesso a transações, relatórios e contas",
+        "permissoes": ["transacoes", "relatorios", "categorias", "contas", "fornecedores", "centros_custo"]
+    },
+    "vendas": {
+        "nome": "Vendas",
+        "descricao": "Acesso a vendas, clientes e estoque",
+        "permissoes": ["vendas", "clientes", "estoque", "produtos"]
+    },
+    "operacional": {
+        "nome": "Operacional",
+        "descricao": "Acesso a estoque e equipamentos",
+        "permissoes": ["estoque", "equipamentos", "movimentacoes"]
+    },
+    "consulta": {
+        "nome": "Consulta",
+        "descricao": "Apenas visualização",
+        "permissoes": ["visualizar"]
+    }
+}
+
 class UserCreate(BaseModel):
     nome: str
     email: EmailStr
