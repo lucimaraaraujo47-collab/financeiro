@@ -218,7 +218,9 @@ function Transacoes({ user, token }) {
     if (!empresa) return;
 
     try {
-      setLoading(true);
+      setLoadingFornecedor(true);
+      setMessage('');
+      
       const response = await axios.post(
         `${API}/empresas/${empresa.id}/fornecedores`,
         fornecedorForm,
@@ -226,19 +228,26 @@ function Transacoes({ user, token }) {
       );
       
       // Atualizar lista de fornecedores
-      setFornecedores([...fornecedores, response.data]);
+      const novoFornecedor = response.data;
+      setFornecedores([...fornecedores, novoFornecedor]);
       
-      // Selecionar o fornecedor recém-criado
-      handleFornecedorChange(response.data.id);
+      // Selecionar o fornecedor recém-criado no formulário de transação
+      setFormData({
+        ...formData,
+        fornecedor_id: novoFornecedor.id,
+        fornecedor: novoFornecedor.nome,
+        cnpj_cpf: novoFornecedor.cnpj || ''
+      });
       
       // Limpar e fechar modal
       setFornecedorForm({ nome: '', cnpj: '', email: '', telefone: '' });
       setShowFornecedorModal(false);
-      setMessage('Fornecedor cadastrado com sucesso!');
+      setMessage('✅ Fornecedor cadastrado! Agora pode finalizar a transação.');
     } catch (error) {
+      console.error('Erro ao cadastrar fornecedor:', error);
       setMessage(error.response?.data?.detail || 'Erro ao cadastrar fornecedor');
     } finally {
-      setLoading(false);
+      setLoadingFornecedor(false);
     }
   };
 
