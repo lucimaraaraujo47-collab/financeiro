@@ -55,6 +55,7 @@ function Transacoes({ user, token }) {
     data_transferencia: new Date().toISOString().split('T')[0]
   });
   const [loading, setLoading] = useState(false);
+  const [loadingFornecedor, setLoadingFornecedor] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
