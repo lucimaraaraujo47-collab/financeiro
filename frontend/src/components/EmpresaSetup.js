@@ -254,88 +254,176 @@ function EmpresaSetup({ user, token, onUpdate }) {
         )}
 
         {empresas.length > 0 ? (
-          <table className="data-table" style={{ marginTop: '2rem' }}>
-            <thead>
-              <tr>
-                <th>Razão Social</th>
-                <th>CNPJ</th>
-                <th>Status</th>
-                <th>Data de Cadastro</th>
-                <th style={{ textAlign: 'center' }}>Ações</th>
-              </tr>
-            </thead>
-            <tbody data-testid="empresas-table">
+          <div style={{ marginTop: '2rem' }}>
+            <div style={{ 
+              display: 'grid', 
+              gap: '1rem',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))'
+            }}>
               {empresas.map((emp) => (
-                <tr key={emp.id} style={{ backgroundColor: emp.bloqueada ? 'rgba(255, 0, 0, 0.05)' : 'transparent' }}>
-                  <td>
-                    {emp.razao_social}
-                    {emp.bloqueada && (
-                      <div style={{ fontSize: '0.75rem', color: '#e74c3c', marginTop: '0.25rem' }}>
-                        🔒 {emp.motivo_bloqueio || 'Bloqueada'}
+                <div 
+                  key={emp.id}
+                  style={{
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: emp.bloqueada ? '2px solid #e74c3c' : '1px solid var(--border-color)',
+                    borderRadius: '12px',
+                    padding: '1.5rem',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                  }}
+                >
+                  {/* Header do Card */}
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'flex-start',
+                    marginBottom: '1rem',
+                    paddingBottom: '1rem',
+                    borderBottom: '1px solid var(--border-color)'
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ 
+                        margin: 0,
+                        fontSize: '1.125rem',
+                        fontWeight: '600',
+                        color: 'var(--text-primary)',
+                        marginBottom: '0.5rem'
+                      }}>
+                        {emp.razao_social}
+                      </h3>
+                      <div style={{ 
+                        fontSize: '0.875rem',
+                        color: 'var(--text-secondary)',
+                        fontFamily: 'monospace'
+                      }}>
+                        CNPJ: {emp.cnpj}
                       </div>
-                    )}
-                  </td>
-                  <td>{emp.cnpj}</td>
-                  <td>
-                    {emp.bloqueada ? (
-                      <span style={{ 
-                        padding: '0.25rem 0.75rem', 
-                        borderRadius: '1rem', 
-                        fontSize: '0.875rem',
-                        backgroundColor: '#fee',
-                        color: '#c00',
-                        fontWeight: '500'
-                      }}>
-                        🔒 Bloqueada
-                      </span>
-                    ) : (
-                      <span style={{ 
-                        padding: '0.25rem 0.75rem', 
-                        borderRadius: '1rem', 
-                        fontSize: '0.875rem',
-                        backgroundColor: '#efe',
-                        color: '#0a0',
-                        fontWeight: '500'
-                      }}>
-                        ✅ Ativa
-                      </span>
-                    )}
-                  </td>
-                  <td>{new Date(emp.created_at).toLocaleDateString('pt-BR')}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                      <button
-                        onClick={() => handleEdit(emp)}
-                        className="btn-secondary"
-                        style={{ fontSize: '0.875rem', padding: '0.4rem 0.8rem' }}
-                        title="Editar empresa"
-                      >
-                        ✏️ Editar
-                      </button>
-                      <button
-                        onClick={() => handleToggleBlock(emp)}
-                        className={emp.bloqueada ? "btn-success" : "btn-warning"}
-                        style={{ fontSize: '0.875rem', padding: '0.4rem 0.8rem' }}
-                        title={emp.bloqueada ? "Desbloquear empresa" : "Bloquear empresa"}
-                        disabled={loading}
-                      >
-                        {emp.bloqueada ? '🔓 Desbloquear' : '🔒 Bloquear'}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(emp.id, emp.razao_social)}
-                        className="btn-danger"
-                        style={{ fontSize: '0.875rem', padding: '0.4rem 0.8rem' }}
-                        title="Excluir empresa"
-                        disabled={loading}
-                      >
-                        🗑️ Excluir
-                      </button>
                     </div>
-                  </td>
-                </tr>
+                    
+                    {/* Status Badge */}
+                    <div>
+                      {emp.bloqueada ? (
+                        <span style={{ 
+                          padding: '0.375rem 0.875rem', 
+                          borderRadius: '2rem', 
+                          fontSize: '0.8125rem',
+                          backgroundColor: '#fee2e2',
+                          color: '#dc2626',
+                          fontWeight: '600',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.375rem'
+                        }}>
+                          🔒 Bloqueada
+                        </span>
+                      ) : (
+                        <span style={{ 
+                          padding: '0.375rem 0.875rem', 
+                          borderRadius: '2rem', 
+                          fontSize: '0.8125rem',
+                          backgroundColor: '#dcfce7',
+                          color: '#16a34a',
+                          fontWeight: '600',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.375rem'
+                        }}>
+                          ✅ Ativa
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Motivo do bloqueio (se houver) */}
+                  {emp.bloqueada && emp.motivo_bloqueio && (
+                    <div style={{
+                      padding: '0.75rem',
+                      backgroundColor: '#fef2f2',
+                      borderRadius: '8px',
+                      marginBottom: '1rem',
+                      fontSize: '0.875rem',
+                      color: '#991b1b'
+                    }}>
+                      <strong>Motivo:</strong> {emp.motivo_bloqueio}
+                    </div>
+                  )}
+
+                  {/* Informações adicionais */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.8125rem',
+                    color: 'var(--text-secondary)',
+                    marginBottom: '1.25rem'
+                  }}>
+                    <span>📅</span>
+                    <span>Cadastrada em {new Date(emp.created_at).toLocaleDateString('pt-BR')}</span>
+                  </div>
+
+                  {/* Botões de Ação */}
+                  <div style={{ 
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 1fr',
+                    gap: '0.5rem'
+                  }}>
+                    <button
+                      onClick={() => handleEdit(emp)}
+                      className="btn-secondary"
+                      style={{ 
+                        fontSize: '0.8125rem',
+                        padding: '0.5rem 0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.375rem',
+                        whiteSpace: 'nowrap'
+                      }}
+                      title="Editar empresa"
+                    >
+                      ✏️ Editar
+                    </button>
+                    
+                    <button
+                      onClick={() => handleToggleBlock(emp)}
+                      className={emp.bloqueada ? "btn-success" : "btn-warning"}
+                      style={{ 
+                        fontSize: '0.8125rem',
+                        padding: '0.5rem 0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.375rem',
+                        whiteSpace: 'nowrap'
+                      }}
+                      title={emp.bloqueada ? "Desbloquear acesso" : "Bloquear acesso"}
+                      disabled={loading}
+                    >
+                      {emp.bloqueada ? '🔓' : '🔒'}
+                    </button>
+                    
+                    <button
+                      onClick={() => handleDelete(emp.id, emp.razao_social)}
+                      className="btn-danger"
+                      style={{ 
+                        fontSize: '0.8125rem',
+                        padding: '0.5rem 0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.375rem',
+                        whiteSpace: 'nowrap'
+                      }}
+                      title="Excluir empresa"
+                      disabled={loading}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </div>
         ) : (
           <div className="empty-state">
             <div className="empty-state-icon">🏢</div>
