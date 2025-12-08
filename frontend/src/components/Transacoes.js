@@ -1088,15 +1088,19 @@ function Transacoes({ user, token }) {
                 <button 
                   type="submit" 
                   className="btn-success"
-                  disabled={loading}
+                  disabled={loadingFornecedor}
                   style={{ flex: 1 }}
                 >
-                  {loading ? 'Salvando...' : 'Salvar Fornecedor'}
+                  {loadingFornecedor ? 'Salvando...' : 'Salvar Fornecedor'}
                 </button>
                 <button 
                   type="button" 
                   className="btn-secondary"
-                  onClick={() => setShowFornecedorModal(false)}
+                  onClick={() => {
+                    setShowFornecedorModal(false);
+                    setFornecedorForm({ nome: '', cnpj: '', email: '', telefone: '' });
+                  }}
+                  disabled={loadingFornecedor}
                 >
                   Cancelar
                 </button>
