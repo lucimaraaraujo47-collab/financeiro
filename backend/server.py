@@ -211,6 +211,40 @@ class LogSessao(BaseModel):
     duracao_segundos: Optional[int] = None
     ip_address: Optional[str] = None
 
+# Sistema de Licenciamento
+class Licenca(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    plano: str  # "basico" ou "pro"
+    valor_mensal: float  # 99.90 ou 139.90
+    asaas_subscription_id: Optional[str] = None
+    asaas_customer_id: Optional[str] = None
+    status: str = "ativa"  # ativa, bloqueada, cancelada
+    data_vencimento: Optional[datetime] = None
+    dias_atraso: int = 0
+    bloqueada_em: Optional[datetime] = None
+    motivo_bloqueio: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class Cobranca(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    licenca_id: str
+    empresa_id: str
+    asaas_payment_id: Optional[str] = None
+    valor: float
+    data_vencimento: datetime
+    data_pagamento: Optional[datetime] = None
+    status: str = "pendente"  # pendente, pago, atrasado, cancelado
+    metodo_pagamento: str  # boleto, pix
+    boleto_url: Optional[str] = None
+    boleto_codigo: Optional[str] = None
+    pix_qrcode: Optional[str] = None
+    pix_codigo: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class Empresa(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -220,6 +254,10 @@ class Empresa(BaseModel):
     ativa: bool = True
     bloqueada: bool = False
     motivo_bloqueio: str = ""
+    # Dados para Asaas
+    asaas_customer_id: Optional[str] = None
+    email_cobranca: Optional[str] = None
+    telefone_cobranca: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class EmpresaCreate(BaseModel):
