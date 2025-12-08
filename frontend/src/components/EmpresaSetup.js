@@ -232,34 +232,55 @@ function EmpresaSetup({ user, token, onUpdate }) {
                 </div>
               </div>
 
-            {editingEmpresa && (
-              <>
-                <div className="form-group">
-                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <input
-                      type="checkbox"
-                      checked={formData.bloqueada}
-                      onChange={(e) => setFormData({ ...formData, bloqueada: e.target.checked })}
-                      style={{ width: 'auto' }}
-                    />
-                    🔒 Empresa Bloqueada (não poderá acessar o sistema)
-                  </label>
-                </div>
-
-                {formData.bloqueada && (
-                  <div className="form-group">
-                    <label className="form-label">Motivo do Bloqueio</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.motivo_bloqueio}
-                      onChange={(e) => setFormData({ ...formData, motivo_bloqueio: e.target.value })}
-                      placeholder="Ex: Inadimplência, Pagamento pendente..."
-                    />
+              {editingEmpresa && (
+                <div style={{
+                  marginTop: '1.5rem',
+                  padding: '1.25rem',
+                  backgroundColor: formData.bloqueada ? '#fef2f2' : '#f9fafb',
+                  borderRadius: '8px',
+                  border: formData.bloqueada ? '2px solid #fecaca' : '1px solid #e5e7eb'
+                }}>
+                  <div className="form-group" style={{ marginBottom: formData.bloqueada ? '1rem' : 0 }}>
+                    <label className="form-label" style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.75rem',
+                      cursor: 'pointer',
+                      fontWeight: '500'
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={formData.bloqueada}
+                        onChange={(e) => setFormData({ ...formData, bloqueada: e.target.checked })}
+                        style={{ 
+                          width: '1.125rem', 
+                          height: '1.125rem',
+                          cursor: 'pointer'
+                        }}
+                      />
+                      <span style={{ fontSize: '0.9375rem' }}>
+                        🔒 Bloquear empresa (impede acesso ao sistema)
+                      </span>
+                    </label>
                   </div>
-                )}
-              </>
-            )}
+
+                  {formData.bloqueada && (
+                    <div className="form-group" style={{ marginTop: '0.75rem' }}>
+                      <label className="form-label" style={{ fontWeight: '500', marginBottom: '0.5rem', display: 'block' }}>
+                        💬 Motivo do Bloqueio
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={formData.motivo_bloqueio}
+                        onChange={(e) => setFormData({ ...formData, motivo_bloqueio: e.target.value })}
+                        placeholder="Ex: Inadimplência, Pagamento pendente..."
+                        style={{ fontSize: '0.9375rem' }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
               <button 
