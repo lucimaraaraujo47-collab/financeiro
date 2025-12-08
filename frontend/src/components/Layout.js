@@ -307,6 +307,15 @@ function Layout({ user, onLogout, children }) {
                   </Link>
                 )}
 
+                <Link 
+                  to="/logs" 
+                  className={`nav-item nav-subitem ${isActive('/logs') ? 'active' : ''}`}
+                  data-testid="nav-logs"
+                >
+                  <span className="nav-icon">📊</span>
+                  <span className="nav-text">Logs</span>
+                </Link>
+
                 {user.perfil === 'admin' && (
                   <Link 
                     to="/backup" 
