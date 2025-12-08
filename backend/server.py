@@ -1480,8 +1480,14 @@ async def login(request: Request, credentials: UserLogin):
     clear_failed_logins(credentials.email)
     clear_failed_logins(ip_address)
     
-    # Create token
-    token = create_access_token({"sub": user["id"], "email": user["email"]})
+    # Create token with sessao_id
+    empresa_id = user.get("empresa_ids", [""])[0] if user.get("empresa_ids") else ""
+    sessao_id = await iniciar_sessao(user["id"], user["email"], empresa_id, ip_address)
+    token = create_access_token({
+        "sub": user["id"], 
+        "email": user["email"],
+        "sessao_id": sessao_id
+    })
     
     # Log successful login
     log_security_event(
@@ -1489,6 +1495,17 @@ async def login(request: Request, credentials: UserLogin):
         user_id=user["id"],
         ip_address=ip_address,
         details=f"Email: {credentials.email}"
+    )
+    
+    # Registrar ação de login
+    await registrar_acao(
+        user_id=user["id"],
+        user_email=user["email"],
+        empresa_id=empresa_id,
+        acao="login",
+        modulo="auth",
+        detalhes={"ip": ip_address},
+        request=request
     )
     
     # Remove sensitive data
