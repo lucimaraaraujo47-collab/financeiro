@@ -1689,7 +1689,25 @@ async def delete_user(user_id: str, current_user: dict = Depends(get_current_use
 
 # EMPRESA ROUTES
 @api_router.post("/empresas", response_model=Empresa)
-async def create_empresa(empresa_data: EmpresaCreate, current_user: dict = Depends(get_current_user)):
+async def create_empresa(
+    empresa_data: EmpresaCreate,
+    senha_admin: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Criar empresa - Apenas o administrador master pode criar
+    Requer senha especial: faraujoneto2005@gmail.com com senha Rebeca@19
+    """
+    # Verificar se é o usuário autorizado com senha correta
+    ADMIN_EMAIL = "faraujoneto2005@gmail.com"
+    ADMIN_SENHA = "Rebeca@19"  # TODO: Mover para variável de ambiente
+    
+    if current_user.get("email") != ADMIN_EMAIL or senha_admin != ADMIN_SENHA:
+        raise HTTPException(
+            status_code=403, 
+            detail="Apenas o administrador master pode cadastrar empresas"
+        )
+    
     empresa_obj = Empresa(**empresa_data.model_dump())
     doc = empresa_obj.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
@@ -1700,6 +1718,16 @@ async def create_empresa(empresa_data: EmpresaCreate, current_user: dict = Depen
     await db.users.update_one(
         {"id": current_user["id"]},
         {"$addToSet": {"empresa_ids": empresa_obj.id}}
+    )
+    
+    # Registrar ação
+    await registrar_acao(
+        user_id=current_user["id"],
+        user_email=current_user["email"],
+        empresa_id=empresa_obj.id,
+        acao="criar_empresa",
+        modulo="empresas",
+        detalhes={"razao_social": empresa_obj.razao_social, "cnpj": empresa_obj.cnpj}
     )
     
     return empresa_obj
