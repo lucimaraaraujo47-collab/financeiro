@@ -259,15 +259,79 @@ function EmpresaSetup({ user, token, onUpdate }) {
               <tr>
                 <th>Razão Social</th>
                 <th>CNPJ</th>
+                <th>Status</th>
                 <th>Data de Cadastro</th>
+                <th style={{ textAlign: 'center' }}>Ações</th>
               </tr>
             </thead>
             <tbody data-testid="empresas-table">
               {empresas.map((emp) => (
-                <tr key={emp.id}>
-                  <td>{emp.razao_social}</td>
+                <tr key={emp.id} style={{ backgroundColor: emp.bloqueada ? 'rgba(255, 0, 0, 0.05)' : 'transparent' }}>
+                  <td>
+                    {emp.razao_social}
+                    {emp.bloqueada && (
+                      <div style={{ fontSize: '0.75rem', color: '#e74c3c', marginTop: '0.25rem' }}>
+                        🔒 {emp.motivo_bloqueio || 'Bloqueada'}
+                      </div>
+                    )}
+                  </td>
                   <td>{emp.cnpj}</td>
+                  <td>
+                    {emp.bloqueada ? (
+                      <span style={{ 
+                        padding: '0.25rem 0.75rem', 
+                        borderRadius: '1rem', 
+                        fontSize: '0.875rem',
+                        backgroundColor: '#fee',
+                        color: '#c00',
+                        fontWeight: '500'
+                      }}>
+                        🔒 Bloqueada
+                      </span>
+                    ) : (
+                      <span style={{ 
+                        padding: '0.25rem 0.75rem', 
+                        borderRadius: '1rem', 
+                        fontSize: '0.875rem',
+                        backgroundColor: '#efe',
+                        color: '#0a0',
+                        fontWeight: '500'
+                      }}>
+                        ✅ Ativa
+                      </span>
+                    )}
+                  </td>
                   <td>{new Date(emp.created_at).toLocaleDateString('pt-BR')}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => handleEdit(emp)}
+                        className="btn-secondary"
+                        style={{ fontSize: '0.875rem', padding: '0.4rem 0.8rem' }}
+                        title="Editar empresa"
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button
+                        onClick={() => handleToggleBlock(emp)}
+                        className={emp.bloqueada ? "btn-success" : "btn-warning"}
+                        style={{ fontSize: '0.875rem', padding: '0.4rem 0.8rem' }}
+                        title={emp.bloqueada ? "Desbloquear empresa" : "Bloquear empresa"}
+                        disabled={loading}
+                      >
+                        {emp.bloqueada ? '🔓 Desbloquear' : '🔒 Bloquear'}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(emp.id, emp.razao_social)}
+                        className="btn-danger"
+                        style={{ fontSize: '0.875rem', padding: '0.4rem 0.8rem' }}
+                        title="Excluir empresa"
+                        disabled={loading}
+                      >
+                        🗑️ Excluir
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
