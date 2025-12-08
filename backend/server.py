@@ -1518,6 +1518,143 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     user_data = {k: v for k, v in current_user.items() if k != "senha_hash"}
     return user_data
 
+@api_router.post("/auth/logout")
+async def logout(request: Request, current_user: dict = Depends(get_current_user)):
+    """Logout e finaliza a sessão"""
+    try:
+        token = request.headers.get("Authorization", "").replace("Bearer ", "")
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        sessao_id = payload.get("sessao_id")
+        
+        if sessao_id:
+            await finalizar_sessao(sessao_id)
+        
+        # Registrar ação de logout
+        empresa_id = current_user.get("empresa_ids", [""])[0] if current_user.get("empresa_ids") else ""
+        await registrar_acao(
+            user_id=current_user["id"],
+            user_email=current_user["email"],
+            empresa_id=empresa_id,
+            acao="logout",
+            modulo="auth",
+            request=request
+        )
+        
+        return {"message": "Logout realizado com sucesso"}
+    except:
+        return {"message": "Logout realizado"}
+
+@api_router.get("/auth/perfis")
+async def get_perfis():
+    """Retorna todos os perfis disponíveis e suas permissões"""
+    return PERFIS_PERMISSOES
+
+@api_router.get("/logs/acoes")
+async def get_logs_acoes(
+    empresa_id: str,
+    limit: int = 100,
+    modulo: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Retorna logs de ações da empresa"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Verificar permissão
+    if not verificar_permissao(current_user, "visualizar"):
+        raise HTTPException(status_code=403, detail="Sem permissão para visualizar logs")
+    
+    filtro = {"empresa_id": empresa_id}
+    if modulo:
+        filtro["modulo"] = modulo
+    
+    logs = await db.logs_acoes.find(filtro, {"_id": 0}).sort("timestamp", -1).limit(limit).to_list(limit)
+    return logs
+
+@api_router.get("/logs/sessoes")
+async def get_logs_sessoes(
+    empresa_id: str,
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """Retorna logs de sessões da empresa"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Verificar permissão (apenas admin)
+    if current_user.get("perfil") != "admin":
+        raise HTTPException(status_code=403, detail="Apenas administradores podem visualizar sessões")
+    
+    sessoes = await db.logs_sessoes.find(
+        {"empresa_id": empresa_id},
+        {"_id": 0}
+    ).sort("login_at", -1).limit(limit).to_list(limit)
+    
+    return sessoes
+
+@api_router.get("/logs/relatorio")
+async def get_relatorio_logs(
+    empresa_id: str,
+    data_inicio: Optional[str] = None,
+    data_fim: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Gera relatório de uso do sistema"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Verificar permissão (apenas admin)
+    if current_user.get("perfil") != "admin":
+        raise HTTPException(status_code=403, detail="Apenas administradores podem gerar relatórios")
+    
+    filtro = {"empresa_id": empresa_id}
+    
+    # Filtrar por data se fornecido
+    if data_inicio or data_fim:
+        filtro["timestamp"] = {}
+        if data_inicio:
+            filtro["timestamp"]["$gte"] = data_inicio
+        if data_fim:
+            filtro["timestamp"]["$lte"] = data_fim
+    
+    # Estatísticas
+    total_acoes = await db.logs_acoes.count_documents(filtro)
+    
+    # Ações por módulo
+    pipeline_modulos = [
+        {"$match": filtro},
+        {"$group": {"_id": "$modulo", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    acoes_por_modulo = await db.logs_acoes.aggregate(pipeline_modulos).to_list(100)
+    
+    # Usuários mais ativos
+    pipeline_usuarios = [
+        {"$match": filtro},
+        {"$group": {"_id": "$user_email", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ]
+    usuarios_ativos = await db.logs_acoes.aggregate(pipeline_usuarios).to_list(10)
+    
+    # Tempo médio de sessão
+    sessoes = await db.logs_sessoes.find(
+        {"empresa_id": empresa_id, "duracao_segundos": {"$exists": True}},
+        {"_id": 0, "duracao_segundos": 1}
+    ).to_list(1000)
+    
+    tempo_medio = 0
+    if sessoes:
+        tempo_medio = sum(s.get("duracao_segundos", 0) for s in sessoes) / len(sessoes)
+    
+    return {
+        "total_acoes": total_acoes,
+        "acoes_por_modulo": acoes_por_modulo,
+        "usuarios_mais_ativos": usuarios_ativos,
+        "tempo_medio_sessao_segundos": int(tempo_medio),
+        "total_sessoes": len(sessoes)
+    }
+
 @api_router.delete("/users/{user_id}")
 async def delete_user(user_id: str, current_user: dict = Depends(get_current_user)):
     """
