@@ -173,10 +173,30 @@ function EmpresaSetup({ user, token, onUpdate }) {
         </div>
 
         {showForm && (
-          <form onSubmit={handleSubmit} style={{ marginTop: '2rem' }}>
-            <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>
-              {editingEmpresa ? '✏️ Editar Empresa' : '➕ Nova Empresa'}
-            </h3>
+          <div style={{
+            marginTop: '2rem',
+            backgroundColor: 'var(--bg-secondary)',
+            borderRadius: '12px',
+            padding: '2rem',
+            border: '1px solid var(--border-color)',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+          }}>
+            <form onSubmit={handleSubmit}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                marginBottom: '1.5rem',
+                paddingBottom: '1rem',
+                borderBottom: '2px solid var(--border-color)'
+              }}>
+                <span style={{ fontSize: '1.5rem' }}>
+                  {editingEmpresa ? '✏️' : '➕'}
+                </span>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600', color: 'var(--text-primary)' }}>
+                  {editingEmpresa ? 'Editar Empresa' : 'Nova Empresa'}
+                </h3>
+              </div>
             
             <div className="form-group">
               <label className="form-label">Razão Social *</label>
