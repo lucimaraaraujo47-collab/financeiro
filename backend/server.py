@@ -1118,6 +1118,79 @@ async def finalizar_sessao(sessao_id: str):
             }}
         )
 
+# ==================== INTEGRAÇÕES ====================
+
+async def asaas_request(method: str, endpoint: str, data: dict = None):
+    """Faz requisição para API do Asaas"""
+    url = f"{ASAAS_BASE_URL}/{endpoint}"
+    headers = {
+        "access_token": ASAAS_API_KEY,
+        "Content-Type": "application/json"
+    }
+    
+    # Mock mode - retorna dados simulados
+    if ASAAS_API_KEY.startswith('MOCK'):
+        return {
+            "id": f"mock_{str(uuid.uuid4())[:8]}",
+            "success": True,
+            "message": "Mock response - Integração funcionará quando substituir pela API key real"
+        }
+    
+    async with httpx.AsyncClient() as client:
+        if method == "POST":
+            response = await client.post(url, json=data, headers=headers)
+        elif method == "GET":
+            response = await client.get(url, headers=headers)
+        elif method == "PUT":
+            response = await client.put(url, json=data, headers=headers)
+        elif method == "DELETE":
+            response = await client.delete(url, headers=headers)
+        
+        response.raise_for_status()
+        return response.json()
+
+async def enviar_email(destinatario: str, assunto: str, html: str):
+    """Envia email via Resend"""
+    # Mock mode
+    if RESEND_API_KEY.startswith('MOCK'):
+        print(f"[MOCK EMAIL] Para: {destinatario}, Assunto: {assunto}")
+        return {"id": "mock_email_id", "success": True}
+    
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {RESEND_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "from": "Sistema Financeiro <noreply@seudominio.com>",
+        "to": [destinatario],
+        "subject": assunto,
+        "html": html
+    }
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, json=data, headers=headers)
+        response.raise_for_status()
+        return response.json()
+
+async def enviar_whatsapp(numero: str, mensagem: str):
+    """Envia mensagem via Twilio WhatsApp"""
+    # Mock mode
+    if TWILIO_ACCOUNT_SID.startswith('MOCK'):
+        print(f"[MOCK WHATSAPP] Para: {numero}, Msg: {mensagem}")
+        return {"sid": "mock_whatsapp_sid", "success": True}
+    
+    from twilio.rest import Client
+    client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    
+    message = client.messages.create(
+        from_=TWILIO_WHATSAPP_FROM,
+        body=mensagem,
+        to=f"whatsapp:+55{numero}"
+    )
+    
+    return {"sid": message.sid, "success": True}
+
 # ==================== AI HELPERS ====================
 
 async def extrair_dados_com_ai(texto: str, empresa_id: str) -> Dict[str, Any]:
