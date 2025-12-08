@@ -1408,6 +1408,63 @@ async def get_empresas(current_user: dict = Depends(get_current_user)):
     ).to_list(100)
     return empresas
 
+@api_router.put("/empresas/{empresa_id}")
+async def update_empresa(empresa_id: str, empresa_data: dict, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Remove campos que não devem ser atualizados
+    update_data = {k: v for k, v in empresa_data.items() if k not in ['id', 'created_at']}
+    
+    result = await db.empresas.update_one(
+        {"id": empresa_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
+    return {"message": "Empresa atualizada com sucesso"}
+
+@api_router.patch("/empresas/{empresa_id}/status")
+async def update_empresa_status(empresa_id: str, status_data: dict, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    result = await db.empresas.update_one(
+        {"id": empresa_id},
+        {"$set": {
+            "bloqueada": status_data.get("bloqueada", False),
+            "motivo_bloqueio": status_data.get("motivo_bloqueio", "")
+        }}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
+    return {"message": "Status atualizado com sucesso"}
+
+@api_router.delete("/empresas/{empresa_id}")
+async def delete_empresa(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Verificar se é admin (pode adicionar verificação de perfil aqui)
+    
+    # Deletar empresa
+    result = await db.empresas.delete_one({"id": empresa_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
+    # Remover empresa_id do usuário
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$pull": {"empresa_ids": empresa_id}}
+    )
+    
+    return {"message": "Empresa excluída com sucesso"}
+
 # CATEGORIA ROUTES
 @api_router.post("/empresas/{empresa_id}/categorias", response_model=Categoria)
 async def create_categoria(empresa_id: str, categoria_data: CategoriaCreate, current_user: dict = Depends(get_current_user)):
