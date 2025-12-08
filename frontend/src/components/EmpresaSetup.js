@@ -157,7 +157,15 @@ function EmpresaSetup({ user, token, onUpdate }) {
           <h2 className="card-title">Minhas Empresas</h2>
           <button 
             className="btn-success" 
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (showForm) {
+                handleCancelEdit();
+              } else {
+                setShowForm(true);
+                setEditingEmpresa(null);
+                resetForm();
+              }
+            }}
             data-testid="toggle-empresa-form-button"
           >
             {showForm ? 'Cancelar' : '+ Nova Empresa'}
