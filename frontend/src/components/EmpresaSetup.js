@@ -282,25 +282,43 @@ function EmpresaSetup({ user, token, onUpdate }) {
                 </div>
               )}
 
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-              <button 
-                type="submit" 
-                className="btn-primary" 
-                disabled={loading}
-                data-testid="empresa-submit-button"
-              >
-                {loading ? 'Salvando...' : (editingEmpresa ? 'Salvar Alterações' : 'Cadastrar Empresa')}
-              </button>
-              <button 
-                type="button" 
-                className="btn-secondary" 
-                onClick={handleCancelEdit}
-                disabled={loading}
-              >
-                Cancelar
-              </button>
-            </div>
-          </form>
+              <div style={{ 
+                display: 'flex', 
+                gap: '1rem', 
+                marginTop: '2rem',
+                paddingTop: '1.5rem',
+                borderTop: '1px solid var(--border-color)'
+              }}>
+                <button 
+                  type="submit" 
+                  className="btn-primary" 
+                  disabled={loading}
+                  data-testid="empresa-submit-button"
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '0.9375rem',
+                    fontWeight: '500'
+                  }}
+                >
+                  {loading ? '⏳ Salvando...' : (editingEmpresa ? '💾 Salvar Alterações' : '➕ Cadastrar Empresa')}
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-secondary" 
+                  onClick={handleCancelEdit}
+                  disabled={loading}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '0.9375rem',
+                    fontWeight: '500'
+                  }}
+                >
+                  ✖️ Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
         )}
 
         {empresas.length > 0 ? (
