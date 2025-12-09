@@ -316,6 +316,15 @@ function Layout({ user, onLogout, children }) {
                   <span className="nav-text">Logs</span>
                 </Link>
 
+                <Link 
+                  to="/licencas" 
+                  className={`nav-item nav-subitem ${isActive('/licencas') ? 'active' : ''}`}
+                  data-testid="nav-licencas"
+                >
+                  <span className="nav-icon">💳</span>
+                  <span className="nav-text">Licenças</span>
+                </Link>
+
                 {user.perfil === 'admin' && (
                   <Link 
                     to="/backup" 
