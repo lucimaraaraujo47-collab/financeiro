@@ -26,6 +26,7 @@ import Movimentacoes from './components/Movimentacoes';
 import ConfiguracoesBackup from './components/ConfiguracoesBackup';
 import Usuarios from './components/Usuarios';
 import Logs from './components/Logs';
+import Licencas from './components/Licencas';
 import Vendas from './components/Vendas';
 import DashboardVendas from './components/DashboardVendas';
 import Layout from './components/Layout';
