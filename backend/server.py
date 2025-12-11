@@ -1188,28 +1188,37 @@ async def asaas_request(method: str, endpoint: str, data: dict = None):
         return response.json()
 
 async def enviar_email(destinatario: str, assunto: str, html: str):
-    """Envia email via Resend"""
-    # Mock mode
-    if RESEND_API_KEY.startswith('MOCK'):
+    """Envia email via Gmail SMTP"""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    
+    # Mock mode se não tiver senha configurada
+    if not GMAIL_APP_PASSWORD:
         print(f"[MOCK EMAIL] Para: {destinatario}, Assunto: {assunto}")
         return {"id": "mock_email_id", "success": True}
     
-    url = "https://api.resend.com/emails"
-    headers = {
-        "Authorization": f"Bearer {RESEND_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "from": "Sistema Financeiro <noreply@seudominio.com>",
-        "to": [destinatario],
-        "subject": assunto,
-        "html": html
-    }
-    
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, json=data, headers=headers)
-        response.raise_for_status()
-        return response.json()
+    try:
+        # Criar mensagem
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = assunto
+        msg['From'] = f"Sistema Financeiro <{GMAIL_USER}>"
+        msg['To'] = destinatario
+        
+        # Adicionar HTML
+        html_part = MIMEText(html, 'html')
+        msg.attach(html_part)
+        
+        # Enviar via Gmail SMTP
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            server.send_message(msg)
+        
+        print(f"✅ Email enviado para {destinatario}")
+        return {"id": f"gmail_{destinatario}", "success": True}
+    except Exception as e:
+        print(f"❌ Erro ao enviar email: {str(e)}")
+        return {"id": None, "success": False, "error": str(e)}
 
 async def enviar_whatsapp(numero: str, mensagem: str):
     """Envia mensagem via Twilio WhatsApp"""
