@@ -69,13 +69,18 @@ db = client[os.environ.get('DB_NAME', 'finai_database')]
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
-# Integrations API Keys (MOCK - Substituir pelas credenciais reais)
+# Integrations API Keys
 ASAAS_API_KEY = os.environ.get('ASAAS_API_KEY', 'MOCK_ASAAS_KEY_SUBSTITUIR_PELA_REAL')
-ASAAS_BASE_URL = os.environ.get('ASAAS_BASE_URL', 'https://sandbox.asaas.com/api/v3')
-RESEND_API_KEY = os.environ.get('RESEND_API_KEY', 'MOCK_RESEND_KEY_SUBSTITUIR_PELA_REAL')
-TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', 'MOCK_TWILIO_SID')
-TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', 'MOCK_TWILIO_TOKEN')
-TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886')
+ASAAS_BASE_URL = os.environ.get('ASAAS_BASE_URL', 'https://www.asaas.com/api/v3')
+
+# Gmail SMTP
+GMAIL_USER = os.environ.get('GMAIL_USER', 'faraujoneto2025@gmail.com')
+GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')  # Senha de app do Google
+
+# WhatsApp Meta
+META_ACCESS_TOKEN = os.environ.get('META_ACCESS_TOKEN', 'MOCK_META_TOKEN')
+META_PHONE_NUMBER_ID = os.environ.get('META_PHONE_NUMBER_ID', '')
+META_WHATSAPP_FROM = os.environ.get('META_WHATSAPP_FROM', '5511999999999')
 
 # Rate limiting
 limiter = Limiter(key_func=get_remote_address)
