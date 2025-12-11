@@ -253,6 +253,39 @@ class Cobranca(BaseModel):
     pix_codigo: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class ConfiguracaoGateway(BaseModel):
+    """Configuração de gateway de pagamento do cliente"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    gateway: str  # asaas, mercadopago, pagseguro
+    api_key: str
+    sandbox_mode: bool = False
+    ativo: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class Venda(BaseModel):
+    """Venda realizada pelo cliente"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    cliente_nome: str
+    cliente_cpf_cnpj: str
+    cliente_email: Optional[str] = None
+    cliente_telefone: Optional[str] = None
+    valor_total: float
+    descricao: str
+    gateway_payment_id: Optional[str] = None  # ID no gateway de pagamento
+    metodo_pagamento: str = "boleto"  # boleto, pix, cartao
+    status: str = "pendente"  # pendente, pago, cancelado
+    boleto_url: Optional[str] = None
+    boleto_codigo: Optional[str] = None
+    pix_qrcode: Optional[str] = None
+    pix_codigo: Optional[str] = None
+    data_vencimento: datetime
+    data_pagamento: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class Empresa(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -262,7 +295,7 @@ class Empresa(BaseModel):
     ativa: bool = True
     bloqueada: bool = False
     motivo_bloqueio: str = ""
-    # Dados para Asaas
+    # Dados para Asaas (licenciamento)
     asaas_customer_id: Optional[str] = None
     email_cobranca: Optional[str] = None
     telefone_cobranca: Optional[str] = None
