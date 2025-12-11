@@ -1973,6 +1973,195 @@ async def verificar_atrasos():
     
     return {"licencas_processadas": len(licencas)}
 
+# ==================== GATEWAY DE PAGAMENTO (VENDAS) ====================
+
+@api_router.post("/gateway")
+async def configurar_gateway(gateway_data: dict, current_user: dict = Depends(get_current_user)):
+    """Configura gateway de pagamento para vendas da empresa"""
+    empresa_id = gateway_data.get("empresa_id")
+    
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Verificar se já existe configuração
+    existing = await db.configuracoes_gateway.find_one(
+        {"empresa_id": empresa_id, "gateway": gateway_data.get("gateway")},
+        {"_id": 0}
+    )
+    
+    if existing:
+        # Atualizar existente
+        await db.configuracoes_gateway.update_one(
+            {"id": existing["id"]},
+            {"$set": {
+                "api_key": gateway_data.get("api_key"),
+                "sandbox_mode": gateway_data.get("sandbox_mode", False),
+                "ativo": gateway_data.get("ativo", True)
+            }}
+        )
+        return {"message": "Gateway atualizado com sucesso", "id": existing["id"]}
+    else:
+        # Criar novo
+        config = ConfiguracaoGateway(**gateway_data)
+        doc = config.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        await db.configuracoes_gateway.insert_one(doc)
+        
+        # Registrar ação
+        await registrar_acao(
+            user_id=current_user["id"],
+            user_email=current_user["email"],
+            empresa_id=empresa_id,
+            acao="configurar_gateway",
+            modulo="vendas",
+            detalhes={"gateway": gateway_data.get("gateway")}
+        )
+        
+        return {"message": "Gateway configurado com sucesso", "id": config.id}
+
+@api_router.get("/gateway/{empresa_id}")
+async def get_gateway(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    """Lista configurações de gateway da empresa"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    configs = await db.configuracoes_gateway.find(
+        {"empresa_id": empresa_id},
+        {"_id": 0, "api_key": 0}  # Não retornar API key por segurança
+    ).to_list(10)
+    
+    return configs
+
+@api_router.post("/vendas")
+async def criar_venda(venda_data: dict, current_user: dict = Depends(get_current_user)):
+    """Cria venda e gera cobrança no gateway do cliente"""
+    empresa_id = venda_data.get("empresa_id")
+    
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Verificar permissão
+    if not verificar_permissao(current_user, "vendas"):
+        raise HTTPException(status_code=403, detail="Sem permissão para criar vendas")
+    
+    # Buscar configuração do gateway
+    gateway_config = await db.configuracoes_gateway.find_one(
+        {"empresa_id": empresa_id, "ativo": True},
+        {"_id": 0}
+    )
+    
+    if not gateway_config:
+        raise HTTPException(
+            status_code=400,
+            detail="Configure um gateway de pagamento antes de criar vendas"
+        )
+    
+    # Criar venda
+    venda = Venda(**venda_data)
+    
+    # Gerar cobrança no gateway do cliente
+    if gateway_config["gateway"] == "asaas":
+        # Usar Asaas do cliente
+        api_key = gateway_config["api_key"]
+        base_url = "https://sandbox.asaas.com/api/v3" if gateway_config["sandbox_mode"] else "https://www.asaas.com/api/v3"
+        
+        # Mock mode
+        if api_key.startswith("MOCK"):
+            payment = {
+                "id": f"mock_payment_{venda.id[:8]}",
+                "bankSlipUrl": f"https://mock-boleto.com/{venda.id}",
+                "identificationField": "00000.00000 00000.000000 00000.000000 0 00000000000000"
+            }
+        else:
+            # Criar cliente no Asaas do cliente
+            customer_data = {
+                "name": venda.cliente_nome,
+                "cpfCnpj": venda.cliente_cpf_cnpj,
+                "email": venda.cliente_email or "",
+                "phone": venda.cliente_telefone or ""
+            }
+            
+            async with httpx.AsyncClient() as client:
+                customer_resp = await client.post(
+                    f"{base_url}/customers",
+                    json=customer_data,
+                    headers={"access_token": api_key}
+                )
+                customer = customer_resp.json()
+                
+                # Criar cobrança
+                payment_data = {
+                    "customer": customer["id"],
+                    "billingType": venda.metodo_pagamento.upper(),
+                    "value": venda.valor_total,
+                    "dueDate": venda.data_vencimento.strftime("%Y-%m-%d"),
+                    "description": venda.descricao
+                }
+                
+                payment_resp = await client.post(
+                    f"{base_url}/payments",
+                    json=payment_data,
+                    headers={"access_token": api_key}
+                )
+                payment = payment_resp.json()
+        
+        # Atualizar venda com dados do pagamento
+        venda.gateway_payment_id = payment.get("id")
+        venda.boleto_url = payment.get("bankSlipUrl")
+        venda.boleto_codigo = payment.get("identificationField")
+    
+    # Salvar venda
+    doc = venda.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['data_vencimento'] = doc['data_vencimento'].isoformat()
+    if doc.get('data_pagamento'):
+        doc['data_pagamento'] = doc['data_pagamento'].isoformat()
+    
+    await db.vendas.insert_one(doc)
+    
+    # Registrar ação
+    await registrar_acao(
+        user_id=current_user["id"],
+        user_email=current_user["email"],
+        empresa_id=empresa_id,
+        acao="criar_venda",
+        modulo="vendas",
+        detalhes={"cliente": venda.cliente_nome, "valor": venda.valor_total}
+    )
+    
+    return venda
+
+@api_router.get("/vendas/{empresa_id}")
+async def listar_vendas(
+    empresa_id: str,
+    status: Optional[str] = None,
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """Lista vendas da empresa"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    filtro = {"empresa_id": empresa_id}
+    if status:
+        filtro["status"] = status
+    
+    vendas = await db.vendas.find(filtro, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+    return vendas
+
+@api_router.get("/vendas/detalhes/{venda_id}")
+async def get_venda(venda_id: str, current_user: dict = Depends(get_current_user)):
+    """Detalhes de uma venda"""
+    venda = await db.vendas.find_one({"id": venda_id}, {"_id": 0})
+    
+    if not venda:
+        raise HTTPException(status_code=404, detail="Venda não encontrada")
+    
+    if venda["empresa_id"] not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    return venda
+
 @api_router.delete("/users/{user_id}")
 async def delete_user(user_id: str, current_user: dict = Depends(get_current_user)):
     """
