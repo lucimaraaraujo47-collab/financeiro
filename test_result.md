@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-## user_problem_statement: "Test transaction deletion with balance recalculation fix"
+## user_problem_statement: "Teste completo do sistema FinAI ECHO SHOP com foco nos seguintes pontos: Autenticação, Dashboard, Sistema de Licenciamento (Asaas), Envio de Email, Endpoints de Empresas, Sistema de Logs"
 
 ## backend:
   - task: "Transaction Deletion with Balance Recalculation"
