@@ -2132,9 +2132,7 @@ async def criar_venda(venda_data: dict, current_user: dict = Depends(get_current
     # Salvar venda
     doc = venda.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
-    doc['data_vencimento'] = doc['data_vencimento'].isoformat()
-    if doc.get('data_pagamento'):
-        doc['data_pagamento'] = doc['data_pagamento'].isoformat()
+    # data_vencimento já é string, não precisa converter
     
     await db.vendas.insert_one(doc)
     
