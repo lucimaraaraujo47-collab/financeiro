@@ -2113,7 +2113,7 @@ async def criar_venda(venda_data: dict, current_user: dict = Depends(get_current
                     "customer": customer["id"],
                     "billingType": venda.metodo_pagamento.upper(),
                     "value": venda.valor_total,
-                    "dueDate": venda.data_vencimento.strftime("%Y-%m-%d"),
+                    "dueDate": venda.data_vencimento,
                     "description": venda.descricao
                 }
                 
