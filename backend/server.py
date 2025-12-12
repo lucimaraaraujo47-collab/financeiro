@@ -2309,7 +2309,7 @@ async def criar_assinatura_saas(
     else:
         # Criar cliente no Asaas
         async with httpx.AsyncClient() as client:
-        customer_resp = await client.post(
+            customer_resp = await client.post(
             f"{base_url}/customers",
             json={
                 "name": dados.razao_social,
