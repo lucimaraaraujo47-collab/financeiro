@@ -87,6 +87,282 @@ class SaaSTestRunner:
             self.log(f"❌ Login request failed: {str(e)}", "ERROR")
             return False
     
+    def test_planos_saas(self):
+        """Test 2: GET /api/assinaturas/planos - List available plans"""
+        self.log("Testing SaaS plans listing...")
+        
+        if not self.token:
+            self.log("❌ No auth token available", "ERROR")
+            return False
+        
+        try:
+            response = self.session.get(f"{BACKEND_URL}/assinaturas/planos")
+            
+            if response.status_code == 200:
+                planos = response.json()
+                self.log("✅ Plans retrieved successfully")
+                self.log(f"   Number of plans: {len(planos)}")
+                
+                # Verify expected plans exist
+                expected_plans = {"basico": 99.00, "profissional": 199.00}
+                
+                for plano_key, expected_value in expected_plans.items():
+                    if plano_key in planos:
+                        plano_data = planos[plano_key]
+                        valor = plano_data.get("valor")
+                        nome = plano_data.get("nome")
+                        
+                        self.log(f"   ✅ Plan '{plano_key}' found:")
+                        self.log(f"      Nome: {nome}")
+                        self.log(f"      Valor: R$ {valor}")
+                        
+                        if valor == expected_value:
+                            self.log(f"      ✅ Correct value: R$ {valor}")
+                        else:
+                            self.log(f"      ❌ Incorrect value: expected R$ {expected_value}, got R$ {valor}", "ERROR")
+                            return False
+                    else:
+                        self.log(f"   ❌ Plan '{plano_key}' not found", "ERROR")
+                        return False
+                
+                return True
+            else:
+                self.log(f"❌ Failed to retrieve plans: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Error retrieving plans: {str(e)}", "ERROR")
+            return False
+
+    def test_create_subscription(self):
+        """Test 3: POST /api/assinaturas - Create new subscription"""
+        self.log("Testing subscription creation...")
+        
+        if not self.token:
+            self.log("❌ No auth token available", "ERROR")
+            return False
+        
+        # Test data from review request
+        subscription_data = {
+            "razao_social": "Empresa Teste LTDA",
+            "cnpj_cpf": "12345678000199",
+            "email": "teste.empresa@teste.com",
+            "telefone": "11999998888",
+            "plano": "basico"
+        }
+        
+        try:
+            response = self.session.post(f"{BACKEND_URL}/assinaturas", json=subscription_data)
+            
+            if response.status_code == 200:
+                created_subscription = response.json()
+                self.created_subscription_id = created_subscription.get('id')
+                
+                self.log("✅ Subscription created successfully")
+                self.log(f"   Subscription ID: {self.created_subscription_id}")
+                self.log(f"   Razão Social: {created_subscription.get('razao_social')}")
+                self.log(f"   Email: {created_subscription.get('email')}")
+                self.log(f"   Plano: {created_subscription.get('plano')}")
+                self.log(f"   Status: {created_subscription.get('status')}")
+                
+                # Verify PIX data was generated
+                self.pix_qrcode = created_subscription.get('pix_qrcode')
+                self.pix_codigo = created_subscription.get('pix_codigo')
+                
+                if self.pix_qrcode:
+                    self.log(f"   ✅ PIX QR Code generated: {self.pix_qrcode[:50]}...")
+                else:
+                    self.log("   ❌ PIX QR Code not generated", "ERROR")
+                    return False
+                
+                if self.pix_codigo:
+                    self.log(f"   ✅ PIX Code generated: {self.pix_codigo[:50]}...")
+                else:
+                    self.log("   ❌ PIX Code not generated", "ERROR")
+                    return False
+                
+                # Store user and empresa IDs for verification
+                self.created_user_id = created_subscription.get('user_id')
+                # We'll get empresa_id from the created user
+                
+                return True
+            else:
+                self.log(f"❌ Failed to create subscription: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Error creating subscription: {str(e)}", "ERROR")
+            return False
+
+    def test_list_subscriptions(self):
+        """Test 4: GET /api/assinaturas - List subscriptions"""
+        self.log("Testing subscription listing...")
+        
+        if not self.token:
+            self.log("❌ No auth token available", "ERROR")
+            return False
+        
+        try:
+            response = self.session.get(f"{BACKEND_URL}/assinaturas")
+            
+            if response.status_code == 200:
+                subscriptions = response.json()
+                self.log(f"✅ Retrieved {len(subscriptions)} subscriptions")
+                
+                # Find our created subscription
+                found_subscription = None
+                for sub in subscriptions:
+                    if sub.get('id') == self.created_subscription_id:
+                        found_subscription = sub
+                        break
+                
+                if found_subscription:
+                    self.log("✅ Created subscription found in list")
+                    self.log(f"   Razão Social: {found_subscription.get('razao_social')}")
+                    self.log(f"   Status: {found_subscription.get('status')}")
+                    
+                    # Verify status is "aguardando_pagamento"
+                    status = found_subscription.get('status')
+                    if status == "aguardando_pagamento":
+                        self.log("   ✅ Correct status: aguardando_pagamento")
+                    else:
+                        self.log(f"   ❌ Incorrect status: expected 'aguardando_pagamento', got '{status}'", "ERROR")
+                        return False
+                else:
+                    self.log("   ❌ Created subscription NOT found in list", "ERROR")
+                    return False
+                
+                return True
+            else:
+                self.log(f"❌ Failed to list subscriptions: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Error listing subscriptions: {str(e)}", "ERROR")
+            return False
+
+    def test_verify_payment(self):
+        """Test 5: POST /api/assinaturas/{id}/verificar-pagamento - Verify payment status"""
+        self.log("Testing payment verification...")
+        
+        if not self.token or not self.created_subscription_id:
+            self.log("❌ No auth token or subscription ID available", "ERROR")
+            return False
+        
+        try:
+            response = self.session.post(f"{BACKEND_URL}/assinaturas/{self.created_subscription_id}/verificar-pagamento")
+            
+            if response.status_code == 200:
+                payment_status = response.json()
+                self.log("✅ Payment verification successful")
+                self.log(f"   Payment Status: {payment_status}")
+                
+                # Since this is sandbox/mock, expect PENDING or similar
+                status = payment_status.get('status', payment_status)
+                if status in ['PENDING', 'pending', 'AGUARDANDO', 'aguardando']:
+                    self.log(f"   ✅ Expected payment status (sandbox): {status}")
+                else:
+                    self.log(f"   ⚠️ Unexpected payment status: {status} (may be normal for sandbox)")
+                
+                return True
+            else:
+                self.log(f"❌ Failed to verify payment: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Error verifying payment: {str(e)}", "ERROR")
+            return False
+
+    def test_verify_empresa_created(self):
+        """Test 6: GET /api/empresas - Verify empresa was created"""
+        self.log("Testing empresa creation verification...")
+        
+        if not self.token:
+            self.log("❌ No auth token available", "ERROR")
+            return False
+        
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas")
+            
+            if response.status_code == 200:
+                empresas = response.json()
+                self.log(f"✅ Retrieved {len(empresas)} empresas")
+                
+                # Find the created empresa "Empresa Teste LTDA"
+                found_empresa = None
+                for empresa in empresas:
+                    if empresa.get('razao_social') == "Empresa Teste LTDA":
+                        found_empresa = empresa
+                        self.created_empresa_id = empresa.get('id')
+                        break
+                
+                if found_empresa:
+                    self.log("✅ Created empresa found")
+                    self.log(f"   Empresa ID: {self.created_empresa_id}")
+                    self.log(f"   Razão Social: {found_empresa.get('razao_social')}")
+                    self.log(f"   CNPJ: {found_empresa.get('cnpj')}")
+                else:
+                    self.log("   ❌ Created empresa 'Empresa Teste LTDA' NOT found", "ERROR")
+                    return False
+                
+                return True
+            else:
+                self.log(f"❌ Failed to list empresas: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Error listing empresas: {str(e)}", "ERROR")
+            return False
+
+    def test_verify_user_created(self):
+        """Test 7: GET /api/users - Verify user was created"""
+        self.log("Testing user creation verification...")
+        
+        if not self.token:
+            self.log("❌ No auth token available", "ERROR")
+            return False
+        
+        try:
+            response = self.session.get(f"{BACKEND_URL}/users")
+            
+            if response.status_code == 200:
+                users = response.json()
+                self.log(f"✅ Retrieved {len(users)} users")
+                
+                # Find the created user with email "teste.empresa@teste.com"
+                found_user = None
+                for user in users:
+                    if user.get('email') == "teste.empresa@teste.com":
+                        found_user = user
+                        break
+                
+                if found_user:
+                    self.log("✅ Created user found")
+                    self.log(f"   User ID: {found_user.get('id')}")
+                    self.log(f"   Email: {found_user.get('email')}")
+                    self.log(f"   Nome: {found_user.get('nome')}")
+                    self.log(f"   Perfil: {found_user.get('perfil')}")
+                    
+                    # Verify user is associated with the created empresa
+                    user_empresa_ids = found_user.get('empresa_ids', [])
+                    if self.created_empresa_id in user_empresa_ids:
+                        self.log(f"   ✅ User correctly associated with empresa {self.created_empresa_id}")
+                    else:
+                        self.log(f"   ❌ User not associated with created empresa", "ERROR")
+                        return False
+                else:
+                    self.log("   ❌ Created user 'teste.empresa@teste.com' NOT found", "ERROR")
+                    return False
+                
+                return True
+            else:
+                self.log(f"❌ Failed to list users: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Error listing users: {str(e)}", "ERROR")
+            return False
+
     def test_clientes_crud(self):
         """Test 2: Clientes CRUD Operations"""
         self.log("Testing Clientes CRUD operations...")
