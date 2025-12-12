@@ -165,6 +165,34 @@ PERFIS_PERMISSOES = {
     }
 }
 
+# ==================== PLANOS SAAS ====================
+PLANOS_SAAS = {
+    "basico": {
+        "nome": "Básico",
+        "valor": 99.00,
+        "descricao": "Ideal para pequenas empresas",
+        "recursos": [
+            "Até 100 transações/mês",
+            "1 usuário",
+            "Relatórios básicos",
+            "Suporte por email"
+        ]
+    },
+    "profissional": {
+        "nome": "Profissional",
+        "valor": 199.00,
+        "descricao": "Para empresas em crescimento",
+        "recursos": [
+            "Transações ilimitadas",
+            "5 usuários",
+            "Relatórios avançados",
+            "Suporte prioritário",
+            "Integração WhatsApp",
+            "Backup automático"
+        ]
+    }
+}
+
 class UserCreate(BaseModel):
     nome: str
     email: EmailStr
