@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """
-Backend API Testing for ECHO SHOP FinAI - Complete Inventory Management System CRUD Operations
-Tests complete CRUD operations for all inventory modules: Clientes, Fornecedores, Locais, 
-Categorias Equipamentos, Equipamentos, Equipamentos Serializados, and Movimentações de Estoque
+Backend API Testing for ECHO SHOP FinAI - SaaS Subscription System Testing
+Tests complete SaaS subscription system including:
+- Plans listing
+- Subscription creation with automatic company and user creation
+- PIX payment generation
+- Payment verification
+- Company and user verification
 """
 
 import requests
@@ -11,10 +15,10 @@ import os
 from datetime import datetime
 import uuid
 
-# Configuration
+# Configuration - Using credentials from review request
 BACKEND_URL = "http://localhost:8001/api"
-ADMIN_EMAIL = "faraujoneto2025@gmail.com"  # Using credentials from review request
-ADMIN_PASSWORD = "EchoShop2025!"  # Using credentials from review request
+ADMIN_EMAIL = "faraujoneto2025@gmail.com"
+ADMIN_PASSWORD = "Rebeca@19"
 EMPRESA_ID = None  # Will be determined from user data
 
 class FinAITestRunner:
