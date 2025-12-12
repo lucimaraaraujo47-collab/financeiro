@@ -1080,8 +1080,8 @@ def verificar_permissao(user: dict, permissao: str) -> bool:
     """Verifica se o usuário tem a permissão necessária"""
     perfil = user.get("perfil", "consulta")
     
-    # Admin tem todas as permissões
-    if perfil == "admin":
+    # Admin e admin_master têm todas as permissões
+    if perfil in ["admin", "admin_master"]:
         return True
     
     # Pega as permissões do perfil
