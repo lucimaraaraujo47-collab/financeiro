@@ -16,7 +16,7 @@ function Layout({ user, onLogout, children }) {
   
   const configPaths = ['/categorias', '/centros-custo', '/financas', '/whatsapp', '/usuarios', '/backup'];
   const estoquePaths = ['/clientes', '/fornecedores', '/locais', '/categorias-equipamentos', '/equipamentos', '/equipamentos-serializados', '/movimentacoes'];
-  const vendasPaths = ['/vendas', '/vendas/dashboard'];
+  const vendasPaths = ['/vendas', '/vendas/dashboard', '/assinaturas'];
   
   const isConfigActive = configPaths.some(path => location.pathname === path);
   const isEstoqueActive = estoquePaths.some(path => location.pathname === path);
