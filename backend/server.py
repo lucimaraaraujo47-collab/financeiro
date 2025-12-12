@@ -1826,7 +1826,7 @@ async def get_relatorio_logs(
 @api_router.post("/licencas")
 async def criar_licenca(empresa_id: str, plano: str, current_user: dict = Depends(get_current_user)):
     """Cria licença e assinatura no Asaas"""
-    if current_user.get("email") != "faraujoneto2005@gmail.com":
+    if current_user.get("email") != "faraujoneto2025@gmail.com":
         raise HTTPException(status_code=403, detail="Apenas admin master pode criar licenças")
     
     empresa = await db.empresas.find_one({"id": empresa_id}, {"_id": 0})
