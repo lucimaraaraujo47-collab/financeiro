@@ -1774,8 +1774,8 @@ async def get_relatorio_logs(
     if empresa_id not in current_user.get("empresa_ids", []):
         raise HTTPException(status_code=403, detail="Acesso negado")
     
-    # Verificar permissão (apenas admin)
-    if current_user.get("perfil") != "admin":
+    # Verificar permissão (apenas admin ou admin_master)
+    if current_user.get("perfil") not in ["admin", "admin_master"]:
         raise HTTPException(status_code=403, detail="Apenas administradores podem gerar relatórios")
     
     filtro = {"empresa_id": empresa_id}
