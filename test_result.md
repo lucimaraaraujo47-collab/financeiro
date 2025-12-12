@@ -617,8 +617,12 @@
 
 ## test_plan:
   current_focus: 
-    - "Backup Configuration Page"
-    - "Transfer Funds Button in Transacoes Page"
+    - "SaaS Subscription System - Plans Listing"
+    - "SaaS Subscription System - Subscription Creation"
+    - "SaaS Subscription System - Subscription Listing"
+    - "SaaS Subscription System - Payment Verification"
+    - "SaaS Subscription System - Automatic Company Creation"
+    - "SaaS Subscription System - Automatic User Creation"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
