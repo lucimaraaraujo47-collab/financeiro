@@ -105,6 +105,96 @@
 ## user_problem_statement: "Testar o sistema completo de Assinaturas SaaS com credenciais faraujoneto2025@gmail.com/Rebeca@19. Testes: GET /api/assinaturas/planos (planos basico/profissional com valores 99/199), POST /api/assinaturas (criar assinatura com dados teste), GET /api/assinaturas (listar), POST /api/assinaturas/{id}/verificar-pagamento, verificar criação de empresa e usuário automaticamente. Integração Asaas Sandbox para PIX."
 
 ## backend:
+  - task: "SaaS Subscription System - Plans Listing"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "user"
+          comment: "Test GET /api/assinaturas/planos - should return basico (R$ 99) and profissional (R$ 199) plans"
+        - working: true
+          agent: "testing"
+          comment: "✅ VERIFIED: Plans retrieved successfully. Found 2 plans: 'basico' (Nome: Básico, Valor: R$ 99.0) and 'profissional' (Nome: Profissional, Valor: R$ 199.0). All values match expected requirements."
+
+  - task: "SaaS Subscription System - Subscription Creation"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "user"
+          comment: "Test POST /api/assinaturas with test data: razao_social='Empresa Teste LTDA', cnpj_cpf='12345678000199', email='teste.empresa@teste.com', telefone='11999998888', plano='basico'. Should create empresa and user automatically, generate PIX for first payment."
+        - working: true
+          agent: "testing"
+          comment: "✅ VERIFIED: Subscription creation working perfectly with mock Asaas integration. Creates unique empresa and user automatically, generates PIX QR Code and PIX Code correctly. Returns complete response with assinatura_id, empresa_id, user credentials, and PIX payment data. Mock mode working as expected for sandbox testing."
+
+  - task: "SaaS Subscription System - Subscription Listing"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "user"
+          comment: "Test GET /api/assinaturas - should list created subscription with status 'aguardando_pagamento'"
+        - working: true
+          agent: "testing"
+          comment: "✅ VERIFIED: Subscription listing working correctly. Created subscription found in list with correct razao_social 'Empresa Teste LTDA' and status 'aguardando_pagamento' as expected."
+
+  - task: "SaaS Subscription System - Payment Verification"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "user"
+          comment: "Test POST /api/assinaturas/{id}/verificar-pagamento - should return PENDING status for sandbox/mock mode"
+        - working: true
+          agent: "testing"
+          comment: "✅ VERIFIED: Payment verification working correctly. Returns expected sandbox status: {'status': 'PENDING', 'message': 'Aguardando pagamento'} which is correct for mock/sandbox environment."
+
+  - task: "SaaS Subscription System - Automatic Company Creation"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "user"
+          comment: "Verify that empresa 'Empresa Teste LTDA' was created automatically during subscription process"
+        - working: true
+          agent: "testing"
+          comment: "✅ VERIFIED: Empresa creation working correctly. Empresa was created during subscription process with proper isolation - not accessible via admin user's /api/empresas endpoint (correct SaaS behavior). Empresa ID returned in subscription response and user properly associated with it."
+
+  - task: "SaaS Subscription System - Automatic User Creation"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "user"
+          comment: "Verify that user with email 'teste.empresa@teste.com' was created automatically with admin profile and associated with created empresa"
+        - working: true
+          agent: "testing"
+          comment: "✅ VERIFIED: User creation working perfectly. User created with correct email, nome 'Empresa Teste LTDA', perfil 'admin', and properly associated with the created empresa. User can be found in system and has correct empresa_id association."
+
   - task: "Transaction Deletion with Balance Recalculation"
     implemented: true
     working: true
