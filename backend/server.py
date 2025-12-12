@@ -1405,7 +1405,7 @@ async def list_users(current_user: dict = Depends(get_current_user)):
     """
     List all users - ADMIN ONLY
     """
-    if current_user.get("perfil") != "admin":
+    if current_user.get("perfil") not in ["admin", "admin_master"]:
         raise HTTPException(
             status_code=403,
             detail="Acesso negado. Apenas administradores podem listar usuários."
