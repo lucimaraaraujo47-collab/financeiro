@@ -2186,7 +2186,7 @@ async def delete_user(user_id: str, current_user: dict = Depends(get_current_use
     """
     Delete a user - ADMIN ONLY
     """
-    if current_user.get("perfil") != "admin":
+    if current_user.get("perfil") not in ["admin", "admin_master"]:
         raise HTTPException(status_code=403, detail="Apenas administradores podem deletar usuários")
     
     # Prevent self-deletion
