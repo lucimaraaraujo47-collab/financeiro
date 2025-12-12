@@ -275,6 +275,53 @@ class Licenca(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# ==================== ASSINATURAS SAAS ====================
+class AssinaturaSaaS(BaseModel):
+    """Assinatura de cliente do sistema SaaS"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    # Dados da empresa cliente
+    razao_social: str
+    cnpj_cpf: str
+    email: str
+    telefone: str
+    # Dados do plano
+    plano: str  # "basico" ou "profissional"
+    valor_mensal: float
+    # Dados do usuário criado
+    user_id: str
+    user_email: str
+    user_senha_temp: str  # Senha temporária gerada
+    # Integração Asaas
+    asaas_customer_id: Optional[str] = None
+    asaas_subscription_id: Optional[str] = None
+    # Status
+    status: str = "aguardando_pagamento"  # aguardando_pagamento, ativa, suspensa, cancelada
+    dia_vencimento: int  # Dia do mês para cobranças futuras
+    # Controle de pagamento
+    primeiro_pagamento_pix: bool = True
+    pix_qrcode: Optional[str] = None
+    pix_codigo: Optional[str] = None
+    pix_payment_id: Optional[str] = None
+    primeiro_pagamento_status: str = "pendente"  # pendente, pago
+    # Controle de inadimplência
+    dias_atraso: int = 0
+    ultimo_email_cobranca: Optional[str] = None
+    bloqueada_em: Optional[str] = None
+    # Vendedor
+    vendedor_id: str
+    vendedor_nome: str
+    # Datas
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AssinaturaSaaSCreate(BaseModel):
+    razao_social: str
+    cnpj_cpf: str
+    email: EmailStr
+    telefone: str
+    plano: str  # "basico" ou "profissional"
+
 class Cobranca(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
