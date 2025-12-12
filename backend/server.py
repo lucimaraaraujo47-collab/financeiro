@@ -2109,6 +2109,14 @@ async def criar_venda(venda_data: dict, current_user: dict = Depends(get_current
                 )
                 customer = customer_resp.json()
                 
+                # Verificar erro na criação do cliente
+                if "errors" in customer:
+                    error_msg = customer.get("errors", [{}])[0].get("description", "Erro ao criar cliente no Asaas")
+                    raise HTTPException(status_code=400, detail=f"Erro Asaas: {error_msg}")
+                
+                if "id" not in customer:
+                    raise HTTPException(status_code=400, detail=f"Resposta inesperada do Asaas: {customer}")
+                
                 # Criar cobrança
                 payment_data = {
                     "customer": customer["id"],
@@ -2124,6 +2132,11 @@ async def criar_venda(venda_data: dict, current_user: dict = Depends(get_current
                     headers={"access_token": api_key}
                 )
                 payment = payment_resp.json()
+                
+                # Verificar erro na criação da cobrança
+                if "errors" in payment:
+                    error_msg = payment.get("errors", [{}])[0].get("description", "Erro ao criar cobrança no Asaas")
+                    raise HTTPException(status_code=400, detail=f"Erro Asaas: {error_msg}")
         
         # Atualizar venda com dados do pagamento
         venda.gateway_payment_id = payment.get("id")
