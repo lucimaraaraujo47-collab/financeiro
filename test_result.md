@@ -566,9 +566,9 @@
 
 ## metadata:
   created_by: "main_agent"
-  version: "4.0"
-  test_sequence: 4
-  run_ui: true
+  version: "5.0"
+  test_sequence: 5
+  run_ui: false
 
   - task: "Backup Configuration Page"
     implemented: true
