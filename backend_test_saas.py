@@ -296,12 +296,11 @@ class SaaSTestRunner:
                 empresas = response.json()
                 self.log(f"✅ Retrieved {len(empresas)} empresas")
                 
-                # Find the created empresa "Empresa Teste LTDA"
+                # Find the created empresa by ID (we have it from subscription creation)
                 found_empresa = None
                 for empresa in empresas:
-                    if empresa.get('razao_social') == "Empresa Teste LTDA":
+                    if empresa.get('id') == self.created_empresa_id:
                         found_empresa = empresa
-                        self.created_empresa_id = empresa.get('id')
                         break
                 
                 if found_empresa:
@@ -310,7 +309,10 @@ class SaaSTestRunner:
                     self.log(f"   Razão Social: {found_empresa.get('razao_social')}")
                     self.log(f"   CNPJ: {found_empresa.get('cnpj')}")
                 else:
-                    self.log("   ❌ Created empresa 'Empresa Teste LTDA' NOT found", "ERROR")
+                    self.log(f"   ❌ Created empresa with ID '{self.created_empresa_id}' NOT found", "ERROR")
+                    self.log("   Available empresas:")
+                    for empresa in empresas:
+                        self.log(f"     - {empresa.get('razao_social')} (ID: {empresa.get('id')})")
                     return False
                 
                 return True
