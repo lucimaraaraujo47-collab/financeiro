@@ -2318,33 +2318,33 @@ async def criar_assinatura_saas(
                 "phone": dados.telefone
             },
             headers={"access_token": api_key}
-        )
-        customer = customer_resp.json()
-        
-        if "errors" in customer:
-            error_msg = customer.get("errors", [{}])[0].get("description", "Erro ao criar cliente no Asaas")
-            raise HTTPException(status_code=400, detail=f"Erro Asaas: {error_msg}")
-        
-        asaas_customer_id = customer["id"]
-        
-        # Criar cobrança PIX para primeiro pagamento
-        pix_resp = await client.post(
-            f"{base_url}/payments",
-            json={
-                "customer": asaas_customer_id,
-                "billingType": "PIX",
-                "value": plano_info["valor"],
-                "dueDate": datetime.now().strftime("%Y-%m-%d"),
-                "description": f"Assinatura {plano_info['nome']} - Primeiro Pagamento"
-            },
-            headers={"access_token": api_key}
-        )
-        pix_payment = pix_resp.json()
-        
-        if "errors" in pix_payment:
-            error_msg = pix_payment.get("errors", [{}])[0].get("description", "Erro ao gerar PIX")
-            raise HTTPException(status_code=400, detail=f"Erro Asaas: {error_msg}")
-        
+            )
+            customer = customer_resp.json()
+            
+            if "errors" in customer:
+                error_msg = customer.get("errors", [{}])[0].get("description", "Erro ao criar cliente no Asaas")
+                raise HTTPException(status_code=400, detail=f"Erro Asaas: {error_msg}")
+            
+            asaas_customer_id = customer["id"]
+            
+            # Criar cobrança PIX para primeiro pagamento
+            pix_resp = await client.post(
+                f"{base_url}/payments",
+                json={
+                    "customer": asaas_customer_id,
+                    "billingType": "PIX",
+                    "value": plano_info["valor"],
+                    "dueDate": datetime.now().strftime("%Y-%m-%d"),
+                    "description": f"Assinatura {plano_info['nome']} - Primeiro Pagamento"
+                },
+                headers={"access_token": api_key}
+            )
+            pix_payment = pix_resp.json()
+            
+            if "errors" in pix_payment:
+                error_msg = pix_payment.get("errors", [{}])[0].get("description", "Erro ao gerar PIX")
+                raise HTTPException(status_code=400, detail=f"Erro Asaas: {error_msg}")
+            
             # Buscar QR Code do PIX
             pix_qr_resp = await client.get(
                 f"{base_url}/payments/{pix_payment['id']}/pixQrCode",
