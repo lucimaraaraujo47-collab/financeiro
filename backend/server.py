@@ -2433,7 +2433,7 @@ async def criar_assinatura_saas(
         "valor": plano_info["valor"],
         "pix_qrcode": pix_qr.get("encodedImage"),
         "pix_codigo": pix_qr.get("payload"),
-        "pix_payment_id": pix_payment["id"]
+        "pix_payment_id": pix_payment_id
     }
 
 @api_router.get("/assinaturas")
