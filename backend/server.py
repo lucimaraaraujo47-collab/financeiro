@@ -2345,12 +2345,13 @@ async def criar_assinatura_saas(
             error_msg = pix_payment.get("errors", [{}])[0].get("description", "Erro ao gerar PIX")
             raise HTTPException(status_code=400, detail=f"Erro Asaas: {error_msg}")
         
-        # Buscar QR Code do PIX
-        pix_qr_resp = await client.get(
-            f"{base_url}/payments/{pix_payment['id']}/pixQrCode",
-            headers={"access_token": api_key}
-        )
-        pix_qr = pix_qr_resp.json()
+            # Buscar QR Code do PIX
+            pix_qr_resp = await client.get(
+                f"{base_url}/payments/{pix_payment['id']}/pixQrCode",
+                headers={"access_token": api_key}
+            )
+            pix_qr = pix_qr_resp.json()
+            pix_payment_id = pix_payment["id"]
     
     # Criar assinatura
     assinatura = AssinaturaSaaS(
@@ -2367,7 +2368,7 @@ async def criar_assinatura_saas(
         dia_vencimento=dia_vencimento,
         pix_qrcode=pix_qr.get("encodedImage"),
         pix_codigo=pix_qr.get("payload"),
-        pix_payment_id=pix_payment["id"],
+        pix_payment_id=pix_payment_id,
         vendedor_id=current_user["id"],
         vendedor_nome=current_user["nome"]
     )
