@@ -137,7 +137,6 @@ function App() {
             <Route path="/analise-ia" element={<AnaliseIA user={user} token={token} />} />
             <Route path="/whatsapp" element={<WhatsAppReal user={user} token={token} />} />
             <Route path="/whatsapp-mock" element={<MockWhatsApp user={user} token={token} />} />
-            <Route path="/usuarios" element={<GerenciarUsuarios user={user} token={token} />} />
             
             {/* Estoque Routes */}
             <Route path="/clientes" element={<Clientes user={user} token={token} />} />
