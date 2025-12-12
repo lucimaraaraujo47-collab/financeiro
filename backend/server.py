@@ -5811,7 +5811,7 @@ async def get_vendas(empresa_id: str, current_user: dict = Depends(get_current_u
 @api_router.post("/empresas/{empresa_id}/vendas")
 async def create_venda(
     empresa_id: str,
-    venda: VendaCreate,
+    venda: VendaContratoCreate,
     current_user: dict = Depends(get_current_user)
 ):
     """Create new sale/contract"""
