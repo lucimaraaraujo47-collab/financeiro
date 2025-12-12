@@ -1419,9 +1419,7 @@ async def list_users(current_user: dict = Depends(get_current_user)):
 @api_router.put("/users/{user_id}")
 async def update_user(
     user_id: str,
-    nome: str = None,
-    telefone: str = None,
-    perfil: str = None,
+    data: dict,
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -1440,11 +1438,12 @@ async def update_user(
     
     # Montar update
     update_data = {}
-    if nome:
-        update_data["nome"] = nome
-    if telefone is not None:
-        update_data["telefone"] = telefone
-    if perfil:
+    if data.get("nome"):
+        update_data["nome"] = data["nome"]
+    if data.get("telefone") is not None:
+        update_data["telefone"] = data["telefone"]
+    if data.get("perfil"):
+        perfil = data["perfil"]
         if perfil not in PERFIS_PERMISSOES:
             raise HTTPException(status_code=400, detail=f"Perfil inválido. Opções: {', '.join(PERFIS_PERMISSOES.keys())}")
         # Apenas admin_master pode criar outro admin_master
