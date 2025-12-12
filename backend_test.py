@@ -2497,25 +2497,20 @@ class SaaSTestRunner:
         self.log("  ✅ Transaction deletion with balance recalculation test PASSED!")
         return True
     
-    def run_all_tests(self):
-        """Run all test scenarios"""
+    def run_saas_tests(self):
+        """Run SaaS subscription system tests"""
         self.log("=" * 80)
-        self.log("STARTING ECHO SHOP FinAI - COMPLETE INVENTORY MANAGEMENT SYSTEM CRUD TESTS")
+        self.log("STARTING ECHO SHOP FinAI - SAAS SUBSCRIPTION SYSTEM TESTS")
         self.log("=" * 80)
         
         results = {
             'login': False,
-            'clientes_crud': False,
-            'fornecedores_crud': False,
-            'locais_crud': False,
-            'categorias_equipamentos_crud': False,
-            'equipamentos_crud': False,
-            'equipamentos_serializados_crud': False,
-            'movimentacoes_estoque_complex': False,
-            'movimentacoes_filters': False,
-            'investimentos_crud': False,
-            'cartoes_crud': False,
-            'transaction_integration': False
+            'planos_saas': False,
+            'create_subscription': False,
+            'list_subscriptions': False,
+            'verify_payment': False,
+            'verify_empresa_created': False,
+            'verify_user_created': False
         }
         
         # Test 1: Admin Login
@@ -2525,71 +2520,40 @@ class SaaSTestRunner:
             self.log("❌ Cannot continue without successful login", "ERROR")
             return results
         
-        # INVENTORY MANAGEMENT TESTS
+        # SAAS SUBSCRIPTION TESTS
         self.log("\n" + "=" * 60)
-        self.log("INVENTORY MANAGEMENT SYSTEM TESTS")
+        self.log("SAAS SUBSCRIPTION SYSTEM TESTS")
         self.log("=" * 60)
         
-        # Test 2: Clientes CRUD
-        results['clientes_crud'] = self.test_clientes_crud()
+        # Test 2: List SaaS Plans
+        results['planos_saas'] = self.test_planos_saas()
         
-        # Test 3: Fornecedores CRUD
-        results['fornecedores_crud'] = self.test_fornecedores_crud()
+        # Test 3: Create Subscription
+        results['create_subscription'] = self.test_create_subscription()
         
-        # Test 4: Locais/Depósitos CRUD
-        results['locais_crud'] = self.test_locais_crud()
+        # Test 4: List Subscriptions
+        results['list_subscriptions'] = self.test_list_subscriptions()
         
-        # Test 5: Categorias Equipamentos CRUD
-        results['categorias_equipamentos_crud'] = self.test_categorias_equipamentos_crud()
+        # Test 5: Verify Payment Status
+        results['verify_payment'] = self.test_verify_payment()
         
-        # Test 6: Equipamentos CRUD
-        results['equipamentos_crud'] = self.test_equipamentos_crud()
+        # Test 6: Verify Empresa Created
+        results['verify_empresa_created'] = self.test_verify_empresa_created()
         
-        # Test 7: Equipamentos Serializados CRUD
-        results['equipamentos_serializados_crud'] = self.test_equipamentos_serializados_crud()
-        
-        # Test 8: Movimentações de Estoque - Complex Business Logic
-        results['movimentacoes_estoque_complex'] = self.test_movimentacoes_estoque_complex()
-        
-        # Test 9: Movimentações Filters
-        results['movimentacoes_filters'] = self.test_movimentacoes_filters()
-        
-        # FINANCIAL SYSTEM TESTS (existing)
-        self.log("\n" + "=" * 60)
-        self.log("FINANCIAL SYSTEM TESTS")
-        self.log("=" * 60)
-        
-        # Test 10: Investimentos CRUD
-        results['investimentos_crud'] = self.test_investimentos_crud()
-        
-        # Test 11: Cartões de Crédito CRUD
-        results['cartoes_crud'] = self.test_cartoes_crud()
-        
-        # Test 12: Transaction Integration
-        results['transaction_integration'] = self.test_transaction_integration()
-        
-        # Cleanup inventory test data
-        self.cleanup_inventory_test_data()
+        # Test 7: Verify User Created
+        results['verify_user_created'] = self.test_verify_user_created()
         
         # Summary
         self.log("\n" + "=" * 80)
         self.log("TEST RESULTS SUMMARY")
         self.log("=" * 80)
         
-        # Inventory tests
-        self.log("\nINVENTORY MANAGEMENT TESTS:")
-        inventory_tests = ['clientes_crud', 'fornecedores_crud', 'locais_crud', 'categorias_equipamentos_crud', 
-                          'equipamentos_crud', 'equipamentos_serializados_crud', 'movimentacoes_estoque_complex', 'movimentacoes_filters']
+        # SaaS tests
+        self.log("\nSAAS SUBSCRIPTION SYSTEM TESTS:")
+        saas_tests = ['planos_saas', 'create_subscription', 'list_subscriptions', 'verify_payment', 
+                     'verify_empresa_created', 'verify_user_created']
         
-        for test_name in inventory_tests:
-            status = "✅ PASS" if results[test_name] else "❌ FAIL"
-            self.log(f"  {test_name.replace('_', ' ').title()}: {status}")
-        
-        # Financial tests
-        self.log("\nFINANCIAL SYSTEM TESTS:")
-        financial_tests = ['investimentos_crud', 'cartoes_crud', 'transaction_integration']
-        
-        for test_name in financial_tests:
+        for test_name in saas_tests:
             status = "✅ PASS" if results[test_name] else "❌ FAIL"
             self.log(f"  {test_name.replace('_', ' ').title()}: {status}")
         
