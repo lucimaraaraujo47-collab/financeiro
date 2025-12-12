@@ -354,7 +354,7 @@ class SaaSTestRunner:
                         self.log(f"   ❌ User not associated with created empresa", "ERROR")
                         return False
                 else:
-                    self.log("   ❌ Created user 'teste.empresa@teste.com' NOT found", "ERROR")
+                    self.log(f"   ❌ Created user '{self.test_email}' NOT found", "ERROR")
                     return False
                 
                 return True
