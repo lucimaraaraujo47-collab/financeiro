@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-## user_problem_statement: "Teste completo do sistema FinAI ECHO SHOP com foco nos seguintes pontos: Autenticação, Dashboard, Sistema de Licenciamento (Asaas), Envio de Email, Endpoints de Empresas, Sistema de Logs"
+## user_problem_statement: "Testar o sistema completo de Assinaturas SaaS com credenciais faraujoneto2025@gmail.com/Rebeca@19. Testes: GET /api/assinaturas/planos (planos basico/profissional com valores 99/199), POST /api/assinaturas (criar assinatura com dados teste), GET /api/assinaturas (listar), POST /api/assinaturas/{id}/verificar-pagamento, verificar criação de empresa e usuário automaticamente. Integração Asaas Sandbox para PIX."
 
 ## backend:
   - task: "Transaction Deletion with Balance Recalculation"
