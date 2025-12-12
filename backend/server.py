@@ -2297,8 +2297,18 @@ async def criar_assinatura_saas(
     api_key = gateway_config["api_key"]
     base_url = "https://sandbox.asaas.com/api/v3" if gateway_config.get("sandbox_mode") else "https://www.asaas.com/api/v3"
     
-    # Criar cliente no Asaas
-    async with httpx.AsyncClient() as client:
+    # Mock mode - para testes
+    if api_key.startswith('MOCK'):
+        # Simular resposta do Asaas para testes
+        asaas_customer_id = f"mock_customer_{str(uuid.uuid4())[:8]}"
+        pix_payment_id = f"mock_payment_{str(uuid.uuid4())[:8]}"
+        pix_qr = {
+            "encodedImage": f"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+            "payload": f"00020126580014br.gov.bcb.pix013636{str(uuid.uuid4()).replace('-', '')}5204000053039865802BR5925MOCK EMPRESA TESTE LTDA6009SAO PAULO62070503***6304ABCD"
+        }
+    else:
+        # Criar cliente no Asaas
+        async with httpx.AsyncClient() as client:
         customer_resp = await client.post(
             f"{base_url}/customers",
             json={
