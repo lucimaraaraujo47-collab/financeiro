@@ -191,7 +191,7 @@ class SaaSTestRunner:
                 
                 # Store user and empresa IDs for verification
                 self.created_user_id = created_subscription.get('user_id')
-                # We'll get empresa_id from the created user
+                self.created_empresa_id = created_subscription.get('empresa_id')
                 
                 return True
             else:
