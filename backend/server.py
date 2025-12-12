@@ -1356,8 +1356,8 @@ async def register(request: Request, user_data: UserCreate, current_user: dict =
     Only administrators can create new users
     Rate limited to 5 registrations per hour per IP
     """
-    # Check if current user is admin
-    if current_user.get("perfil") != "admin":
+    # Check if current user is admin or admin_master
+    if current_user.get("perfil") not in ["admin", "admin_master"]:
         log_security_event(
             "UNAUTHORIZED_USER_CREATION_ATTEMPT",
             user_id=current_user.get("id"),
