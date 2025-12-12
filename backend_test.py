@@ -12,10 +12,10 @@ from datetime import datetime
 import uuid
 
 # Configuration
-BACKEND_URL = "https://tenant-manager-38.preview.emergentagent.com/api"
-ADMIN_EMAIL = "admin@echoshop.com"  # Using existing admin user
-ADMIN_PASSWORD = "admin123"  # Using existing password
-EMPRESA_ID = "226b58c1-4a48-4b66-9537-0dbf9fa65500"
+BACKEND_URL = "http://localhost:8001/api"
+ADMIN_EMAIL = "faraujoneto2025@gmail.com"  # Using credentials from review request
+ADMIN_PASSWORD = "EchoShop2025!"  # Using credentials from review request
+EMPRESA_ID = None  # Will be determined from user data
 
 class FinAITestRunner:
     def __init__(self):
