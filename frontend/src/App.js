@@ -28,6 +28,7 @@ import Usuarios from './components/Usuarios';
 import Logs from './components/Logs';
 import Licencas from './components/Licencas';
 import Vendas from './components/Vendas';
+import Assinaturas from './components/Assinaturas';
 import DashboardVendas from './components/DashboardVendas';
 import Layout from './components/Layout';
 
