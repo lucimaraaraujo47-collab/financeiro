@@ -20,7 +20,7 @@ function GerenciarUsuarios({ user, token }) {
   const [passwordStrength, setPasswordStrength] = useState(null);
 
   useEffect(() => {
-    if (user.perfil !== 'admin') {
+    if (user.perfil !== 'admin' && user.perfil !== 'admin_master') {
       setMessage('Acesso negado. Apenas administradores podem gerenciar usuários.');
       return;
     }
