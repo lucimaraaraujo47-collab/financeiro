@@ -46,6 +46,21 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Remover badge Emergent
+    const removeEmergentBadge = () => {
+      const badge = document.getElementById('emergent-badge');
+      if (badge) badge.remove();
+      const links = document.querySelectorAll('a[href*="emergent.sh"]');
+      links.forEach(link => link.remove());
+    };
+    
+    removeEmergentBadge();
+    const interval = setInterval(removeEmergentBadge, 500);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     if (token) {
       loadUser();
     } else {
