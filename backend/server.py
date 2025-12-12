@@ -292,8 +292,8 @@ class Venda(BaseModel):
     boleto_codigo: Optional[str] = None
     pix_qrcode: Optional[str] = None
     pix_codigo: Optional[str] = None
-    data_vencimento: datetime
-    data_pagamento: Optional[datetime] = None
+    data_vencimento: str  # ISO date string
+    data_pagamento: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class Empresa(BaseModel):
