@@ -1416,6 +1416,81 @@ async def list_users(current_user: dict = Depends(get_current_user)):
     return users
 
 
+@api_router.put("/users/{user_id}")
+async def update_user(
+    user_id: str,
+    nome: str = None,
+    telefone: str = None,
+    perfil: str = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Update user - ADMIN ONLY
+    """
+    if current_user.get("perfil") not in ["admin", "admin_master"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Acesso negado. Apenas administradores podem editar usuários."
+        )
+    
+    # Verificar se usuário existe
+    existing = await db.users.find_one({"id": user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Montar update
+    update_data = {}
+    if nome:
+        update_data["nome"] = nome
+    if telefone is not None:
+        update_data["telefone"] = telefone
+    if perfil:
+        if perfil not in PERFIS_PERMISSOES:
+            raise HTTPException(status_code=400, detail=f"Perfil inválido. Opções: {', '.join(PERFIS_PERMISSOES.keys())}")
+        # Apenas admin_master pode criar outro admin_master
+        if perfil == "admin_master" and current_user.get("perfil") != "admin_master":
+            raise HTTPException(status_code=403, detail="Apenas admin_master pode definir este perfil")
+        update_data["perfil"] = perfil
+    
+    if update_data:
+        await db.users.update_one({"id": user_id}, {"$set": update_data})
+    
+    updated = await db.users.find_one({"id": user_id}, {"_id": 0, "senha_hash": 0})
+    return {"message": "Usuário atualizado com sucesso", "user": updated}
+
+
+@api_router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Delete user - ADMIN ONLY
+    """
+    if current_user.get("perfil") not in ["admin", "admin_master"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Acesso negado. Apenas administradores podem excluir usuários."
+        )
+    
+    # Verificar se não está excluindo a si mesmo
+    if user_id == current_user.get("id"):
+        raise HTTPException(status_code=400, detail="Você não pode excluir a si mesmo")
+    
+    # Verificar se usuário existe
+    existing = await db.users.find_one({"id": user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Não permitir excluir admin_master se não for admin_master
+    if existing.get("perfil") == "admin_master" and current_user.get("perfil") != "admin_master":
+        raise HTTPException(status_code=403, detail="Apenas admin_master pode excluir outro admin_master")
+    
+    await db.users.delete_one({"id": user_id})
+    
+    return {"message": "Usuário excluído com sucesso"}
+
+
 # ==================== SETUP / SEED ENDPOINT ====================
 
 @api_router.post("/setup/initialize")
