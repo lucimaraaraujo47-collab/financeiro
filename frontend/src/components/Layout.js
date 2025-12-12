@@ -150,11 +150,19 @@ function Layout({ user, onLogout, children }) {
             </Link>
             
             <Link 
+              to="/assinaturas" 
+              className={`nav-item nav-subitem ${isActive('/assinaturas') ? 'active' : ''}`}
+            >
+              <span className="nav-icon">🛒</span>
+              <span className="nav-text">Assinaturas SaaS</span>
+            </Link>
+            
+            <Link 
               to="/vendas" 
               className={`nav-item nav-subitem ${isActive('/vendas') ? 'active' : ''}`}
             >
               <span className="nav-icon">📝</span>
-              <span className="nav-text">Gerenciar</span>
+              <span className="nav-text">Emitir Cobranças</span>
             </Link>
           </div>
 
