@@ -37,6 +37,7 @@ class SaaSTestRunner:
         self.created_user_id = None
         self.pix_qrcode = None
         self.pix_codigo = None
+        self.test_email = None
         
     def log(self, message, level="INFO"):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
