@@ -137,6 +137,11 @@ PERFIS_PERMISSOES = {
         "descricao": "Acesso total ao sistema",
         "permissoes": ["*"]  # Todas as permissões
     },
+    "admin_master": {
+        "nome": "Admin Master",
+        "descricao": "Acesso total ao sistema e licenciamento",
+        "permissoes": ["*"]  # Todas as permissões
+    },
     "financeiro": {
         "nome": "Financeiro",
         "descricao": "Acesso a transações, relatórios e contas",
