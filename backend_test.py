@@ -2568,7 +2568,7 @@ class SaaSTestRunner:
         self.log(f"\nOverall: {passed_tests}/{total_tests} tests passed")
         
         if passed_tests == total_tests:
-            self.log("🎉 ALL TESTS PASSED - Complete Inventory Management System working correctly!")
+            self.log("🎉 ALL TESTS PASSED - SaaS Subscription System working correctly!")
         else:
             failed_tests = [name for name, passed in results.items() if not passed]
             self.log(f"⚠️ SOME TESTS FAILED: {', '.join(failed_tests)}")
@@ -2576,5 +2576,5 @@ class SaaSTestRunner:
         return results
 
 if __name__ == "__main__":
-    tester = FinAITestRunner()
-    results = tester.run_all_tests()
+    tester = SaaSTestRunner()
+    results = tester.run_saas_tests()
