@@ -838,8 +838,8 @@ class ClienteVendaCreate(BaseModel):
     cidade: str
     estado: str
 
-# VENDA / CONTRATO
-class Venda(BaseModel):
+# VENDA / CONTRATO (Assinaturas recorrentes)
+class VendaContrato(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     empresa_id: str
@@ -855,7 +855,7 @@ class Venda(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class VendaCreate(BaseModel):
+class VendaContratoCreate(BaseModel):
     cliente_id: str
     plano_id: str
     data_contratacao: str
