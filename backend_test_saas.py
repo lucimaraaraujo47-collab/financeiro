@@ -330,10 +330,10 @@ class SaaSTestRunner:
                 users = response.json()
                 self.log(f"✅ Retrieved {len(users)} users")
                 
-                # Find the created user with email "teste.empresa@teste.com"
+                # Find the created user with the test email
                 found_user = None
                 for user in users:
-                    if user.get('email') == "teste.empresa@teste.com":
+                    if user.get('email') and user.get('email').startswith("teste.empresa.") and user.get('email').endswith("@teste.com"):
                         found_user = user
                         break
                 
