@@ -2201,6 +2201,573 @@ async def get_gateway(empresa_id: str, current_user: dict = Depends(get_current_
     
     return configs
 
+# ==================== SISTEMA DE ASSINATURAS SAAS ====================
+
+def gerar_senha_automatica(email: str) -> str:
+    """Gera senha automática baseada no email"""
+    import random
+    import string
+    # Pega as primeiras 4 letras do email antes do @
+    base = email.split('@')[0][:4].capitalize()
+    # Adiciona números e caracteres especiais
+    numeros = ''.join(random.choices(string.digits, k=3))
+    especial = random.choice(['@', '#', '!', '$'])
+    return f"{base}{numeros}{especial}"
+
+@api_router.get("/assinaturas/planos")
+async def listar_planos_saas():
+    """Retorna os planos SaaS disponíveis"""
+    return PLANOS_SAAS
+
+@api_router.post("/assinaturas")
+async def criar_assinatura_saas(
+    dados: AssinaturaSaaSCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Cria nova assinatura SaaS:
+    1. Cria empresa cliente no sistema
+    2. Cria usuário com senha automática
+    3. Gera PIX para primeiro pagamento
+    4. Envia email com credenciais
+    """
+    # Verificar se vendedor tem permissão
+    if current_user.get("perfil") not in ["admin", "admin_master", "vendas"]:
+        raise HTTPException(status_code=403, detail="Apenas vendedores podem criar assinaturas")
+    
+    # Verificar se plano é válido
+    if dados.plano not in PLANOS_SAAS:
+        raise HTTPException(status_code=400, detail=f"Plano inválido. Opções: {', '.join(PLANOS_SAAS.keys())}")
+    
+    plano_info = PLANOS_SAAS[dados.plano]
+    
+    # Verificar se já existe assinatura com este CNPJ/CPF
+    existing = await db.assinaturas_saas.find_one({"cnpj_cpf": dados.cnpj_cpf, "status": {"$ne": "cancelada"}})
+    if existing:
+        raise HTTPException(status_code=400, detail="Já existe uma assinatura ativa para este CNPJ/CPF")
+    
+    # Verificar se email já está em uso
+    existing_user = await db.users.find_one({"email": dados.email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Este email já está cadastrado no sistema")
+    
+    # Gerar senha automática
+    senha_temp = gerar_senha_automatica(dados.email)
+    
+    # Criar empresa cliente
+    empresa_cliente = {
+        "id": str(uuid.uuid4()),
+        "razao_social": dados.razao_social,
+        "cnpj": dados.cnpj_cpf,
+        "email_cobranca": dados.email,
+        "telefone_cobranca": dados.telefone,
+        "is_blocked": False,
+        "is_cliente_saas": True,
+        "plano_saas": dados.plano,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.empresas.insert_one(empresa_cliente)
+    
+    # Criar usuário para o cliente
+    hashed_password = pwd_context.hash(senha_temp)
+    user_cliente = {
+        "id": str(uuid.uuid4()),
+        "nome": dados.razao_social,
+        "email": dados.email,
+        "telefone": dados.telefone,
+        "senha_hash": hashed_password,
+        "perfil": "admin",  # Admin da própria empresa
+        "empresa_ids": [empresa_cliente["id"]],
+        "is_cliente_saas": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(user_cliente)
+    
+    # Dia de vencimento = dia atual
+    dia_vencimento = datetime.now().day
+    
+    # Buscar gateway do admin (sua empresa)
+    gateway_config = await db.configuracoes_gateway.find_one({"ativo": True}, {"_id": 0})
+    if not gateway_config:
+        raise HTTPException(status_code=400, detail="Gateway de pagamento não configurado. Configure o Asaas primeiro.")
+    
+    api_key = gateway_config["api_key"]
+    base_url = "https://sandbox.asaas.com/api/v3" if gateway_config.get("sandbox_mode") else "https://www.asaas.com/api/v3"
+    
+    # Criar cliente no Asaas
+    async with httpx.AsyncClient() as client:
+        customer_resp = await client.post(
+            f"{base_url}/customers",
+            json={
+                "name": dados.razao_social,
+                "cpfCnpj": dados.cnpj_cpf.replace(".", "").replace("-", "").replace("/", ""),
+                "email": dados.email,
+                "phone": dados.telefone
+            },
+            headers={"access_token": api_key}
+        )
+        customer = customer_resp.json()
+        
+        if "errors" in customer:
+            error_msg = customer.get("errors", [{}])[0].get("description", "Erro ao criar cliente no Asaas")
+            raise HTTPException(status_code=400, detail=f"Erro Asaas: {error_msg}")
+        
+        asaas_customer_id = customer["id"]
+        
+        # Criar cobrança PIX para primeiro pagamento
+        pix_resp = await client.post(
+            f"{base_url}/payments",
+            json={
+                "customer": asaas_customer_id,
+                "billingType": "PIX",
+                "value": plano_info["valor"],
+                "dueDate": datetime.now().strftime("%Y-%m-%d"),
+                "description": f"Assinatura {plano_info['nome']} - Primeiro Pagamento"
+            },
+            headers={"access_token": api_key}
+        )
+        pix_payment = pix_resp.json()
+        
+        if "errors" in pix_payment:
+            error_msg = pix_payment.get("errors", [{}])[0].get("description", "Erro ao gerar PIX")
+            raise HTTPException(status_code=400, detail=f"Erro Asaas: {error_msg}")
+        
+        # Buscar QR Code do PIX
+        pix_qr_resp = await client.get(
+            f"{base_url}/payments/{pix_payment['id']}/pixQrCode",
+            headers={"access_token": api_key}
+        )
+        pix_qr = pix_qr_resp.json()
+    
+    # Criar assinatura
+    assinatura = AssinaturaSaaS(
+        razao_social=dados.razao_social,
+        cnpj_cpf=dados.cnpj_cpf,
+        email=dados.email,
+        telefone=dados.telefone,
+        plano=dados.plano,
+        valor_mensal=plano_info["valor"],
+        user_id=user_cliente["id"],
+        user_email=dados.email,
+        user_senha_temp=senha_temp,
+        asaas_customer_id=asaas_customer_id,
+        dia_vencimento=dia_vencimento,
+        pix_qrcode=pix_qr.get("encodedImage"),
+        pix_codigo=pix_qr.get("payload"),
+        pix_payment_id=pix_payment["id"],
+        vendedor_id=current_user["id"],
+        vendedor_nome=current_user["nome"]
+    )
+    
+    # Salvar assinatura
+    doc = assinatura.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    await db.assinaturas_saas.insert_one(doc)
+    
+    # Enviar email com credenciais
+    try:
+        html_email = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #667eea;">🎉 Bem-vindo ao Sistema!</h1>
+            <p>Olá <strong>{dados.razao_social}</strong>,</p>
+            <p>Sua conta foi criada com sucesso! Aqui estão suas credenciais de acesso:</p>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h3 style="margin-top: 0;">📋 Dados de Acesso</h3>
+                <p><strong>Email:</strong> {dados.email}</p>
+                <p><strong>Senha:</strong> {senha_temp}</p>
+                <p><strong>CPF/CNPJ:</strong> {dados.cnpj_cpf}</p>
+            </div>
+            
+            <div style="background: #e8f5e9; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h3 style="margin-top: 0;">📦 Seu Plano</h3>
+                <p><strong>Plano:</strong> {plano_info['nome']}</p>
+                <p><strong>Valor Mensal:</strong> R$ {plano_info['valor']:.2f}</p>
+                <p><strong>Vencimento:</strong> Todo dia {dia_vencimento}</p>
+            </div>
+            
+            <p style="color: #f57c00;"><strong>⚠️ Importante:</strong> Seu acesso será liberado após a confirmação do primeiro pagamento via PIX.</p>
+            
+            <p>Atenciosamente,<br>Equipe ECHO SHOP</p>
+        </div>
+        """
+        
+        GMAIL_USER = os.environ.get('GMAIL_USER')
+        GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')
+        
+        if GMAIL_USER and GMAIL_APP_PASSWORD:
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = f'🎉 Bem-vindo! Seus dados de acesso - {plano_info["nome"]}'
+            msg['From'] = f'Sistema ECHO SHOP <{GMAIL_USER}>'
+            msg['To'] = dados.email
+            msg.attach(MIMEText(html_email, 'html'))
+            
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+                server.send_message(msg)
+    except Exception as e:
+        logging.error(f"Erro ao enviar email: {e}")
+    
+    return {
+        "message": "Assinatura criada com sucesso!",
+        "assinatura_id": assinatura.id,
+        "empresa_id": empresa_cliente["id"],
+        "user_email": dados.email,
+        "user_senha": senha_temp,
+        "plano": plano_info["nome"],
+        "valor": plano_info["valor"],
+        "pix_qrcode": pix_qr.get("encodedImage"),
+        "pix_codigo": pix_qr.get("payload"),
+        "pix_payment_id": pix_payment["id"]
+    }
+
+@api_router.get("/assinaturas")
+async def listar_assinaturas(current_user: dict = Depends(get_current_user)):
+    """Lista todas as assinaturas SaaS"""
+    if current_user.get("perfil") not in ["admin", "admin_master", "vendas"]:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    assinaturas = await db.assinaturas_saas.find({}, {"_id": 0}).to_list(500)
+    return assinaturas
+
+@api_router.get("/assinaturas/{assinatura_id}")
+async def get_assinatura(assinatura_id: str, current_user: dict = Depends(get_current_user)):
+    """Retorna detalhes de uma assinatura"""
+    assinatura = await db.assinaturas_saas.find_one({"id": assinatura_id}, {"_id": 0})
+    if not assinatura:
+        raise HTTPException(status_code=404, detail="Assinatura não encontrada")
+    return assinatura
+
+@api_router.post("/assinaturas/{assinatura_id}/verificar-pagamento")
+async def verificar_pagamento_assinatura(assinatura_id: str, current_user: dict = Depends(get_current_user)):
+    """Verifica status do pagamento PIX inicial"""
+    assinatura = await db.assinaturas_saas.find_one({"id": assinatura_id}, {"_id": 0})
+    if not assinatura:
+        raise HTTPException(status_code=404, detail="Assinatura não encontrada")
+    
+    if assinatura.get("primeiro_pagamento_status") == "pago":
+        return {"status": "pago", "message": "Pagamento já confirmado"}
+    
+    # Buscar gateway
+    gateway_config = await db.configuracoes_gateway.find_one({"ativo": True}, {"_id": 0})
+    if not gateway_config:
+        raise HTTPException(status_code=400, detail="Gateway não configurado")
+    
+    api_key = gateway_config["api_key"]
+    base_url = "https://sandbox.asaas.com/api/v3" if gateway_config.get("sandbox_mode") else "https://www.asaas.com/api/v3"
+    
+    # Verificar status no Asaas
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{base_url}/payments/{assinatura['pix_payment_id']}",
+            headers={"access_token": api_key}
+        )
+        payment = resp.json()
+    
+    if payment.get("status") in ["RECEIVED", "CONFIRMED"]:
+        # Pagamento confirmado!
+        await db.assinaturas_saas.update_one(
+            {"id": assinatura_id},
+            {"$set": {
+                "primeiro_pagamento_status": "pago",
+                "status": "ativa",
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        # Desbloquear empresa
+        await db.empresas.update_one(
+            {"cnpj": assinatura["cnpj_cpf"]},
+            {"$set": {"is_blocked": False}}
+        )
+        
+        # Lançar no financeiro
+        await lancar_receita_mensalidade(assinatura)
+        
+        # Criar assinatura recorrente no Asaas (boletos futuros)
+        await criar_assinatura_recorrente(assinatura, gateway_config)
+        
+        return {"status": "pago", "message": "Pagamento confirmado! Acesso liberado."}
+    
+    return {"status": payment.get("status", "PENDING"), "message": "Aguardando pagamento"}
+
+async def lancar_receita_mensalidade(assinatura: dict):
+    """Lança a receita da mensalidade no financeiro"""
+    # Buscar ou criar categoria
+    categoria = await db.categorias.find_one({"nome": "Mensalidade Sistema"})
+    if not categoria:
+        categoria = {
+            "id": str(uuid.uuid4()),
+            "nome": "Mensalidade Sistema",
+            "tipo": "receita",
+            "cor": "#4caf50"
+        }
+        await db.categorias.insert_one(categoria)
+    
+    # Buscar ou criar centro de custo
+    centro_custo = await db.centros_custo.find_one({"nome": "Receitas SaaS"})
+    if not centro_custo:
+        centro_custo = {
+            "id": str(uuid.uuid4()),
+            "nome": "Receitas SaaS",
+            "descricao": "Receitas de assinaturas do sistema"
+        }
+        await db.centros_custo.insert_one(centro_custo)
+    
+    # Buscar empresa admin (sua empresa)
+    empresa_admin = await db.empresas.find_one({"is_cliente_saas": {"$ne": True}})
+    
+    # Criar transação
+    transacao = {
+        "id": str(uuid.uuid4()),
+        "empresa_id": empresa_admin["id"] if empresa_admin else assinatura.get("vendedor_id", ""),
+        "tipo": "receita",
+        "categoria_id": categoria["id"],
+        "categoria_nome": categoria["nome"],
+        "centro_custo_id": centro_custo["id"],
+        "centro_custo_nome": centro_custo["nome"],
+        "descricao": f"Mensalidade SaaS - {assinatura['razao_social']} - Plano {assinatura['plano'].capitalize()}",
+        "valor": assinatura["valor_mensal"],
+        "data": datetime.now(timezone.utc).isoformat(),
+        "status": "pago",
+        "observacoes": f"Assinatura ID: {assinatura['id']}",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.transacoes.insert_one(transacao)
+
+async def criar_assinatura_recorrente(assinatura: dict, gateway_config: dict):
+    """Cria assinatura recorrente no Asaas para boletos futuros"""
+    api_key = gateway_config["api_key"]
+    base_url = "https://sandbox.asaas.com/api/v3" if gateway_config.get("sandbox_mode") else "https://www.asaas.com/api/v3"
+    
+    # Calcular próximo vencimento
+    hoje = datetime.now()
+    proximo_mes = hoje.month + 1 if hoje.month < 12 else 1
+    proximo_ano = hoje.year if hoje.month < 12 else hoje.year + 1
+    dia = min(assinatura["dia_vencimento"], 28)  # Evitar problemas com fevereiro
+    proximo_vencimento = f"{proximo_ano}-{proximo_mes:02d}-{dia:02d}"
+    
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{base_url}/subscriptions",
+            json={
+                "customer": assinatura["asaas_customer_id"],
+                "billingType": "BOLETO",
+                "value": assinatura["valor_mensal"],
+                "cycle": "MONTHLY",
+                "nextDueDate": proximo_vencimento,
+                "description": f"Mensalidade Plano {assinatura['plano'].capitalize()}"
+            },
+            headers={"access_token": api_key}
+        )
+        subscription = resp.json()
+        
+        if "id" in subscription:
+            await db.assinaturas_saas.update_one(
+                {"id": assinatura["id"]},
+                {"$set": {"asaas_subscription_id": subscription["id"]}}
+            )
+
+@api_router.post("/assinaturas/verificar-inadimplentes")
+async def verificar_inadimplentes(current_user: dict = Depends(get_current_user)):
+    """Verifica assinaturas inadimplentes e envia cobranças/bloqueia"""
+    if current_user.get("perfil") not in ["admin", "admin_master"]:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    gateway_config = await db.configuracoes_gateway.find_one({"ativo": True}, {"_id": 0})
+    if not gateway_config:
+        return {"message": "Gateway não configurado"}
+    
+    api_key = gateway_config["api_key"]
+    base_url = "https://sandbox.asaas.com/api/v3" if gateway_config.get("sandbox_mode") else "https://www.asaas.com/api/v3"
+    
+    # Buscar assinaturas ativas
+    assinaturas = await db.assinaturas_saas.find({"status": "ativa"}, {"_id": 0}).to_list(500)
+    
+    resultados = []
+    GMAIL_USER = os.environ.get('GMAIL_USER')
+    GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')
+    
+    for assinatura in assinaturas:
+        if not assinatura.get("asaas_subscription_id"):
+            continue
+        
+        # Verificar cobranças pendentes
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                f"{base_url}/payments",
+                params={
+                    "subscription": assinatura["asaas_subscription_id"],
+                    "status": "OVERDUE"
+                },
+                headers={"access_token": api_key}
+            )
+            overdue = resp.json()
+        
+        if overdue.get("data"):
+            cobranca = overdue["data"][0]
+            vencimento = datetime.strptime(cobranca["dueDate"], "%Y-%m-%d")
+            dias_atraso = (datetime.now() - vencimento).days
+            
+            # Atualizar dias de atraso
+            await db.assinaturas_saas.update_one(
+                {"id": assinatura["id"]},
+                {"$set": {"dias_atraso": dias_atraso}}
+            )
+            
+            # Lógica de cobrança/bloqueio
+            if dias_atraso >= 5:
+                # BLOQUEAR
+                await db.assinaturas_saas.update_one(
+                    {"id": assinatura["id"]},
+                    {"$set": {
+                        "status": "suspensa",
+                        "bloqueada_em": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+                await db.empresas.update_one(
+                    {"cnpj": assinatura["cnpj_cpf"]},
+                    {"$set": {"is_blocked": True, "block_reason": "Inadimplência"}}
+                )
+                
+                # Enviar email de bloqueio
+                if GMAIL_USER and GMAIL_APP_PASSWORD:
+                    try:
+                        html = f"""
+                        <div style="font-family: Arial; max-width: 600px; margin: 0 auto;">
+                            <h2 style="color: #dc3545;">⚠️ Acesso Suspenso</h2>
+                            <p>Prezado(a) {assinatura['razao_social']},</p>
+                            <p>Devido à inadimplência de <strong>{dias_atraso} dias</strong>, seu acesso ao sistema foi suspenso.</p>
+                            <p>Para reativar, efetue o pagamento pendente.</p>
+                            <p>Atenciosamente,<br>Equipe ECHO SHOP</p>
+                        </div>
+                        """
+                        msg = MIMEMultipart('alternative')
+                        msg['Subject'] = '⚠️ Acesso Suspenso - Inadimplência'
+                        msg['From'] = f'Sistema ECHO SHOP <{GMAIL_USER}>'
+                        msg['To'] = assinatura['email']
+                        msg.attach(MIMEText(html, 'html'))
+                        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+                            server.send_message(msg)
+                    except Exception as e:
+                        logging.error(f"Erro envio email bloqueio: {e}")
+                
+                resultados.append({"assinatura": assinatura["razao_social"], "acao": "bloqueada"})
+            
+            elif dias_atraso >= 3:
+                # Aviso de suspensão
+                if GMAIL_USER and GMAIL_APP_PASSWORD:
+                    try:
+                        html = f"""
+                        <div style="font-family: Arial; max-width: 600px; margin: 0 auto;">
+                            <h2 style="color: #f57c00;">⚠️ Aviso de Suspensão</h2>
+                            <p>Prezado(a) {assinatura['razao_social']},</p>
+                            <p>Sua mensalidade está em atraso há <strong>{dias_atraso} dias</strong>.</p>
+                            <p><strong>Seu acesso será suspenso em {5 - dias_atraso} dias caso o pagamento não seja efetuado.</strong></p>
+                            <p>Atenciosamente,<br>Equipe ECHO SHOP</p>
+                        </div>
+                        """
+                        msg = MIMEMultipart('alternative')
+                        msg['Subject'] = '⚠️ Aviso: Suspensão em breve'
+                        msg['From'] = f'Sistema ECHO SHOP <{GMAIL_USER}>'
+                        msg['To'] = assinatura['email']
+                        msg.attach(MIMEText(html, 'html'))
+                        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+                            server.send_message(msg)
+                    except Exception as e:
+                        logging.error(f"Erro envio email aviso: {e}")
+                
+                resultados.append({"assinatura": assinatura["razao_social"], "acao": "aviso_suspensao"})
+            
+            else:
+                # Email de cobrança
+                if GMAIL_USER and GMAIL_APP_PASSWORD:
+                    try:
+                        html = f"""
+                        <div style="font-family: Arial; max-width: 600px; margin: 0 auto;">
+                            <h2 style="color: #1976d2;">📋 Lembrete de Pagamento</h2>
+                            <p>Prezado(a) {assinatura['razao_social']},</p>
+                            <p>Identificamos que sua mensalidade está pendente.</p>
+                            <p>Valor: <strong>R$ {assinatura['valor_mensal']:.2f}</strong></p>
+                            <p>Efetue o pagamento para evitar a suspensão do serviço.</p>
+                            <p>Atenciosamente,<br>Equipe ECHO SHOP</p>
+                        </div>
+                        """
+                        msg = MIMEMultipart('alternative')
+                        msg['Subject'] = '📋 Lembrete: Mensalidade Pendente'
+                        msg['From'] = f'Sistema ECHO SHOP <{GMAIL_USER}>'
+                        msg['To'] = assinatura['email']
+                        msg.attach(MIMEText(html, 'html'))
+                        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+                            server.send_message(msg)
+                    except Exception as e:
+                        logging.error(f"Erro envio email cobranca: {e}")
+                
+                resultados.append({"assinatura": assinatura["razao_social"], "acao": "email_cobranca"})
+    
+    return {"processadas": len(resultados), "resultados": resultados}
+
+@api_router.post("/webhook/asaas")
+async def webhook_asaas(request: Request):
+    """Webhook para receber notificações do Asaas"""
+    try:
+        data = await request.json()
+        event = data.get("event")
+        payment = data.get("payment", {})
+        
+        if event == "PAYMENT_RECEIVED":
+            # Pagamento recebido - verificar se é de assinatura SaaS
+            asaas_customer_id = payment.get("customer")
+            
+            assinatura = await db.assinaturas_saas.find_one(
+                {"asaas_customer_id": asaas_customer_id},
+                {"_id": 0}
+            )
+            
+            if assinatura:
+                # É pagamento de assinatura SaaS
+                if assinatura.get("primeiro_pagamento_status") == "pendente":
+                    # Primeiro pagamento
+                    await db.assinaturas_saas.update_one(
+                        {"id": assinatura["id"]},
+                        {"$set": {
+                            "primeiro_pagamento_status": "pago",
+                            "status": "ativa",
+                            "dias_atraso": 0,
+                            "updated_at": datetime.now(timezone.utc).isoformat()
+                        }}
+                    )
+                    await db.empresas.update_one(
+                        {"cnpj": assinatura["cnpj_cpf"]},
+                        {"$set": {"is_blocked": False}}
+                    )
+                else:
+                    # Mensalidade recorrente
+                    await db.assinaturas_saas.update_one(
+                        {"id": assinatura["id"]},
+                        {"$set": {
+                            "status": "ativa",
+                            "dias_atraso": 0,
+                            "updated_at": datetime.now(timezone.utc).isoformat()
+                        }}
+                    )
+                    await db.empresas.update_one(
+                        {"cnpj": assinatura["cnpj_cpf"]},
+                        {"$set": {"is_blocked": False}}
+                    )
+                
+                # Lançar receita
+                await lancar_receita_mensalidade(assinatura)
+        
+        return {"status": "ok"}
+    except Exception as e:
+        logging.error(f"Erro webhook Asaas: {e}")
+        return {"status": "error", "message": str(e)}
+
 @api_router.post("/vendas")
 async def criar_venda(venda_data: dict, current_user: dict = Depends(get_current_user)):
     """Cria venda e gera cobrança no gateway do cliente"""
