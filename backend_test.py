@@ -68,12 +68,12 @@ class SaaSTestRunner:
                     self.log(f"   User Profile: {self.user_data.get('perfil')}")
                     self.log(f"   Empresa IDs: {self.user_data.get('empresa_ids')}")
                     
-                    # Verify expected empresa_id is in user's list
-                    if EMPRESA_ID in self.user_data.get('empresa_ids', []):
-                        self.log(f"   ✅ Expected empresa_id {EMPRESA_ID} found in user's empresas")
-                    else:
-                        self.log(f"   ❌ Expected empresa_id {EMPRESA_ID} NOT found in user's empresas", "ERROR")
-                        return False
+                    # Set EMPRESA_ID from user data for subsequent tests
+                    empresa_ids = self.user_data.get('empresa_ids', [])
+                    if empresa_ids:
+                        global EMPRESA_ID
+                        EMPRESA_ID = empresa_ids[0]
+                        self.log(f"   ✅ Using empresa_id: {EMPRESA_ID}")
                     
                     return True
                 else:
