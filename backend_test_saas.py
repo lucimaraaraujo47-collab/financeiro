@@ -161,14 +161,17 @@ class SaaSTestRunner:
             
             if response.status_code == 200:
                 created_subscription = response.json()
-                self.created_subscription_id = created_subscription.get('id')
-                
                 self.log("✅ Subscription created successfully")
+                self.log(f"   Full response: {created_subscription}")
+                
+                # The response format is different - it's a message with details
+                self.created_subscription_id = created_subscription.get('assinatura_id')
+                
                 self.log(f"   Subscription ID: {self.created_subscription_id}")
-                self.log(f"   Razão Social: {created_subscription.get('razao_social')}")
-                self.log(f"   Email: {created_subscription.get('email')}")
+                self.log(f"   Empresa ID: {created_subscription.get('empresa_id')}")
+                self.log(f"   User Email: {created_subscription.get('user_email')}")
                 self.log(f"   Plano: {created_subscription.get('plano')}")
-                self.log(f"   Status: {created_subscription.get('status')}")
+                self.log(f"   Valor: R$ {created_subscription.get('valor')}")
                 
                 # Verify PIX data was generated
                 self.pix_qrcode = created_subscription.get('pix_qrcode')
