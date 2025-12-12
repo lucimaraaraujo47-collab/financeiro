@@ -142,10 +142,10 @@ class SaaSTestRunner:
             self.log("❌ No auth token available", "ERROR")
             return False
         
-        # Test data from review request
+        # Test data from review request - using valid CNPJ format
         subscription_data = {
             "razao_social": "Empresa Teste LTDA",
-            "cnpj_cpf": "12345678000199",
+            "cnpj_cpf": "11222333000181",  # Valid CNPJ format
             "email": "teste.empresa@teste.com",
             "telefone": "11999998888",
             "plano": "basico"
