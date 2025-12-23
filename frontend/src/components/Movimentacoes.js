@@ -276,7 +276,7 @@ function Movimentacoes({ user, token }) {
               <tbody>
                 {movimentacoes.map((m) => (
                   <tr key={m.id}>
-                    <td>{new Date(m.data).toLocaleDateString('pt-BR')}</td>
+                    <td>{m.data ? m.data.split('T')[0].split('-').reverse().join('/') : '-'}</td>
                     <td>{getTipoBadge(m.tipo)}</td>
                     <td>{getEquipamentoNome(m.equipamento_id)}</td>
                     <td>{m.quantidade}</td>
