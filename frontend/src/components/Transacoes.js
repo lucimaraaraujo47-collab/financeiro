@@ -859,7 +859,11 @@ function Transacoes({ user, token }) {
                   <label className="form-label" style={{ marginBottom: 0 }}>Fornecedor/Cliente Cadastrado</label>
                   <button
                     type="button"
-                    onClick={() => setShowFornecedorModal(true)}
+                    onClick={() => {
+                      setEditingFornecedor(null);
+                      setFornecedorForm({ nome: '', cnpj: '', email: '', telefone: '' });
+                      setShowFornecedorModal(true);
+                    }}
                     style={{
                       padding: '0.35rem 0.75rem',
                       fontSize: '0.8rem',
@@ -874,22 +878,113 @@ function Transacoes({ user, token }) {
                       gap: '0.25rem'
                     }}
                   >
-                    <span>+</span> Novo Fornecedor
+                    <span>+</span> Novo
                   </button>
                 </div>
-                <select
-                  className="form-select"
-                  value={formData.fornecedor_id}
-                  onChange={(e) => handleFornecedorChange(e.target.value)}
-                  data-testid="transacao-fornecedor-select"
-                >
-                  <option value="">Selecione ou digite manualmente abaixo</option>
+                
+                {/* Lista de Fornecedores com botões de ação */}
+                <div style={{
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  maxHeight: '200px',
+                  overflowY: 'auto'
+                }}>
+                  <div 
+                    style={{
+                      padding: '0.5rem 0.75rem',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid var(--border-color)',
+                      backgroundColor: !formData.fornecedor_id ? '#e0f2fe' : 'transparent',
+                      fontSize: '0.875rem'
+                    }}
+                    onClick={() => handleFornecedorChange('')}
+                  >
+                    <em style={{ color: '#6b7280' }}>Nenhum selecionado (digitar manualmente)</em>
+                  </div>
                   {fornecedores.map(forn => (
-                    <option key={forn.id} value={forn.id}>
-                      {forn.nome} - {forn.cnpj}
-                    </option>
+                    <div 
+                      key={forn.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.5rem 0.75rem',
+                        borderBottom: '1px solid var(--border-color)',
+                        backgroundColor: formData.fornecedor_id === forn.id ? '#e0f2fe' : 'transparent',
+                        transition: 'background-color 0.2s'
+                      }}
+                    >
+                      <div 
+                        style={{ 
+                          flex: 1, 
+                          cursor: 'pointer',
+                          fontSize: '0.875rem'
+                        }}
+                        onClick={() => handleFornecedorChange(forn.id)}
+                      >
+                        <div style={{ fontWeight: formData.fornecedor_id === forn.id ? '600' : '400' }}>
+                          {forn.nome}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                          {forn.cnpj || 'Sem CNPJ/CPF'}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditFornecedor(forn);
+                          }}
+                          style={{
+                            padding: '0.25rem 0.5rem',
+                            fontSize: '0.7rem',
+                            backgroundColor: '#dbeafe',
+                            color: '#1e40af',
+                            border: '1px solid #93c5fd',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                          title="Editar fornecedor"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteFornecedor(forn.id, forn.nome);
+                          }}
+                          style={{
+                            padding: '0.25rem 0.5rem',
+                            fontSize: '0.7rem',
+                            backgroundColor: '#fee2e2',
+                            color: '#991b1b',
+                            border: '1px solid #fca5a5',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                          title="Excluir fornecedor"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
                   ))}
-                </select>
+                </div>
+                
+                {formData.fornecedor_id && (
+                  <div style={{ 
+                    marginTop: '0.5rem', 
+                    padding: '0.5rem', 
+                    backgroundColor: '#d1fae5', 
+                    borderRadius: '4px',
+                    fontSize: '0.8rem',
+                    color: '#065f46'
+                  }}>
+                    ✅ Selecionado: <strong>{formData.fornecedor}</strong>
+                  </div>
+                )}
               </div>
 
               <div className="form-group">
