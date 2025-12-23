@@ -233,7 +233,17 @@ function Transacoes({ user, token }) {
   // Criar fornecedor rápido
   const handleCreateFornecedor = async (e) => {
     e.preventDefault();
-    if (!empresa) return;
+    e.stopPropagation(); // Evitar propagação do evento
+    
+    if (!empresa) {
+      setMessage('Erro: Empresa não selecionada');
+      return;
+    }
+
+    if (!fornecedorForm.nome.trim()) {
+      setMessage('Erro: Nome do fornecedor é obrigatório');
+      return;
+    }
 
     try {
       setLoadingFornecedor(true);
@@ -247,15 +257,16 @@ function Transacoes({ user, token }) {
       
       // Atualizar lista de fornecedores
       const novoFornecedor = response.data;
-      setFornecedores([...fornecedores, novoFornecedor]);
+      const novaListaFornecedores = [...fornecedores, novoFornecedor];
+      setFornecedores(novaListaFornecedores);
       
       // Selecionar o fornecedor recém-criado no formulário de transação
-      setFormData({
-        ...formData,
+      setFormData(prevFormData => ({
+        ...prevFormData,
         fornecedor_id: novoFornecedor.id,
         fornecedor: novoFornecedor.nome,
         cnpj_cpf: novoFornecedor.cnpj || ''
-      });
+      }));
       
       // Limpar e fechar modal
       setFornecedorForm({ nome: '', cnpj: '', email: '', telefone: '' });
@@ -263,7 +274,7 @@ function Transacoes({ user, token }) {
       setMessage('✅ Fornecedor cadastrado! Agora pode finalizar a transação.');
     } catch (error) {
       console.error('Erro ao cadastrar fornecedor:', error);
-      setMessage(error.response?.data?.detail || 'Erro ao cadastrar fornecedor');
+      setMessage('❌ ' + (error.response?.data?.detail || 'Erro ao cadastrar fornecedor'));
     } finally {
       setLoadingFornecedor(false);
     }
