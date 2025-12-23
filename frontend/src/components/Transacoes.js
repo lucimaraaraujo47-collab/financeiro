@@ -198,6 +198,13 @@ function Transacoes({ user, token }) {
       resultado = resultado.filter(t => t.status === filtros.status);
     }
 
+    // Ordenar por data decrescente (mais recente primeiro)
+    resultado.sort((a, b) => {
+      const dataA = a.data_competencia ? new Date(a.data_competencia) : new Date(0);
+      const dataB = b.data_competencia ? new Date(b.data_competencia) : new Date(0);
+      return dataB - dataA;
+    });
+
     setTransacoesFiltradas(resultado);
   };
 
@@ -210,7 +217,13 @@ function Transacoes({ user, token }) {
       tipo: '',
       status: ''
     });
-    setTransacoesFiltradas(transacoes);
+    // Ordenar transações ao limpar filtros
+    const ordenadas = [...transacoes].sort((a, b) => {
+      const dataA = a.data_competencia ? new Date(a.data_competencia) : new Date(0);
+      const dataB = b.data_competencia ? new Date(b.data_competencia) : new Date(0);
+      return dataB - dataA;
+    });
+    setTransacoesFiltradas(ordenadas);
   };
 
   // Quando fornecedor é selecionado, preencher os dados automaticamente
