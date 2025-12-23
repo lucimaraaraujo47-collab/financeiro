@@ -294,12 +294,101 @@ function Transacoes({ user, token }) {
       // Limpar e fechar modal
       setFornecedorForm({ nome: '', cnpj: '', email: '', telefone: '' });
       setShowFornecedorModal(false);
+      setEditingFornecedor(null);
       setMessage('✅ Fornecedor cadastrado! Agora pode finalizar a transação.');
     } catch (error) {
       console.error('Erro ao cadastrar fornecedor:', error);
       setMessage('❌ ' + (error.response?.data?.detail || 'Erro ao cadastrar fornecedor'));
     } finally {
       setLoadingFornecedor(false);
+    }
+  };
+
+  // Editar fornecedor
+  const handleEditFornecedor = (fornecedor) => {
+    setEditingFornecedor(fornecedor);
+    setFornecedorForm({
+      nome: fornecedor.nome || '',
+      cnpj: fornecedor.cnpj || '',
+      email: fornecedor.email || '',
+      telefone: fornecedor.telefone || ''
+    });
+    setShowFornecedorModal(true);
+  };
+
+  // Salvar edição do fornecedor
+  const handleUpdateFornecedor = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!editingFornecedor) return;
+
+    try {
+      setLoadingFornecedor(true);
+      setMessage('');
+      
+      await axios.put(
+        `${API}/fornecedores/${editingFornecedor.id}`,
+        fornecedorForm,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Atualizar lista de fornecedores
+      const fornecedoresAtualizados = fornecedores.map(f => 
+        f.id === editingFornecedor.id 
+          ? { ...f, ...fornecedorForm }
+          : f
+      );
+      setFornecedores(fornecedoresAtualizados);
+      
+      // Atualizar o formulário de transação se o fornecedor editado estiver selecionado
+      if (formData.fornecedor_id === editingFornecedor.id) {
+        setFormData(prev => ({
+          ...prev,
+          fornecedor: fornecedorForm.nome,
+          cnpj_cpf: fornecedorForm.cnpj || ''
+        }));
+      }
+      
+      // Limpar e fechar modal
+      setFornecedorForm({ nome: '', cnpj: '', email: '', telefone: '' });
+      setShowFornecedorModal(false);
+      setEditingFornecedor(null);
+      setMessage('✅ Fornecedor atualizado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao atualizar fornecedor:', error);
+      setMessage('❌ ' + (error.response?.data?.detail || 'Erro ao atualizar fornecedor'));
+    } finally {
+      setLoadingFornecedor(false);
+    }
+  };
+
+  // Excluir fornecedor
+  const handleDeleteFornecedor = async (fornecedorId, fornecedorNome) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o fornecedor "${fornecedorNome}"?\n\nEsta ação não pode ser desfeita.`)) return;
+
+    try {
+      await axios.delete(`${API}/fornecedores/${fornecedorId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Remover da lista
+      setFornecedores(fornecedores.filter(f => f.id !== fornecedorId));
+      
+      // Limpar seleção se o fornecedor excluído estiver selecionado
+      if (formData.fornecedor_id === fornecedorId) {
+        setFormData(prev => ({
+          ...prev,
+          fornecedor_id: '',
+          fornecedor: '',
+          cnpj_cpf: ''
+        }));
+      }
+      
+      setMessage('✅ Fornecedor excluído com sucesso!');
+    } catch (error) {
+      console.error('Erro ao excluir fornecedor:', error);
+      setMessage('❌ ' + (error.response?.data?.detail || 'Erro ao excluir fornecedor'));
     }
   };
 
