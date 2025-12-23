@@ -68,38 +68,38 @@ function Transacoes({ user, token }) {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (empresasRes.data.length > 0) {
+      if (empresasRes.data && empresasRes.data.length > 0) {
         const emp = empresasRes.data[0];
         setEmpresa(emp);
 
         const [transacoesRes, categoriasRes, ccRes, contasRes, cartoesRes, fornecedoresRes] = await Promise.all([
           axios.get(`${API}/empresas/${emp.id}/transacoes`, {
             headers: { Authorization: `Bearer ${token}` }
-          }),
+          }).catch(() => ({ data: [] })),
           axios.get(`${API}/empresas/${emp.id}/categorias`, {
             headers: { Authorization: `Bearer ${token}` }
-          }),
+          }).catch(() => ({ data: [] })),
           axios.get(`${API}/empresas/${emp.id}/centros-custo`, {
             headers: { Authorization: `Bearer ${token}` }
-          }),
+          }).catch(() => ({ data: [] })),
           axios.get(`${API}/empresas/${emp.id}/contas`, {
             headers: { Authorization: `Bearer ${token}` }
-          }),
+          }).catch(() => ({ data: [] })),
           axios.get(`${API}/empresas/${emp.id}/cartoes`, {
             headers: { Authorization: `Bearer ${token}` }
-          }),
+          }).catch(() => ({ data: [] })),
           axios.get(`${API}/empresas/${emp.id}/fornecedores`, {
             headers: { Authorization: `Bearer ${token}` }
-          })
+          }).catch(() => ({ data: [] }))
         ]);
 
-        setTransacoes(transacoesRes.data);
-        setTransacoesFiltradas(transacoesRes.data);
-        setCategorias(categoriasRes.data);
-        setCentrosCusto(ccRes.data);
-        setContas(contasRes.data);
-        setCartoes(cartoesRes.data);
-        setFornecedores(fornecedoresRes.data);
+        setTransacoes(transacoesRes.data || []);
+        setTransacoesFiltradas(transacoesRes.data || []);
+        setCategorias(categoriasRes.data || []);
+        setCentrosCusto(ccRes.data || []);
+        setContas(contasRes.data || []);
+        setCartoes(cartoesRes.data || []);
+        setFornecedores(fornecedoresRes.data || []);
       }
     } catch (error) {
       console.error('Error loading data:', error);
