@@ -176,7 +176,7 @@ function Dashboard({ user, token }) {
                 <div className="transaction-info">
                   <div className="transaction-description">{t.descricao}</div>
                   <div className="transaction-meta">
-                    {t.fornecedor} • {new Date(t.data_competencia).toLocaleDateString('pt-BR')}
+                    {t.fornecedor} • {t.data_competencia ? t.data_competencia.split('T')[0].split('-').reverse().join('/') : '-'}
                   </div>
                 </div>
                 <div className={`transaction-amount ${t.tipo}`}>
