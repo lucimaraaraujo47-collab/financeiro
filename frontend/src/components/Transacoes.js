@@ -14,6 +14,7 @@ function Transacoes({ user, token }) {
   const [showForm, setShowForm] = useState(false);
   const [showTransferencia, setShowTransferencia] = useState(false);
   const [showFornecedorModal, setShowFornecedorModal] = useState(false);
+  const [editingFornecedor, setEditingFornecedor] = useState(null);
   const [fornecedorForm, setFornecedorForm] = useState({
     nome: '',
     cnpj: '',
