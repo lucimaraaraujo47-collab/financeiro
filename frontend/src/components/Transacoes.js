@@ -170,6 +170,9 @@ function Transacoes({ user, token }) {
       status: 'pendente',
       origem: 'manual'
     });
+    // Fechar modal do fornecedor se estiver aberto
+    setShowFornecedorModal(false);
+    setFornecedorForm({ nome: '', cnpj: '', email: '', telefone: '' });
   };
 
   // Aplicar filtros localmente
