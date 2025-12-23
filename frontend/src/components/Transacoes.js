@@ -108,7 +108,17 @@ function Transacoes({ user, token }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!empresa) return;
+    if (!empresa) {
+      setMessage('Erro: Empresa não selecionada');
+      return;
+    }
+
+    // Validar valor
+    const valorNumerico = parseFloat(formData.valor_total);
+    if (isNaN(valorNumerico) || valorNumerico <= 0) {
+      setMessage('Erro: Informe um valor válido');
+      return;
+    }
 
     setLoading(true);
     setMessage('');
@@ -116,18 +126,26 @@ function Transacoes({ user, token }) {
     try {
       const payload = {
         ...formData,
-        valor_total: parseFloat(formData.valor_total)
+        valor_total: valorNumerico
       };
 
       await axios.post(`${API}/empresas/${empresa.id}/transacoes`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMessage('Transação cadastrada com sucesso!');
+      setMessage('✅ Transação cadastrada com sucesso!');
       setShowForm(false);
+      setShowFornecedorModal(false); // Garantir que modal está fechado
       resetForm();
-      loadData();
+      
+      // Recarregar dados com tratamento de erro
+      try {
+        await loadData();
+      } catch (loadError) {
+        console.error('Erro ao recarregar dados:', loadError);
+      }
     } catch (error) {
-      setMessage(error.response?.data?.detail || 'Erro ao cadastrar transação');
+      console.error('Erro ao cadastrar transação:', error);
+      setMessage('❌ ' + (error.response?.data?.detail || 'Erro ao cadastrar transação'));
     } finally {
       setLoading(false);
     }
