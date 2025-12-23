@@ -1253,7 +1253,11 @@ function Transacoes({ user, token }) {
             justifyContent: 'center',
             zIndex: 1000
           }}
-          onClick={() => setShowFornecedorModal(false)}
+          onClick={() => {
+            setShowFornecedorModal(false);
+            setEditingFornecedor(null);
+            setFornecedorForm({ nome: '', cnpj: '', email: '', telefone: '' });
+          }}
         >
           <div 
             style={{
@@ -1269,11 +1273,15 @@ function Transacoes({ user, token }) {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h3 style={{ fontSize: '1.5rem', fontWeight: '600', margin: 0 }}>
-                Cadastrar Fornecedor
+                {editingFornecedor ? '✏️ Editar Fornecedor' : '➕ Cadastrar Fornecedor'}
               </h3>
               <button
                 type="button"
-                onClick={() => setShowFornecedorModal(false)}
+                onClick={() => {
+                  setShowFornecedorModal(false);
+                  setEditingFornecedor(null);
+                  setFornecedorForm({ nome: '', cnpj: '', email: '', telefone: '' });
+                }}
                 style={{
                   background: 'transparent',
                   border: 'none',
@@ -1286,7 +1294,7 @@ function Transacoes({ user, token }) {
               </button>
             </div>
 
-            <form onSubmit={handleCreateFornecedor}>
+            <form onSubmit={editingFornecedor ? handleUpdateFornecedor : handleCreateFornecedor}>
               <div className="form-group">
                 <label className="form-label">Nome *</label>
                 <input
@@ -1300,13 +1308,12 @@ function Transacoes({ user, token }) {
               </div>
 
               <div className="form-group">
-                <label className="form-label">CNPJ *</label>
+                <label className="form-label">CNPJ/CPF</label>
                 <input
                   type="text"
                   className="form-input"
                   value={fornecedorForm.cnpj}
                   onChange={(e) => setFornecedorForm({...fornecedorForm, cnpj: e.target.value})}
-                  required
                   placeholder="00.000.000/0001-00"
                 />
               </div>
@@ -1340,13 +1347,14 @@ function Transacoes({ user, token }) {
                   disabled={loadingFornecedor}
                   style={{ flex: 1 }}
                 >
-                  {loadingFornecedor ? 'Salvando...' : 'Salvar Fornecedor'}
+                  {loadingFornecedor ? 'Salvando...' : (editingFornecedor ? '💾 Salvar Alterações' : '➕ Cadastrar')}
                 </button>
                 <button 
                   type="button" 
                   className="btn-secondary"
                   onClick={() => {
                     setShowFornecedorModal(false);
+                    setEditingFornecedor(null);
                     setFornecedorForm({ nome: '', cnpj: '', email: '', telefone: '' });
                   }}
                   disabled={loadingFornecedor}
