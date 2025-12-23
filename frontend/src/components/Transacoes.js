@@ -373,6 +373,19 @@ function Transacoes({ user, token }) {
     );
   }
 
+  // Função para formatar data sem problema de timezone
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    // Se a data já estiver no formato ISO (YYYY-MM-DD), formatar diretamente
+    if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+      const [year, month, day] = dateStr.split('T')[0].split('-');
+      return `${day}/${month}/${year}`;
+    }
+    // Fallback para outros formatos
+    const date = new Date(dateStr + 'T12:00:00');
+    return date.toLocaleDateString('pt-BR');
+  };
+
   const getCategoriaName = (id) => {
     const cat = categorias.find(c => c.id === id);
     return cat ? cat.nome : '-';
