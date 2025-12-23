@@ -94,7 +94,13 @@ function Transacoes({ user, token }) {
         ]);
 
         setTransacoes(transacoesRes.data || []);
-        setTransacoesFiltradas(transacoesRes.data || []);
+        // Ordenar por data decrescente (mais recente primeiro)
+        const transacoesOrdenadas = [...(transacoesRes.data || [])].sort((a, b) => {
+          const dataA = a.data_competencia ? new Date(a.data_competencia) : new Date(0);
+          const dataB = b.data_competencia ? new Date(b.data_competencia) : new Date(0);
+          return dataB - dataA;
+        });
+        setTransacoesFiltradas(transacoesOrdenadas);
         setCategorias(categoriasRes.data || []);
         setCentrosCusto(ccRes.data || []);
         setContas(contasRes.data || []);
