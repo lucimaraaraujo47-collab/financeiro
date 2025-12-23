@@ -107,7 +107,7 @@ curl -X POST https://fintracker-117.emergent.host/api/users/reset-admin-password
 1. **Ambiente Preview vs Produção:** São ambientes completamente separados. Mudanças feitas no preview não aparecem automaticamente em produção.
 
 2. **URLs Corretas:**
-   - Preview: `https://tenant-manager-38.preview.emergentagent.com`
+   - Preview: `https://billingportal-5.preview.emergentagent.com`
    - Produção: `https://fintracker-117.emergent.host`
 
 3. **Banco de Dados:** Cada ambiente tem seu próprio banco MongoDB. Os dados não são compartilhados.

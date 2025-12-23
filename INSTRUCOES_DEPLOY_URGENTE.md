@@ -223,7 +223,7 @@ Se após seguir TODOS os passos acima o sistema ainda não funcionar:
 
 | Ambiente | URL | Banco de Dados | Quando usar |
 |----------|-----|----------------|-------------|
-| **Preview** | `https://tenant-manager-38.preview.emergentagent.com` | MongoDB Interno (Preview) | Para testar durante desenvolvimento |
+| **Preview** | `https://billingportal-5.preview.emergentagent.com` | MongoDB Interno (Preview) | Para testar durante desenvolvimento |
 | **Produção** | `https://fintracker-117.emergent.host` | MongoDB Isolado (Produção) | Para uso real do sistema |
 
 ⚠️ **Mudanças no Preview NÃO aparecem automaticamente em Produção!**  

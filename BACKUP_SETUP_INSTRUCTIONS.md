@@ -123,7 +123,7 @@ Você pode testar fazendo um backup manual:
 
 **Via API (Postman ou curl):**
 ```bash
-curl -X POST https://tenant-manager-38.preview.emergentagent.com/api/backup/create \
+curl -X POST https://billingportal-5.preview.emergentagent.com/api/backup/create \
   -H "Authorization: Bearer SEU_TOKEN_ADMIN"
 ```
 
@@ -138,7 +138,7 @@ cd /app/backend
 Após configurar, verifique o status via API:
 
 ```bash
-curl -X GET https://tenant-manager-38.preview.emergentagent.com/api/backup/status \
+curl -X GET https://billingportal-5.preview.emergentagent.com/api/backup/status \
   -H "Authorization: Bearer SEU_TOKEN_ADMIN"
 ```
 
