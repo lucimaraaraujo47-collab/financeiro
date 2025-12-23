@@ -978,7 +978,7 @@ function Transacoes({ user, token }) {
               <tbody data-testid="transacoes-table">
                 {transacoesFiltradas.map((t) => (
                   <tr key={t.id}>
-                    <td>{new Date(t.data_competencia).toLocaleDateString('pt-BR')}</td>
+                    <td>{formatDate(t.data_competencia)}</td>
                     <td><span className={`badge badge-${t.tipo}`}>{t.tipo}</span></td>
                     <td>{t.fornecedor}</td>
                     <td>{t.descricao}</td>
