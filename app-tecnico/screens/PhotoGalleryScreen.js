@@ -11,7 +11,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 import axios from 'axios';
-import { API_URL } from '../config';
+import { API_URL, LABELS } from '../config';
 
 const { width: screenWidth } = Dimensions.get('window');
 

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Camera } from 'expo-camera';
 import axios from 'axios';
-import { API_URL } from '../config';
+import { API_URL, LABELS, APP_CONFIG } from '../config';
 
 export default function CameraScreen({ route, navigation, token }) {
   const { osId, tipoFoto } = route.params;
@@ -21,14 +21,7 @@ export default function CameraScreen({ route, navigation, token }) {
   const [cameraType, setCameraType] = useState(Camera.Constants.Type.back);
   const cameraRef = useRef(null);
 
-  const tipoLabels = {
-    antes: '📷 Foto Antes',
-    durante: '🔧 Foto Durante',
-    depois: '✅ Foto Depois',
-    equipamento: '📦 Foto Equipamento',
-    documento: '📄 Foto Documento',
-    geral: '📸 Foto Geral'
-  };
+  const tipoLabels = LABELS.tipoFoto;
 
   useEffect(() => {
     (async () => {
