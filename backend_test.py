@@ -604,7 +604,7 @@ class VendasContratosTestRunner:
         }
         
         try:
-            response = self.session.put(f"{BACKEND_URL}/ordens-servico/{os_id_to_test}/atribuir-tecnico", json=assignment_data)
+            response = self.session.patch(f"{BACKEND_URL}/ordens-servico/{os_id_to_test}/atribuir", json=assignment_data)
             
             if response.status_code == 200:
                 updated_os = response.json()
