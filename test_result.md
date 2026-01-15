@@ -91,15 +91,18 @@ backend:
 
   - task: "Atribuição de Técnico à OS"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado sistema de atribuição de técnico às ordens de serviço"
+      - working: true
+        agent: "testing"
+        comment: "✅ Atribuição funcionando: endpoint PATCH /ordens-servico/{id}/atribuir responde 200. Minor: response não retorna dados atualizados"
 
   - task: "Atualização Status OS"
     implemented: true
