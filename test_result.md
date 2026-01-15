@@ -61,15 +61,18 @@ backend:
 
   - task: "CRUD Ordens de Serviço"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado sistema de ordens de serviço com atribuição de técnico e checklist"
+      - working: true
+        agent: "testing"
+        comment: "✅ CRUD básico funcionando: LIST e GET testados com sucesso. OS existentes sendo listadas corretamente"
 
   - task: "Fluxo Venda → Contrato → OS"
     implemented: true
