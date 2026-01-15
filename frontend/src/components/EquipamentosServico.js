@@ -54,7 +54,7 @@ function EquipamentosServico({ user, token }) {
         const emp = empresasRes.data[0];
         setEmpresa(emp);
 
-        let url = `${API}/empresas/${emp.id}/equipamentos`;
+        let url = `${API}/empresas/${emp.id}/equipamentos-tecnicos`;
         const params = [];
         if (filtroStatus) params.push(`status=${filtroStatus}`);
         if (filtroTipo) params.push(`tipo=${filtroTipo}`);
@@ -64,7 +64,7 @@ function EquipamentosServico({ user, token }) {
           axios.get(url, { headers: { Authorization: `Bearer ${token}` } }),
           axios.get(`${API}/empresas/${emp.id}/tipos-equipamento`, { headers: { Authorization: `Bearer ${token}` } }),
           axios.get(`${API}/empresas/${emp.id}/depositos`, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(`${API}/empresas/${emp.id}/equipamentos/dashboard`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API}/empresas/${emp.id}/equipamentos-tecnicos/dashboard`, { headers: { Authorization: `Bearer ${token}` } }),
           axios.get(`${API}/users`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
 
@@ -92,7 +92,7 @@ function EquipamentosServico({ user, token }) {
         valor_aquisicao: formData.valor_aquisicao ? parseFloat(formData.valor_aquisicao) : null
       };
 
-      await axios.post(`${API}/empresas/${empresa.id}/equipamentos`, payload, {
+      await axios.post(`${API}/empresas/${empresa.id}/equipamentos-tecnicos`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -119,7 +119,7 @@ function EquipamentosServico({ user, token }) {
     if (!showTransferir) return;
 
     try {
-      await axios.post(`${API}/equipamentos/${showTransferir.id}/transferir`, transferenciaForm, {
+      await axios.post(`${API}/equipamentos-tecnicos/${showTransferir.id}/transferir`, transferenciaForm, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -134,7 +134,7 @@ function EquipamentosServico({ user, token }) {
 
   const loadDetalhes = async (equipId) => {
     try {
-      const res = await axios.get(`${API}/equipamentos/${equipId}`, {
+      const res = await axios.get(`${API}/equipamentos-tecnicos/${equipId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShowDetalhes(res.data);
