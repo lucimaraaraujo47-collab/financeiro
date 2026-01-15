@@ -789,7 +789,7 @@ class VendasContratosTestRunner:
         
         try:
             # Get the venda details
-            response = self.session.get(f"{BACKEND_URL}/vendas-servico/{self.created_venda_id}")
+            response = self.session.get(f"{BACKEND_URL}/vendas-servico/{venda_id_to_test}")
             
             if response.status_code == 200:
                 venda = response.json()
