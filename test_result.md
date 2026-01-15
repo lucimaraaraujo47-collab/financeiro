@@ -31,15 +31,18 @@ backend:
 
   - task: "Preview de Contrato com Variáveis"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado preview de contrato com substituição de variáveis dinâmicas"
+      - working: true
+        agent: "testing"
+        comment: "✅ Preview funcionando: variáveis {{nome_cliente}}, {{plano_nome}}, {{data_inicio}} sendo substituídas corretamente"
 
   - task: "CRUD Vendas de Serviço"
     implemented: true
