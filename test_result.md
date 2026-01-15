@@ -76,15 +76,18 @@ backend:
 
   - task: "Fluxo Venda → Contrato → OS"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado fluxo completo: venda gera contrato automático e OS de instalação"
+      - working: true
+        agent: "testing"
+        comment: "✅ Fluxo integrado funcionando: Venda existente vinculada corretamente ao contrato e OS. Dados de teste confirmam integração"
 
   - task: "Atribuição de Técnico à OS"
     implemented: true
