@@ -201,11 +201,13 @@ class VendasContratosTestRunner:
             response = self.session.put(f"{BACKEND_URL}/planos-servico/{self.created_plano_id}", json=update_data)
             
             if response.status_code == 200:
-                updated_plano = response.json()
+                result = response.json()
+                # Handle both direct object and message+object response
+                updated_plano = result if 'message' not in result else result.get('plano', result)
                 self.log("    ✅ Plano updated successfully")
-                self.log(f"       New Nome: {updated_plano.get('nome')}")
-                self.log(f"       New Valor: R$ {updated_plano.get('valor')}")
-                self.log(f"       New Benefícios: {updated_plano.get('beneficios')}")
+                self.log(f"       New Nome: {updated_plano.get('nome', 'N/A')}")
+                self.log(f"       New Valor: R$ {updated_plano.get('valor', 'N/A')}")
+                self.log(f"       New Benefícios: {updated_plano.get('beneficios', 'N/A')}")
             else:
                 self.log(f"    ❌ Failed to update plano: {response.status_code} - {response.text}", "ERROR")
                 return False
