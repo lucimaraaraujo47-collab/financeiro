@@ -7902,16 +7902,16 @@ async def criar_deposito(empresa_id: str, data: Dict[str, Any] = Body(...), curr
     deposito_dict.pop("_id", None)
     return deposito_dict
 
-# --- Equipamentos ---
-@api_router.get("/empresas/{empresa_id}/equipamentos")
-async def listar_equipamentos(
+# --- Equipamentos com Série (Fase 2) ---
+@api_router.get("/empresas/{empresa_id}/equipamentos-tecnicos")
+async def listar_equipamentos_tecnicos(
     empresa_id: str, 
     status: Optional[str] = None,
     tipo: Optional[str] = None,
     localizacao_tipo: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Lista equipamentos com filtros"""
+    """Lista equipamentos para técnicos com filtros"""
     if empresa_id not in current_user.get("empresa_ids", []):
         raise HTTPException(status_code=403, detail="Acesso negado")
     
@@ -7923,17 +7923,17 @@ async def listar_equipamentos(
     if localizacao_tipo:
         query["localizacao_tipo"] = localizacao_tipo
     
-    equipamentos = await db.equipamentos_serie.find(query, {"_id": 0}).to_list(5000)
+    equipamentos = await db.equipamentos_tecnicos.find(query, {"_id": 0}).to_list(5000)
     return equipamentos
 
-@api_router.post("/empresas/{empresa_id}/equipamentos")
-async def criar_equipamento(empresa_id: str, equip: EquipamentoCreate, current_user: dict = Depends(get_current_user)):
-    """Cria novo equipamento"""
+@api_router.post("/empresas/{empresa_id}/equipamentos-tecnicos")
+async def criar_equipamento_tecnico(empresa_id: str, equip: EquipamentoCreate, current_user: dict = Depends(get_current_user)):
+    """Cria novo equipamento para técnicos"""
     if empresa_id not in current_user.get("empresa_ids", []):
         raise HTTPException(status_code=403, detail="Acesso negado")
     
     # Verificar se número de série já existe
-    existe = await db.equipamentos_serie.find_one({
+    existe = await db.equipamentos_tecnicos.find_one({
         "empresa_id": empresa_id, 
         "numero_serie": equip.numero_serie
     })
@@ -7960,7 +7960,7 @@ async def criar_equipamento(empresa_id: str, equip: EquipamentoCreate, current_u
     equip_dict["created_at"] = datetime.now(timezone.utc)
     equip_dict["updated_at"] = datetime.now(timezone.utc)
     
-    await db.equipamentos_serie.insert_one(equip_dict)
+    await db.equipamentos_tecnicos.insert_one(equip_dict)
     equip_dict.pop("_id", None)
     return equip_dict
 
