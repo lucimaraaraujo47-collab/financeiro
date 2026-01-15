@@ -136,15 +136,18 @@ backend:
 
   - task: "Assinatura Digital Contrato"
     implemented: true
-    working: "NA"
+    working: false
     file: "server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado sistema de assinatura digital de contratos"
+      - working: false
+        agent: "testing"
+        comment: "❌ Assinatura parcialmente funcionando: endpoint POST /contratos/{id}/assinar responde 200 mas não retorna dados atualizados do contrato. Status não muda para 'assinado'"
 
 frontend:
   - task: "Interface Planos de Serviço"
