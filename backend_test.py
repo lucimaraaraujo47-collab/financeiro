@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Backend API Testing for ECHO SHOP FinAI - SaaS Subscription System Testing
-Tests complete SaaS subscription system including:
-- Plans listing
-- Subscription creation with automatic company and user creation
-- PIX payment generation
-- Payment verification
-- Company and user verification
+Backend API Testing for Sistema de Vendas com Contratos (Fase 1)
+Tests the complete sales and contracts system including:
+- Planos de Serviço CRUD
+- Modelos de Contrato CRUD with dynamic variables
+- Contract preview with variable substitution
+- Vendas de Serviço CRUD with automatic contract and OS generation
+- Ordens de Serviço CRUD with technician assignment and checklist
+- Digital contract signature
+- Complete flow: Sale → Contract → Service Order
 """
 
 import requests
@@ -19,9 +21,17 @@ import uuid
 BACKEND_URL = "http://localhost:8001/api"
 ADMIN_EMAIL = "faraujoneto2025@gmail.com"
 ADMIN_PASSWORD = "Rebeca@19"
-EMPRESA_ID = None  # Will be determined from user data
+EMPRESA_ID = "884bd1b2-ceb7-4ca6-8f5b-f847333eca3e"
 
-class SaaSTestRunner:
+# Test data IDs from review request
+EXISTING_PLANO_ID = "0fa0ea52-aac2-4314-92c1-a81fd2ab3aae"
+EXISTING_MODELO_CONTRATO_ID = "cd6ece0a-9dda-4a8f-a0d6-f12feb4111e8"
+EXISTING_CLIENTE_ID = "7c80843e-ef54-451d-b5bd-f626dd541bb8"
+EXISTING_VENDA_ID = "4a0278db-1dc1-4f33-9393-b8ed87587c90"
+EXISTING_OS_ID = "0de6dab1-85cc-4232-a87a-abfd71ff2bd1"
+EXISTING_CONTRATO_ID = "03dc63cf-481c-43f2-bac2-c75e81f4631b"
+
+class VendasContratosTestRunner:
     def __init__(self):
         self.token = None
         self.user_data = None
@@ -31,12 +41,13 @@ class SaaSTestRunner:
             'Accept': 'application/json'
         })
         
-        # Test data storage - SaaS Subscription
-        self.created_subscription_id = None
-        self.created_empresa_id = None
-        self.created_user_id = None
-        self.pix_qrcode = None
-        self.pix_codigo = None
+        # Test data storage
+        self.created_plano_id = None
+        self.created_modelo_id = None
+        self.created_cliente_id = None
+        self.created_venda_id = None
+        self.created_os_id = None
+        self.created_contrato_id = None
         
     def log(self, message, level="INFO"):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -67,14 +78,6 @@ class SaaSTestRunner:
                     self.log(f"   User ID: {self.user_data.get('id')}")
                     self.log(f"   User Profile: {self.user_data.get('perfil')}")
                     self.log(f"   Empresa IDs: {self.user_data.get('empresa_ids')}")
-                    
-                    # Set EMPRESA_ID from user data for subsequent tests
-                    empresa_ids = self.user_data.get('empresa_ids', [])
-                    if empresa_ids:
-                        global EMPRESA_ID
-                        EMPRESA_ID = empresa_ids[0]
-                        self.log(f"   ✅ Using empresa_id: {EMPRESA_ID}")
-                    
                     return True
                 else:
                     self.log("❌ Login response missing access token", "ERROR")
@@ -86,2495 +89,806 @@ class SaaSTestRunner:
         except Exception as e:
             self.log(f"❌ Login request failed: {str(e)}", "ERROR")
             return False
-    
-    def test_planos_saas(self):
-        """Test 2: GET /api/assinaturas/planos - List available plans"""
-        self.log("Testing SaaS plans listing...")
-        
-        if not self.token:
-            self.log("❌ No auth token available", "ERROR")
-            return False
-        
-        try:
-            response = self.session.get(f"{BACKEND_URL}/assinaturas/planos")
-            
-            if response.status_code == 200:
-                planos = response.json()
-                self.log("✅ Plans retrieved successfully")
-                self.log(f"   Number of plans: {len(planos)}")
-                
-                # Verify expected plans exist
-                expected_plans = {"basico": 99.00, "profissional": 199.00}
-                
-                for plano_key, expected_value in expected_plans.items():
-                    if plano_key in planos:
-                        plano_data = planos[plano_key]
-                        valor = plano_data.get("valor")
-                        nome = plano_data.get("nome")
-                        
-                        self.log(f"   ✅ Plan '{plano_key}' found:")
-                        self.log(f"      Nome: {nome}")
-                        self.log(f"      Valor: R$ {valor}")
-                        
-                        if valor == expected_value:
-                            self.log(f"      ✅ Correct value: R$ {valor}")
-                        else:
-                            self.log(f"      ❌ Incorrect value: expected R$ {expected_value}, got R$ {valor}", "ERROR")
-                            return False
-                    else:
-                        self.log(f"   ❌ Plan '{plano_key}' not found", "ERROR")
-                        return False
-                
-                return True
-            else:
-                self.log(f"❌ Failed to retrieve plans: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"❌ Error retrieving plans: {str(e)}", "ERROR")
-            return False
 
-    def test_create_subscription(self):
-        """Test 3: POST /api/assinaturas - Create new subscription"""
-        self.log("Testing subscription creation...")
+    def test_planos_servico_crud(self):
+        """Test 2: CRUD Planos de Serviço"""
+        self.log("Testing Planos de Serviço CRUD operations...")
         
         if not self.token:
             self.log("❌ No auth token available", "ERROR")
             return False
         
-        # Test data from review request
-        subscription_data = {
-            "razao_social": "Empresa Teste LTDA",
-            "cnpj_cpf": "12345678000199",
-            "email": "teste.empresa@teste.com",
-            "telefone": "11999998888",
-            "plano": "basico"
+        # Test CREATE Plano de Serviço
+        self.log("  2.1 Testing CREATE plano de serviço...")
+        plano_data = {
+            "nome": "Internet 500MB Fibra Teste",
+            "tipo_servico": "internet",
+            "valor": 89.90,
+            "periodicidade": "mensal",
+            "tem_contrato": True,
+            "prazo_fidelidade_meses": 12,
+            "valor_multa_cancelamento": 200.0,
+            "modelo_contrato_id": EXISTING_MODELO_CONTRATO_ID,
+            "descricao": "Plano de internet fibra óptica 500MB",
+            "beneficios": ["WiFi grátis", "Instalação grátis", "Suporte 24h"]
         }
         
         try:
-            response = self.session.post(f"{BACKEND_URL}/assinaturas", json=subscription_data)
+            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/planos-servico", json=plano_data)
             
             if response.status_code == 200:
-                created_subscription = response.json()
-                self.created_subscription_id = created_subscription.get('id')
-                
-                self.log("✅ Subscription created successfully")
-                self.log(f"   Subscription ID: {self.created_subscription_id}")
-                self.log(f"   Razão Social: {created_subscription.get('razao_social')}")
-                self.log(f"   Email: {created_subscription.get('email')}")
-                self.log(f"   Plano: {created_subscription.get('plano')}")
-                self.log(f"   Status: {created_subscription.get('status')}")
-                
-                # Verify PIX data was generated
-                self.pix_qrcode = created_subscription.get('pix_qrcode')
-                self.pix_codigo = created_subscription.get('pix_codigo')
-                
-                if self.pix_qrcode:
-                    self.log(f"   ✅ PIX QR Code generated: {self.pix_qrcode[:50]}...")
-                else:
-                    self.log("   ❌ PIX QR Code not generated", "ERROR")
-                    return False
-                
-                if self.pix_codigo:
-                    self.log(f"   ✅ PIX Code generated: {self.pix_codigo[:50]}...")
-                else:
-                    self.log("   ❌ PIX Code not generated", "ERROR")
-                    return False
-                
-                # Store user and empresa IDs for verification
-                self.created_user_id = created_subscription.get('user_id')
-                # We'll get empresa_id from the created user
-                
-                return True
+                created_plano = response.json()
+                self.created_plano_id = created_plano.get('id')
+                self.log("    ✅ Plano de serviço created successfully")
+                self.log(f"       ID: {self.created_plano_id}")
+                self.log(f"       Nome: {created_plano.get('nome')}")
+                self.log(f"       Valor: R$ {created_plano.get('valor')}")
+                self.log(f"       Tem Contrato: {created_plano.get('tem_contrato')}")
+                self.log(f"       Fidelidade: {created_plano.get('prazo_fidelidade_meses')} meses")
             else:
-                self.log(f"❌ Failed to create subscription: {response.status_code} - {response.text}", "ERROR")
+                self.log(f"    ❌ Failed to create plano: {response.status_code} - {response.text}", "ERROR")
                 return False
                 
         except Exception as e:
-            self.log(f"❌ Error creating subscription: {str(e)}", "ERROR")
-            return False
-
-    def test_list_subscriptions(self):
-        """Test 4: GET /api/assinaturas - List subscriptions"""
-        self.log("Testing subscription listing...")
-        
-        if not self.token:
-            self.log("❌ No auth token available", "ERROR")
+            self.log(f"    ❌ Error creating plano: {str(e)}", "ERROR")
             return False
         
+        # Test LIST Planos
+        self.log("  2.2 Testing LIST planos de serviço...")
         try:
-            response = self.session.get(f"{BACKEND_URL}/assinaturas")
+            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/planos-servico")
             
             if response.status_code == 200:
-                subscriptions = response.json()
-                self.log(f"✅ Retrieved {len(subscriptions)} subscriptions")
+                planos = response.json()
+                self.log(f"    ✅ Retrieved {len(planos)} planos")
                 
-                # Find our created subscription
-                found_subscription = None
-                for sub in subscriptions:
-                    if sub.get('id') == self.created_subscription_id:
-                        found_subscription = sub
-                        break
-                
-                if found_subscription:
-                    self.log("✅ Created subscription found in list")
-                    self.log(f"   Razão Social: {found_subscription.get('razao_social')}")
-                    self.log(f"   Status: {found_subscription.get('status')}")
+                # Verify created plano appears in list
+                found_plano = any(p.get('id') == self.created_plano_id for p in planos)
+                if found_plano:
+                    self.log("    ✅ Created plano found in list")
+                else:
+                    self.log("    ❌ Created plano NOT found in list", "ERROR")
+                    return False
                     
-                    # Verify status is "aguardando_pagamento"
-                    status = found_subscription.get('status')
-                    if status == "aguardando_pagamento":
-                        self.log("   ✅ Correct status: aguardando_pagamento")
+                # Verify existing plano from test data
+                existing_found = any(p.get('id') == EXISTING_PLANO_ID for p in planos)
+                if existing_found:
+                    self.log(f"    ✅ Existing plano {EXISTING_PLANO_ID} found in list")
+                else:
+                    self.log(f"    ⚠️ Existing plano {EXISTING_PLANO_ID} not found", "WARNING")
+            else:
+                self.log(f"    ❌ Failed to list planos: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error listing planos: {str(e)}", "ERROR")
+            return False
+        
+        # Test GET specific plano
+        self.log("  2.3 Testing GET specific plano...")
+        try:
+            response = self.session.get(f"{BACKEND_URL}/planos-servico/{self.created_plano_id}")
+            
+            if response.status_code == 200:
+                plano = response.json()
+                self.log("    ✅ Retrieved specific plano successfully")
+                self.log(f"       Nome: {plano.get('nome')}")
+                self.log(f"       Benefícios: {plano.get('beneficios')}")
+            else:
+                self.log(f"    ❌ Failed to get specific plano: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error getting specific plano: {str(e)}", "ERROR")
+            return False
+        
+        # Test UPDATE Plano
+        self.log("  2.4 Testing UPDATE plano...")
+        update_data = {
+            "nome": "Internet 500MB Fibra Teste Atualizado",
+            "tipo_servico": "internet",
+            "valor": 99.90,  # Updated price
+            "periodicidade": "mensal",
+            "tem_contrato": True,
+            "prazo_fidelidade_meses": 12,
+            "valor_multa_cancelamento": 250.0,  # Updated multa
+            "modelo_contrato_id": EXISTING_MODELO_CONTRATO_ID,
+            "descricao": "Plano de internet fibra óptica 500MB atualizado",
+            "beneficios": ["WiFi grátis", "Instalação grátis", "Suporte 24h", "Netflix grátis"]
+        }
+        
+        try:
+            response = self.session.put(f"{BACKEND_URL}/planos-servico/{self.created_plano_id}", json=update_data)
+            
+            if response.status_code == 200:
+                updated_plano = response.json()
+                self.log("    ✅ Plano updated successfully")
+                self.log(f"       New Nome: {updated_plano.get('nome')}")
+                self.log(f"       New Valor: R$ {updated_plano.get('valor')}")
+                self.log(f"       New Benefícios: {updated_plano.get('beneficios')}")
+            else:
+                self.log(f"    ❌ Failed to update plano: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error updating plano: {str(e)}", "ERROR")
+            return False
+        
+        return True
+
+    def test_modelos_contrato_crud(self):
+        """Test 3: CRUD Modelos de Contrato"""
+        self.log("Testing Modelos de Contrato CRUD operations...")
+        
+        if not self.token:
+            self.log("❌ No auth token available", "ERROR")
+            return False
+        
+        # Test CREATE Modelo de Contrato
+        self.log("  3.1 Testing CREATE modelo de contrato...")
+        modelo_data = {
+            "nome": "Contrato Internet Residencial Teste",
+            "descricao": "Modelo de contrato para internet residencial com fidelidade",
+            "conteudo_html": """
+            <h1>CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE INTERNET</h1>
+            <p><strong>CONTRATANTE:</strong> {{nome_cliente}}</p>
+            <p><strong>CPF/CNPJ:</strong> {{cpf_cnpj}}</p>
+            <p><strong>ENDEREÇO:</strong> {{endereco_completo}}</p>
+            <p><strong>TELEFONE:</strong> {{telefone}}</p>
+            <p><strong>EMAIL:</strong> {{email}}</p>
+            
+            <h2>PLANO CONTRATADO</h2>
+            <p><strong>Plano:</strong> {{plano_nome}}</p>
+            <p><strong>Valor Mensal:</strong> R$ {{plano_valor}}</p>
+            <p><strong>Periodicidade:</strong> {{periodicidade}}</p>
+            
+            <h2>FIDELIDADE</h2>
+            <p><strong>Prazo de Fidelidade:</strong> {{fidelidade_meses}} meses</p>
+            <p><strong>Valor da Multa:</strong> R$ {{valor_multa}}</p>
+            <p><strong>Data de Início:</strong> {{data_inicio}}</p>
+            <p><strong>Data de Fim:</strong> {{data_fim}}</p>
+            
+            <p><strong>Data de Assinatura:</strong> {{data_assinatura}}</p>
+            
+            <p>Assinatura do Cliente: _________________________</p>
+            """
+        }
+        
+        try:
+            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/modelos-contrato", json=modelo_data)
+            
+            if response.status_code == 200:
+                created_modelo = response.json()
+                self.created_modelo_id = created_modelo.get('id')
+                self.log("    ✅ Modelo de contrato created successfully")
+                self.log(f"       ID: {self.created_modelo_id}")
+                self.log(f"       Nome: {created_modelo.get('nome')}")
+                self.log(f"       Versão: {created_modelo.get('versao')}")
+                self.log(f"       Variáveis Disponíveis: {len(created_modelo.get('variaveis_disponiveis', []))}")
+            else:
+                self.log(f"    ❌ Failed to create modelo: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error creating modelo: {str(e)}", "ERROR")
+            return False
+        
+        # Test LIST Modelos
+        self.log("  3.2 Testing LIST modelos de contrato...")
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/modelos-contrato")
+            
+            if response.status_code == 200:
+                modelos = response.json()
+                self.log(f"    ✅ Retrieved {len(modelos)} modelos")
+                
+                found_modelo = any(m.get('id') == self.created_modelo_id for m in modelos)
+                if found_modelo:
+                    self.log("    ✅ Created modelo found in list")
+                else:
+                    self.log("    ❌ Created modelo NOT found in list", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to list modelos: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error listing modelos: {str(e)}", "ERROR")
+            return False
+        
+        # Test UPDATE Modelo (should create new version)
+        self.log("  3.3 Testing UPDATE modelo (versioning)...")
+        update_data = {
+            "nome": "Contrato Internet Residencial Teste v2",
+            "descricao": "Modelo atualizado com nova versão",
+            "conteudo_html": modelo_data["conteudo_html"] + "\n<p>VERSÃO 2.0 - Atualizada</p>"
+        }
+        
+        try:
+            response = self.session.put(f"{BACKEND_URL}/modelos-contrato/{self.created_modelo_id}", json=update_data)
+            
+            if response.status_code == 200:
+                updated_modelo = response.json()
+                self.log("    ✅ Modelo updated successfully")
+                self.log(f"       New Nome: {updated_modelo.get('nome')}")
+                self.log(f"       New Versão: {updated_modelo.get('versao')}")
+                
+                # Verify version incremented
+                if updated_modelo.get('versao') == 2:
+                    self.log("    ✅ Version correctly incremented to 2")
+                else:
+                    self.log(f"    ❌ Version not incremented correctly: {updated_modelo.get('versao')}", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to update modelo: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error updating modelo: {str(e)}", "ERROR")
+            return False
+        
+        return True
+
+    def test_contract_preview(self):
+        """Test 4: Contract Preview with Variable Substitution"""
+        self.log("Testing contract preview with variable substitution...")
+        
+        if not self.token or not self.created_modelo_id:
+            self.log("❌ No auth token or modelo ID available", "ERROR")
+            return False
+        
+        # Test contract preview
+        self.log("  4.1 Testing contract preview...")
+        preview_data = {
+            "cliente_id": EXISTING_CLIENTE_ID,
+            "plano_id": EXISTING_PLANO_ID,
+            "data_inicio": "2026-01-15",
+            "data_assinatura": "2026-01-15"
+        }
+        
+        try:
+            response = self.session.post(f"{BACKEND_URL}/modelos-contrato/{self.created_modelo_id}/preview", json=preview_data)
+            
+            if response.status_code == 200:
+                preview = response.json()
+                conteudo_preenchido = preview.get('conteudo_preenchido', '')
+                
+                self.log("    ✅ Contract preview generated successfully")
+                
+                # Verify variables were substituted
+                if '{{nome_cliente}}' not in conteudo_preenchido:
+                    self.log("    ✅ Variable {{nome_cliente}} was substituted")
+                else:
+                    self.log("    ❌ Variable {{nome_cliente}} was NOT substituted", "ERROR")
+                    return False
+                
+                if '{{plano_nome}}' not in conteudo_preenchido:
+                    self.log("    ✅ Variable {{plano_nome}} was substituted")
+                else:
+                    self.log("    ❌ Variable {{plano_nome}} was NOT substituted", "ERROR")
+                    return False
+                
+                if '{{data_inicio}}' not in conteudo_preenchido:
+                    self.log("    ✅ Variable {{data_inicio}} was substituted")
+                else:
+                    self.log("    ❌ Variable {{data_inicio}} was NOT substituted", "ERROR")
+                    return False
+                
+                # Log a sample of the filled content
+                sample = conteudo_preenchido[:200] + "..." if len(conteudo_preenchido) > 200 else conteudo_preenchido
+                self.log(f"    Preview sample: {sample}")
+                
+            else:
+                self.log(f"    ❌ Failed to generate preview: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error generating preview: {str(e)}", "ERROR")
+            return False
+        
+        return True
+
+    def test_vendas_servico_crud(self):
+        """Test 5: CRUD Vendas de Serviço"""
+        self.log("Testing Vendas de Serviço CRUD operations...")
+        
+        if not self.token:
+            self.log("❌ No auth token available", "ERROR")
+            return False
+        
+        # Test CREATE Venda de Serviço
+        self.log("  5.1 Testing CREATE venda de serviço...")
+        venda_data = {
+            "cliente_id": EXISTING_CLIENTE_ID,
+            "plano_id": EXISTING_PLANO_ID,
+            "forma_pagamento": "boleto",
+            "dia_vencimento": 10,
+            "observacoes": "Venda de teste para validação do sistema"
+        }
+        
+        try:
+            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/vendas-servico", json=venda_data)
+            
+            if response.status_code == 200:
+                created_venda = response.json()
+                self.created_venda_id = created_venda.get('id')
+                self.log("    ✅ Venda de serviço created successfully")
+                self.log(f"       ID: {self.created_venda_id}")
+                self.log(f"       Cliente ID: {created_venda.get('cliente_id')}")
+                self.log(f"       Plano ID: {created_venda.get('plano_id')}")
+                self.log(f"       Status: {created_venda.get('status')}")
+                self.log(f"       Valor Venda: R$ {created_venda.get('valor_venda')}")
+                
+                # Verify automatic contract generation
+                contrato_id = created_venda.get('contrato_id')
+                if contrato_id:
+                    self.log(f"    ✅ Contract automatically generated: {contrato_id}")
+                    self.created_contrato_id = contrato_id
+                else:
+                    self.log("    ⚠️ No contract generated (may be normal if plano doesn't require contract)", "WARNING")
+                
+                # Verify automatic OS generation
+                os_id = created_venda.get('os_instalacao_id')
+                if os_id:
+                    self.log(f"    ✅ Installation OS automatically generated: {os_id}")
+                    self.created_os_id = os_id
+                else:
+                    self.log("    ❌ Installation OS was NOT generated", "ERROR")
+                    return False
+                
+            else:
+                self.log(f"    ❌ Failed to create venda: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error creating venda: {str(e)}", "ERROR")
+            return False
+        
+        # Test LIST Vendas
+        self.log("  5.2 Testing LIST vendas de serviço...")
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/vendas-servico")
+            
+            if response.status_code == 200:
+                vendas = response.json()
+                self.log(f"    ✅ Retrieved {len(vendas)} vendas")
+                
+                found_venda = any(v.get('id') == self.created_venda_id for v in vendas)
+                if found_venda:
+                    self.log("    ✅ Created venda found in list")
+                else:
+                    self.log("    ❌ Created venda NOT found in list", "ERROR")
+                    return False
+            else:
+                self.log(f"    ❌ Failed to list vendas: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error listing vendas: {str(e)}", "ERROR")
+            return False
+        
+        # Test UPDATE Venda status
+        self.log("  5.3 Testing UPDATE venda status...")
+        update_data = {
+            "status": "ativo",
+            "data_ativacao": "2026-01-15"
+        }
+        
+        try:
+            response = self.session.put(f"{BACKEND_URL}/vendas-servico/{self.created_venda_id}", json=update_data)
+            
+            if response.status_code == 200:
+                updated_venda = response.json()
+                self.log("    ✅ Venda status updated successfully")
+                self.log(f"       New Status: {updated_venda.get('status')}")
+                self.log(f"       Data Ativação: {updated_venda.get('data_ativacao')}")
+            else:
+                self.log(f"    ❌ Failed to update venda: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error updating venda: {str(e)}", "ERROR")
+            return False
+        
+        return True
+
+    def test_ordens_servico_crud(self):
+        """Test 6: CRUD Ordens de Serviço"""
+        self.log("Testing Ordens de Serviço CRUD operations...")
+        
+        if not self.token:
+            self.log("❌ No auth token available", "ERROR")
+            return False
+        
+        # Test LIST Ordens de Serviço
+        self.log("  6.1 Testing LIST ordens de serviço...")
+        try:
+            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/ordens-servico")
+            
+            if response.status_code == 200:
+                ordens = response.json()
+                self.log(f"    ✅ Retrieved {len(ordens)} ordens de serviço")
+                
+                # Find our created OS
+                if self.created_os_id:
+                    found_os = any(o.get('id') == self.created_os_id for o in ordens)
+                    if found_os:
+                        self.log(f"    ✅ Created OS {self.created_os_id} found in list")
                     else:
-                        self.log(f"   ❌ Incorrect status: expected 'aguardando_pagamento', got '{status}'", "ERROR")
+                        self.log(f"    ❌ Created OS {self.created_os_id} NOT found in list", "ERROR")
                         return False
-                else:
-                    self.log("   ❌ Created subscription NOT found in list", "ERROR")
-                    return False
                 
-                return True
+                # Find existing OS from test data
+                existing_found = any(o.get('id') == EXISTING_OS_ID for o in ordens)
+                if existing_found:
+                    self.log(f"    ✅ Existing OS {EXISTING_OS_ID} found in list")
+                else:
+                    self.log(f"    ⚠️ Existing OS {EXISTING_OS_ID} not found", "WARNING")
+                
             else:
-                self.log(f"❌ Failed to list subscriptions: {response.status_code} - {response.text}", "ERROR")
+                self.log(f"    ❌ Failed to list ordens: {response.status_code} - {response.text}", "ERROR")
                 return False
                 
         except Exception as e:
-            self.log(f"❌ Error listing subscriptions: {str(e)}", "ERROR")
-            return False
-
-    def test_verify_payment(self):
-        """Test 5: POST /api/assinaturas/{id}/verificar-pagamento - Verify payment status"""
-        self.log("Testing payment verification...")
-        
-        if not self.token or not self.created_subscription_id:
-            self.log("❌ No auth token or subscription ID available", "ERROR")
+            self.log(f"    ❌ Error listing ordens: {str(e)}", "ERROR")
             return False
         
+        # Test GET specific OS
+        os_id_to_test = self.created_os_id or EXISTING_OS_ID
+        self.log(f"  6.2 Testing GET specific OS: {os_id_to_test}...")
         try:
-            response = self.session.post(f"{BACKEND_URL}/assinaturas/{self.created_subscription_id}/verificar-pagamento")
+            response = self.session.get(f"{BACKEND_URL}/ordens-servico/{os_id_to_test}")
             
             if response.status_code == 200:
-                payment_status = response.json()
-                self.log("✅ Payment verification successful")
-                self.log(f"   Payment Status: {payment_status}")
-                
-                # Since this is sandbox/mock, expect PENDING or similar
-                status = payment_status.get('status', payment_status)
-                if status in ['PENDING', 'pending', 'AGUARDANDO', 'aguardando']:
-                    self.log(f"   ✅ Expected payment status (sandbox): {status}")
-                else:
-                    self.log(f"   ⚠️ Unexpected payment status: {status} (may be normal for sandbox)")
-                
-                return True
+                os_data = response.json()
+                self.log("    ✅ Retrieved specific OS successfully")
+                self.log(f"       Número: {os_data.get('numero')}")
+                self.log(f"       Tipo: {os_data.get('tipo')}")
+                self.log(f"       Status: {os_data.get('status')}")
+                self.log(f"       Cliente ID: {os_data.get('cliente_id')}")
+                self.log(f"       Técnico ID: {os_data.get('tecnico_id')}")
             else:
-                self.log(f"❌ Failed to verify payment: {response.status_code} - {response.text}", "ERROR")
+                self.log(f"    ❌ Failed to get specific OS: {response.status_code} - {response.text}", "ERROR")
                 return False
                 
         except Exception as e:
-            self.log(f"❌ Error verifying payment: {str(e)}", "ERROR")
+            self.log(f"    ❌ Error getting specific OS: {str(e)}", "ERROR")
             return False
+        
+        return True
 
-    def test_verify_empresa_created(self):
-        """Test 6: GET /api/empresas - Verify empresa was created"""
-        self.log("Testing empresa creation verification...")
+    def test_technician_assignment(self):
+        """Test 7: Technician Assignment to OS"""
+        self.log("Testing technician assignment to OS...")
         
         if not self.token:
             self.log("❌ No auth token available", "ERROR")
             return False
         
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas")
-            
-            if response.status_code == 200:
-                empresas = response.json()
-                self.log(f"✅ Retrieved {len(empresas)} empresas")
-                
-                # Find the created empresa "Empresa Teste LTDA"
-                found_empresa = None
-                for empresa in empresas:
-                    if empresa.get('razao_social') == "Empresa Teste LTDA":
-                        found_empresa = empresa
-                        self.created_empresa_id = empresa.get('id')
-                        break
-                
-                if found_empresa:
-                    self.log("✅ Created empresa found")
-                    self.log(f"   Empresa ID: {self.created_empresa_id}")
-                    self.log(f"   Razão Social: {found_empresa.get('razao_social')}")
-                    self.log(f"   CNPJ: {found_empresa.get('cnpj')}")
-                else:
-                    self.log("   ❌ Created empresa 'Empresa Teste LTDA' NOT found", "ERROR")
-                    return False
-                
-                return True
-            else:
-                self.log(f"❌ Failed to list empresas: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"❌ Error listing empresas: {str(e)}", "ERROR")
-            return False
-
-    def test_verify_user_created(self):
-        """Test 7: GET /api/users - Verify user was created"""
-        self.log("Testing user creation verification...")
-        
-        if not self.token:
-            self.log("❌ No auth token available", "ERROR")
-            return False
-        
+        # Get a user to assign as technician
+        self.log("  7.1 Getting available users for technician assignment...")
         try:
             response = self.session.get(f"{BACKEND_URL}/users")
             
             if response.status_code == 200:
                 users = response.json()
-                self.log(f"✅ Retrieved {len(users)} users")
-                
-                # Find the created user with email "teste.empresa@teste.com"
-                found_user = None
-                for user in users:
-                    if user.get('email') == "teste.empresa@teste.com":
-                        found_user = user
-                        break
-                
-                if found_user:
-                    self.log("✅ Created user found")
-                    self.log(f"   User ID: {found_user.get('id')}")
-                    self.log(f"   Email: {found_user.get('email')}")
-                    self.log(f"   Nome: {found_user.get('nome')}")
-                    self.log(f"   Perfil: {found_user.get('perfil')}")
-                    
-                    # Verify user is associated with the created empresa
-                    user_empresa_ids = found_user.get('empresa_ids', [])
-                    if self.created_empresa_id in user_empresa_ids:
-                        self.log(f"   ✅ User correctly associated with empresa {self.created_empresa_id}")
-                    else:
-                        self.log(f"   ❌ User not associated with created empresa", "ERROR")
-                        return False
+                if users:
+                    tecnico_id = users[0].get('id')
+                    tecnico_nome = users[0].get('nome')
+                    self.log(f"    ✅ Using user as technician: {tecnico_nome} ({tecnico_id})")
                 else:
-                    self.log("   ❌ Created user 'teste.empresa@teste.com' NOT found", "ERROR")
+                    self.log("    ❌ No users available for technician assignment", "ERROR")
                     return False
-                
-                return True
             else:
-                self.log(f"❌ Failed to list users: {response.status_code} - {response.text}", "ERROR")
+                self.log(f"    ❌ Failed to get users: {response.status_code} - {response.text}", "ERROR")
                 return False
                 
         except Exception as e:
-            self.log(f"❌ Error listing users: {str(e)}", "ERROR")
+            self.log(f"    ❌ Error getting users: {str(e)}", "ERROR")
             return False
+        
+        # Test technician assignment
+        os_id_to_test = self.created_os_id or EXISTING_OS_ID
+        self.log(f"  7.2 Testing technician assignment to OS: {os_id_to_test}...")
+        
+        assignment_data = {
+            "tecnico_id": tecnico_id,
+            "data_agendamento": "2026-01-16",
+            "horario_previsto": "14:00"
+        }
+        
+        try:
+            response = self.session.put(f"{BACKEND_URL}/ordens-servico/{os_id_to_test}/atribuir-tecnico", json=assignment_data)
+            
+            if response.status_code == 200:
+                updated_os = response.json()
+                self.log("    ✅ Technician assigned successfully")
+                self.log(f"       Técnico ID: {updated_os.get('tecnico_id')}")
+                self.log(f"       Data Agendamento: {updated_os.get('data_agendamento')}")
+                self.log(f"       Horário Previsto: {updated_os.get('horario_previsto')}")
+                self.log(f"       Status: {updated_os.get('status')}")
+            else:
+                self.log(f"    ❌ Failed to assign technician: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error assigning technician: {str(e)}", "ERROR")
+            return False
+        
+        return True
 
-    def test_clientes_crud(self):
-        """Test 2: Clientes CRUD Operations"""
-        self.log("Testing Clientes CRUD operations...")
+    def test_os_status_update(self):
+        """Test 8: OS Status Update"""
+        self.log("Testing OS status update...")
         
         if not self.token:
             self.log("❌ No auth token available", "ERROR")
             return False
         
-        # Test CREATE Cliente
-        self.log("  2.1 Testing CREATE cliente...")
-        cliente_data = {
-            "nome": "Tech Solutions LTDA",
-            "tipo": "juridica",
-            "cnpj_cpf": "12345678000190",
-            "email": "contato@techsolutions.com",
-            "telefone": "11987654321",
-            "cidade": "São Paulo",
-            "estado": "SP"
-        }
+        os_id_to_test = self.created_os_id or EXISTING_OS_ID
+        self.log(f"  8.1 Testing OS status update: {os_id_to_test}...")
         
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/clientes", json=cliente_data)
-            
-            if response.status_code == 200:
-                created_cliente = response.json()
-                self.created_cliente_id = created_cliente.get('id')
-                self.log("    ✅ Cliente created successfully")
-                self.log(f"       ID: {self.created_cliente_id}")
-                self.log(f"       Nome: {created_cliente.get('nome')}")
-                self.log(f"       Tipo: {created_cliente.get('tipo')}")
-                self.log(f"       CNPJ/CPF: {created_cliente.get('cnpj_cpf')}")
-                self.log(f"       Email: {created_cliente.get('email')}")
-            else:
-                self.log(f"    ❌ Failed to create cliente: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating cliente: {str(e)}", "ERROR")
-            return False
-        
-        # Test LIST Clientes
-        self.log("  2.2 Testing LIST clientes...")
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/clientes")
-            
-            if response.status_code == 200:
-                clientes = response.json()
-                self.log(f"    ✅ Retrieved {len(clientes)} clientes")
-                
-                # Verify created cliente appears in list
-                found_cliente = None
-                for cliente in clientes:
-                    if cliente.get('id') == self.created_cliente_id:
-                        found_cliente = cliente
-                        break
-                
-                if found_cliente:
-                    self.log("    ✅ Created cliente found in list")
-                else:
-                    self.log("    ❌ Created cliente NOT found in list", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to list clientes: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error listing clientes: {str(e)}", "ERROR")
-            return False
-        
-        # Test UPDATE Cliente
-        self.log("  2.3 Testing UPDATE cliente...")
-        update_data = {
-            "nome": "Tech Solutions LTDA",
-            "tipo": "juridica",
-            "cnpj_cpf": "12345678000190",
-            "email": "contato@techsolutions.com",
-            "telefone": "11999888777",  # Updated phone
-            "cidade": "São Paulo",
-            "estado": "SP"
-        }
-        
-        try:
-            response = self.session.put(f"{BACKEND_URL}/clientes/{self.created_cliente_id}", json=update_data)
-            
-            if response.status_code == 200:
-                updated_cliente = response.json()
-                self.log("    ✅ Cliente updated successfully")
-                self.log(f"       New Telefone: {updated_cliente.get('telefone')}")
-                
-                if updated_cliente.get('telefone') == "11999888777":
-                    self.log("    ✅ Telefone updated correctly")
-                else:
-                    self.log(f"    ❌ Telefone not updated correctly", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to update cliente: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error updating cliente: {str(e)}", "ERROR")
-            return False
-        
-        # Test DELETE Cliente (will be done at the end)
-        self.log("  2.4 Cliente DELETE test will be performed at cleanup")
-        return True
-    
-    def test_fornecedores_crud(self):
-        """Test 3: Fornecedores CRUD Operations"""
-        self.log("Testing Fornecedores CRUD operations...")
-        
-        if not self.token:
-            self.log("❌ No auth token available", "ERROR")
-            return False
-        
-        # Test CREATE Fornecedor
-        self.log("  3.1 Testing CREATE fornecedor...")
-        fornecedor_data = {
-            "nome": "Fornecedor ABC",
-            "cnpj": "98765432000100",
-            "contato": "João Silva",
-            "email": "joao@abc.com",
-            "telefone": "11999887766"
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/fornecedores", json=fornecedor_data)
-            
-            if response.status_code == 200:
-                created_fornecedor = response.json()
-                self.created_fornecedor_id = created_fornecedor.get('id')
-                self.log("    ✅ Fornecedor created successfully")
-                self.log(f"       ID: {self.created_fornecedor_id}")
-                self.log(f"       Nome: {created_fornecedor.get('nome')}")
-                self.log(f"       CNPJ: {created_fornecedor.get('cnpj')}")
-                self.log(f"       Contato: {created_fornecedor.get('contato')}")
-            else:
-                self.log(f"    ❌ Failed to create fornecedor: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating fornecedor: {str(e)}", "ERROR")
-            return False
-        
-        # Test LIST Fornecedores
-        self.log("  3.2 Testing LIST fornecedores...")
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/fornecedores")
-            
-            if response.status_code == 200:
-                fornecedores = response.json()
-                self.log(f"    ✅ Retrieved {len(fornecedores)} fornecedores")
-                
-                found_fornecedor = any(f.get('id') == self.created_fornecedor_id for f in fornecedores)
-                if found_fornecedor:
-                    self.log("    ✅ Created fornecedor found in list")
-                else:
-                    self.log("    ❌ Created fornecedor NOT found in list", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to list fornecedores: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error listing fornecedores: {str(e)}", "ERROR")
-            return False
-        
-        # Test UPDATE Fornecedor
-        self.log("  3.3 Testing UPDATE fornecedor...")
-        update_data = {
-            "nome": "Fornecedor ABC Atualizado",
-            "cnpj": "98765432000100",
-            "contato": "João Silva",
-            "email": "joao@abc.com",
-            "telefone": "11999887766"
-        }
-        
-        try:
-            response = self.session.put(f"{BACKEND_URL}/fornecedores/{self.created_fornecedor_id}", json=update_data)
-            
-            if response.status_code == 200:
-                updated_fornecedor = response.json()
-                self.log("    ✅ Fornecedor updated successfully")
-                self.log(f"       New Nome: {updated_fornecedor.get('nome')}")
-            else:
-                self.log(f"    ❌ Failed to update fornecedor: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error updating fornecedor: {str(e)}", "ERROR")
-            return False
-        
-        return True
-    
-    def test_locais_crud(self):
-        """Test 4: Locais/Depósitos CRUD Operations"""
-        self.log("Testing Locais/Depósitos CRUD operations...")
-        
-        if not self.token:
-            self.log("❌ No auth token available", "ERROR")
-            return False
-        
-        # Test CREATE Local
-        self.log("  4.1 Testing CREATE local...")
-        local_data = {
-            "nome": "Depósito Principal",
-            "descricao": "Depósito central",
-            "responsavel": "Carlos",
-            "endereco": "Rua ABC, 123"
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/locais", json=local_data)
-            
-            if response.status_code == 200:
-                created_local = response.json()
-                self.created_local_id = created_local.get('id')
-                self.log("    ✅ Local created successfully")
-                self.log(f"       ID: {self.created_local_id}")
-                self.log(f"       Nome: {created_local.get('nome')}")
-                self.log(f"       Responsável: {created_local.get('responsavel')}")
-            else:
-                self.log(f"    ❌ Failed to create local: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating local: {str(e)}", "ERROR")
-            return False
-        
-        # Test LIST Locais
-        self.log("  4.2 Testing LIST locais...")
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/locais")
-            
-            if response.status_code == 200:
-                locais = response.json()
-                self.log(f"    ✅ Retrieved {len(locais)} locais")
-                
-                found_local = any(l.get('id') == self.created_local_id for l in locais)
-                if found_local:
-                    self.log("    ✅ Created local found in list")
-                else:
-                    self.log("    ❌ Created local NOT found in list", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to list locais: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error listing locais: {str(e)}", "ERROR")
-            return False
-        
-        # Test UPDATE Local
-        self.log("  4.3 Testing UPDATE local...")
-        update_data = {
-            "nome": "Depósito Principal Atualizado",
-            "descricao": "Depósito central",
-            "responsavel": "Carlos",
-            "endereco": "Rua ABC, 123"
-        }
-        
-        try:
-            response = self.session.put(f"{BACKEND_URL}/locais/{self.created_local_id}", json=update_data)
-            
-            if response.status_code == 200:
-                updated_local = response.json()
-                self.log("    ✅ Local updated successfully")
-                self.log(f"       New Nome: {updated_local.get('nome')}")
-            else:
-                self.log(f"    ❌ Failed to update local: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error updating local: {str(e)}", "ERROR")
-            return False
-        
-        return True
-    
-    def test_categorias_equipamentos_crud(self):
-        """Test 5: Categorias Equipamentos CRUD Operations"""
-        self.log("Testing Categorias Equipamentos CRUD operations...")
-        
-        if not self.token:
-            self.log("❌ No auth token available", "ERROR")
-            return False
-        
-        # Test CREATE Categoria 1 (Roteadores)
-        self.log("  5.1 Testing CREATE categoria equipamento (Roteadores)...")
-        categoria_data = {
-            "nome": "Roteadores",
-            "descricao": "Equipamentos de rede",
-            "tipo_controle": "serializado"
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/categorias-equipamentos", json=categoria_data)
-            
-            if response.status_code == 200:
-                created_categoria = response.json()
-                self.created_categoria_roteadores_id = created_categoria.get('id')
-                self.log("    ✅ Categoria Roteadores created successfully")
-                self.log(f"       ID: {self.created_categoria_roteadores_id}")
-                self.log(f"       Nome: {created_categoria.get('nome')}")
-                self.log(f"       Tipo Controle: {created_categoria.get('tipo_controle')}")
-            else:
-                self.log(f"    ❌ Failed to create categoria: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating categoria: {str(e)}", "ERROR")
-            return False
-        
-        # Test CREATE Categoria 2 (Cabos)
-        self.log("  5.2 Testing CREATE categoria equipamento (Cabos)...")
-        categoria_data = {
-            "nome": "Cabos",
-            "descricao": "Cabos de rede",
-            "tipo_controle": "nao_serializado"
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/categorias-equipamentos", json=categoria_data)
-            
-            if response.status_code == 200:
-                created_categoria = response.json()
-                self.created_categoria_cabos_id = created_categoria.get('id')
-                self.log("    ✅ Categoria Cabos created successfully")
-                self.log(f"       ID: {self.created_categoria_cabos_id}")
-                self.log(f"       Nome: {created_categoria.get('nome')}")
-                self.log(f"       Tipo Controle: {created_categoria.get('tipo_controle')}")
-            else:
-                self.log(f"    ❌ Failed to create categoria: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating categoria: {str(e)}", "ERROR")
-            return False
-        
-        # Test LIST Categorias
-        self.log("  5.3 Testing LIST categorias equipamentos...")
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/categorias-equipamentos")
-            
-            if response.status_code == 200:
-                categorias = response.json()
-                self.log(f"    ✅ Retrieved {len(categorias)} categorias")
-                
-                found_roteadores = any(c.get('id') == self.created_categoria_roteadores_id for c in categorias)
-                found_cabos = any(c.get('id') == self.created_categoria_cabos_id for c in categorias)
-                
-                if found_roteadores and found_cabos:
-                    self.log("    ✅ Both created categorias found in list")
-                else:
-                    self.log("    ❌ Created categorias NOT found in list", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to list categorias: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error listing categorias: {str(e)}", "ERROR")
-            return False
-        
-        # Test UPDATE Categoria
-        self.log("  5.4 Testing UPDATE categoria equipamento...")
-        update_data = {
-            "nome": "Roteadores Atualizados",
-            "descricao": "Equipamentos de rede atualizados",
-            "tipo_controle": "serializado"
-        }
-        
-        try:
-            response = self.session.put(f"{BACKEND_URL}/categorias-equipamentos/{self.created_categoria_roteadores_id}", json=update_data)
-            
-            if response.status_code == 200:
-                updated_categoria = response.json()
-                self.log("    ✅ Categoria updated successfully")
-                self.log(f"       New Nome: {updated_categoria.get('nome')}")
-            else:
-                self.log(f"    ❌ Failed to update categoria: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error updating categoria: {str(e)}", "ERROR")
-            return False
-        
-        return True
-    
-    def test_equipamentos_crud(self):
-        """Test 6: Equipamentos CRUD Operations"""
-        self.log("Testing Equipamentos CRUD operations...")
-        
-        if not self.token:
-            self.log("❌ No auth token available", "ERROR")
-            return False
-        
-        # Test CREATE Equipamento Serializado (Router)
-        self.log("  6.1 Testing CREATE equipamento serializado (Router)...")
-        equipamento_data = {
-            "nome": "Roteador TP-Link AX3000",
-            "categoria_id": self.created_categoria_roteadores_id,
-            "fabricante": "TP-Link",
-            "modelo": "AX3000",
-            "custo_aquisicao": 500.0,
-            "valor_venda": 800.0,
-            "valor_locacao_mensal": 100.0,
-            "tipo_controle": "serializado",
-            "fornecedor_id": self.created_fornecedor_id,
-            "estoque_minimo": 5
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/equipamentos", json=equipamento_data)
-            
-            if response.status_code == 200:
-                created_equipamento = response.json()
-                self.created_equipamento_router_id = created_equipamento.get('id')
-                self.log("    ✅ Equipamento Router created successfully")
-                self.log(f"       ID: {self.created_equipamento_router_id}")
-                self.log(f"       Nome: {created_equipamento.get('nome')}")
-                self.log(f"       Fabricante: {created_equipamento.get('fabricante')}")
-                self.log(f"       Valor Venda: R$ {created_equipamento.get('valor_venda')}")
-                self.log(f"       Tipo Controle: {created_equipamento.get('tipo_controle')}")
-            else:
-                self.log(f"    ❌ Failed to create equipamento: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating equipamento: {str(e)}", "ERROR")
-            return False
-        
-        # Test CREATE Equipamento Não-Serializado (Cabo)
-        self.log("  6.2 Testing CREATE equipamento não-serializado (Cabo)...")
-        equipamento_data = {
-            "nome": "Cabo Ethernet Cat6",
-            "categoria_id": self.created_categoria_cabos_id,
-            "fabricante": "Intelbras",
-            "custo_aquisicao": 10.0,
-            "valor_venda": 20.0,
-            "tipo_controle": "nao_serializado",
-            "estoque_minimo": 50
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/equipamentos", json=equipamento_data)
-            
-            if response.status_code == 200:
-                created_equipamento = response.json()
-                self.created_equipamento_cabo_id = created_equipamento.get('id')
-                self.log("    ✅ Equipamento Cabo created successfully")
-                self.log(f"       ID: {self.created_equipamento_cabo_id}")
-                self.log(f"       Nome: {created_equipamento.get('nome')}")
-                self.log(f"       Quantidade Estoque: {created_equipamento.get('quantidade_estoque')}")
-            else:
-                self.log(f"    ❌ Failed to create equipamento: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating equipamento: {str(e)}", "ERROR")
-            return False
-        
-        # Test LIST Equipamentos
-        self.log("  6.3 Testing LIST equipamentos...")
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/equipamentos")
-            
-            if response.status_code == 200:
-                equipamentos = response.json()
-                self.log(f"    ✅ Retrieved {len(equipamentos)} equipamentos")
-                
-                found_router = any(e.get('id') == self.created_equipamento_router_id for e in equipamentos)
-                found_cabo = any(e.get('id') == self.created_equipamento_cabo_id for e in equipamentos)
-                
-                if found_router and found_cabo:
-                    self.log("    ✅ Both created equipamentos found in list")
-                else:
-                    self.log("    ❌ Created equipamentos NOT found in list", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to list equipamentos: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error listing equipamentos: {str(e)}", "ERROR")
-            return False
-        
-        # Test GET specific equipamento
-        self.log("  6.4 Testing GET specific equipamento...")
-        try:
-            response = self.session.get(f"{BACKEND_URL}/equipamentos/{self.created_equipamento_router_id}")
-            
-            if response.status_code == 200:
-                equipamento = response.json()
-                self.log("    ✅ Retrieved specific equipamento successfully")
-                self.log(f"       Nome: {equipamento.get('nome')}")
-                self.log(f"       Valor Venda: R$ {equipamento.get('valor_venda')}")
-            else:
-                self.log(f"    ❌ Failed to get specific equipamento: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error getting specific equipamento: {str(e)}", "ERROR")
-            return False
-        
-        # Test UPDATE Equipamento
-        self.log("  6.5 Testing UPDATE equipamento...")
-        
-        # First get current equipamento to preserve quantidade_estoque
-        try:
-            response = self.session.get(f"{BACKEND_URL}/equipamentos/{self.created_equipamento_router_id}")
-            if response.status_code == 200:
-                current_equipamento = response.json()
-                current_estoque = current_equipamento.get('quantidade_estoque', 0)
-                self.log(f"       Current quantidade_estoque: {current_estoque}")
-            else:
-                self.log(f"    ❌ Failed to get current equipamento: {response.status_code}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error getting current equipamento: {str(e)}", "ERROR")
-            return False
-        
-        update_data = {
-            "nome": "Roteador TP-Link AX3000",
-            "categoria_id": self.created_categoria_roteadores_id,
-            "fabricante": "TP-Link",
-            "modelo": "AX3000",
-            "custo_aquisicao": 500.0,
-            "valor_venda": 900.0,  # Updated price
-            "valor_locacao_mensal": 100.0,
-            "tipo_controle": "serializado",
-            "fornecedor_id": self.created_fornecedor_id,
-            "estoque_minimo": 5
-        }
-        
-        try:
-            response = self.session.put(f"{BACKEND_URL}/equipamentos/{self.created_equipamento_router_id}", json=update_data)
-            
-            if response.status_code == 200:
-                updated_equipamento = response.json()
-                self.log("    ✅ Equipamento updated successfully")
-                self.log(f"       New Valor Venda: R$ {updated_equipamento.get('valor_venda')}")
-                
-                # Verify quantidade_estoque is preserved
-                new_estoque = updated_equipamento.get('quantidade_estoque', 0)
-                if new_estoque == current_estoque:
-                    self.log(f"    ✅ Quantidade estoque preserved: {new_estoque}")
-                else:
-                    self.log(f"    ❌ Quantidade estoque not preserved: expected {current_estoque}, got {new_estoque}", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to update equipamento: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error updating equipamento: {str(e)}", "ERROR")
-            return False
-        
-        return True
-    
-    def test_equipamentos_serializados_crud(self):
-        """Test 7: Equipamentos Serializados CRUD Operations"""
-        self.log("Testing Equipamentos Serializados CRUD operations...")
-        
-        if not self.token:
-            self.log("❌ No auth token available", "ERROR")
-            return False
-        
-        # Test CREATE Equipamento Serializado 1
-        self.log("  7.1 Testing CREATE equipamento serializado 1...")
-        eq_serial_data = {
-            "equipamento_id": self.created_equipamento_router_id,
-            "numero_serie": "SN123456789",
-            "numero_linha": "11987654321",
-            "numero_simcard": "89551234567890",
-            "data_aquisicao": "2024-01-15",
-            "data_garantia": "2025-01-15"
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/equipamentos-serializados", json=eq_serial_data)
-            
-            if response.status_code == 200:
-                created_eq_serial = response.json()
-                self.created_eq_serial_1_id = created_eq_serial.get('id')
-                self.log("    ✅ Equipamento Serializado 1 created successfully")
-                self.log(f"       ID: {self.created_eq_serial_1_id}")
-                self.log(f"       Número Série: {created_eq_serial.get('numero_serie')}")
-                self.log(f"       Status: {created_eq_serial.get('status')}")
-                self.log(f"       Número Linha: {created_eq_serial.get('numero_linha')}")
-                self.log(f"       SIM Card: {created_eq_serial.get('numero_simcard')}")
-            else:
-                self.log(f"    ❌ Failed to create equipamento serializado: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating equipamento serializado: {str(e)}", "ERROR")
-            return False
-        
-        # Test CREATE Equipamento Serializado 2
-        self.log("  7.2 Testing CREATE equipamento serializado 2...")
-        eq_serial_data = {
-            "equipamento_id": self.created_equipamento_router_id,
-            "numero_serie": "SN987654321",
-            "numero_linha": "11999999999",
-            "numero_simcard": "89559999999999"
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/equipamentos-serializados", json=eq_serial_data)
-            
-            if response.status_code == 200:
-                created_eq_serial = response.json()
-                self.created_eq_serial_2_id = created_eq_serial.get('id')
-                self.log("    ✅ Equipamento Serializado 2 created successfully")
-                self.log(f"       ID: {self.created_eq_serial_2_id}")
-                self.log(f"       Número Série: {created_eq_serial.get('numero_serie')}")
-            else:
-                self.log(f"    ❌ Failed to create equipamento serializado 2: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating equipamento serializado 2: {str(e)}", "ERROR")
-            return False
-        
-        # Test unique numero_serie validation
-        self.log("  7.3 Testing unique numero_serie validation...")
-        duplicate_data = {
-            "equipamento_id": self.created_equipamento_router_id,
-            "numero_serie": "SN123456789"  # Duplicate
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/equipamentos-serializados", json=duplicate_data)
-            
-            if response.status_code == 400:
-                self.log("    ✅ Duplicate numero_serie correctly rejected")
-            else:
-                self.log(f"    ❌ Duplicate numero_serie should have been rejected: {response.status_code}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error testing duplicate numero_serie: {str(e)}", "ERROR")
-            return False
-        
-        # Test LIST Equipamentos Serializados
-        self.log("  7.4 Testing LIST equipamentos serializados...")
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/equipamentos-serializados")
-            
-            if response.status_code == 200:
-                eq_serializados = response.json()
-                self.log(f"    ✅ Retrieved {len(eq_serializados)} equipamentos serializados")
-                
-                found_1 = any(e.get('id') == self.created_eq_serial_1_id for e in eq_serializados)
-                found_2 = any(e.get('id') == self.created_eq_serial_2_id for e in eq_serializados)
-                
-                if found_1 and found_2:
-                    self.log("    ✅ Both created equipamentos serializados found in list")
-                else:
-                    self.log("    ❌ Created equipamentos serializados NOT found in list", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to list equipamentos serializados: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error listing equipamentos serializados: {str(e)}", "ERROR")
-            return False
-        
-        # Test FILTER by status
-        self.log("  7.5 Testing FILTER by status='disponivel'...")
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/equipamentos-serializados?status=disponivel")
-            
-            if response.status_code == 200:
-                eq_disponiveis = response.json()
-                self.log(f"    ✅ Retrieved {len(eq_disponiveis)} equipamentos disponíveis")
-                
-                # All should be disponivel initially
-                all_disponivel = all(e.get('status') == 'disponivel' for e in eq_disponiveis)
-                if all_disponivel:
-                    self.log("    ✅ All filtered equipamentos have status 'disponivel'")
-                else:
-                    self.log("    ❌ Some filtered equipamentos don't have status 'disponivel'", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to filter equipamentos serializados: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error filtering equipamentos serializados: {str(e)}", "ERROR")
-            return False
-        
-        # Test GET specific equipamento serializado
-        self.log("  7.6 Testing GET specific equipamento serializado...")
-        try:
-            response = self.session.get(f"{BACKEND_URL}/equipamentos-serializados/{self.created_eq_serial_1_id}")
-            
-            if response.status_code == 200:
-                eq_serial = response.json()
-                self.log("    ✅ Retrieved specific equipamento serializado successfully")
-                self.log(f"       Número Série: {eq_serial.get('numero_serie')}")
-                self.log(f"       Status: {eq_serial.get('status')}")
-            else:
-                self.log(f"    ❌ Failed to get specific equipamento serializado: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error getting specific equipamento serializado: {str(e)}", "ERROR")
-            return False
-        
-        # Test UPDATE SIM card (should go to history)
-        self.log("  7.7 Testing UPDATE SIM card number (history tracking)...")
-        update_data = {
-            "numero_simcard": "89551111111111"  # New SIM card
-        }
-        
-        try:
-            response = self.session.put(f"{BACKEND_URL}/equipamentos-serializados/{self.created_eq_serial_1_id}", json=update_data)
-            
-            if response.status_code == 200:
-                updated_eq_serial = response.json()
-                self.log("    ✅ SIM card number updated successfully")
-                self.log(f"       New SIM Card: {updated_eq_serial.get('numero_simcard')}")
-                
-                # Verify historico_simcards has the old number
-                historico = updated_eq_serial.get('historico_simcards', [])
-                if historico:
-                    old_sim = historico[-1].get('numero')
-                    if old_sim == "89551234567890":
-                        self.log(f"    ✅ Old SIM card added to history: {old_sim}")
-                    else:
-                        self.log(f"    ❌ Old SIM card not in history correctly: {old_sim}", "ERROR")
-                        return False
-                else:
-                    self.log("    ❌ No SIM card history found", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to update SIM card: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error updating SIM card: {str(e)}", "ERROR")
-            return False
-        
-        return True
-    
-    def test_movimentacoes_estoque_complex(self):
-        """Test 8: Movimentações de Estoque - Complex Business Logic"""
-        self.log("Testing Movimentações de Estoque - Complex Business Logic...")
-        
-        if not self.token:
-            self.log("❌ No auth token available", "ERROR")
-            return False
-        
-        # Setup categories and cost centers for financial integration
-        self.log("  8.1 Setting up financial categories and cost centers...")
-        
-        # Get or create category
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/categorias")
-            if response.status_code == 200:
-                categories = response.json()
-                if categories:
-                    self.test_categoria_id = categories[0]['id']
-                    self.log(f"    ✅ Using existing category: {categories[0]['nome']}")
-                else:
-                    cat_data = {"nome": "Vendas Equipamentos", "tipo": "receita"}
-                    response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/categorias", json=cat_data)
-                    if response.status_code == 200:
-                        self.test_categoria_id = response.json()['id']
-                        self.log("    ✅ Created test category")
-                    else:
-                        self.log(f"    ❌ Failed to create category: {response.status_code}", "ERROR")
-                        return False
-        except Exception as e:
-            self.log(f"    ❌ Error with categories: {str(e)}", "ERROR")
-            return False
-        
-        # Get or create cost center
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/centros-custo")
-            if response.status_code == 200:
-                cost_centers = response.json()
-                if cost_centers:
-                    self.test_centro_custo_id = cost_centers[0]['id']
-                    self.log(f"    ✅ Using existing cost center: {cost_centers[0]['nome']}")
-                else:
-                    cc_data = {"nome": "Operações", "area": "Comercial"}
-                    response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/centros-custo", json=cc_data)
-                    if response.status_code == 200:
-                        self.test_centro_custo_id = response.json()['id']
-                        self.log("    ✅ Created test cost center")
-                    else:
-                        self.log(f"    ❌ Failed to create cost center: {response.status_code}", "ERROR")
-                        return False
-        except Exception as e:
-            self.log(f"    ❌ Error with cost centers: {str(e)}", "ERROR")
-            return False
-        
-        # Test 8a: Serialized Equipment Movements
-        self.log("  8.2 Testing serialized equipment movements...")
-        
-        # Create movement: saida_locacao
-        self.log("    8.2.1 Testing saida_locacao movement...")
-        mov_data = {
-            "tipo": "saida_locacao",
-            "data": "2024-01-20",
-            "equipamento_id": self.created_equipamento_router_id,
-            "equipamento_serializado_id": self.created_eq_serial_1_id,
-            "cliente_id": self.created_cliente_id,
-            "valor_financeiro": 100.0,
-            "criar_transacao_financeira": True,
-            "categoria_financeira_id": self.test_categoria_id,
-            "centro_custo_id": self.test_centro_custo_id
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/movimentacoes", json=mov_data)
-            
-            if response.status_code == 200:
-                created_mov = response.json()
-                self.log("    ✅ Saida_locacao movement created successfully")
-                
-                # Verify equipamento_serializado status changed
-                response = self.session.get(f"{BACKEND_URL}/equipamentos-serializados/{self.created_eq_serial_1_id}")
-                if response.status_code == 200:
-                    eq_serial = response.json()
-                    status = eq_serial.get('status')
-                    cliente_id = eq_serial.get('cliente_id')
-                    tipo_vinculo = eq_serial.get('tipo_vinculo')
-                    
-                    if status == "em_cliente":
-                        self.log(f"    ✅ Status changed to 'em_cliente'")
-                    else:
-                        self.log(f"    ❌ Status not changed correctly: {status}", "ERROR")
-                        return False
-                    
-                    if cliente_id == self.created_cliente_id:
-                        self.log(f"    ✅ Cliente_id set correctly")
-                    else:
-                        self.log(f"    ❌ Cliente_id not set correctly: {cliente_id}", "ERROR")
-                        return False
-                    
-                    if tipo_vinculo == "locacao":
-                        self.log(f"    ✅ Tipo_vinculo set to 'locacao'")
-                    else:
-                        self.log(f"    ❌ Tipo_vinculo not set correctly: {tipo_vinculo}", "ERROR")
-                        return False
-                
-                # Verify financial transaction was created
-                transacao_id = created_mov.get('transacao_id')
-                if transacao_id:
-                    self.log(f"    ✅ Financial transaction created: {transacao_id}")
-                else:
-                    self.log("    ❌ Financial transaction not created", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to create saida_locacao movement: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating saida_locacao movement: {str(e)}", "ERROR")
-            return False
-        
-        # Create movement: devolucao
-        self.log("    8.2.2 Testing devolucao movement...")
-        mov_data = {
-            "tipo": "devolucao",
-            "data": "2024-01-25",
-            "equipamento_id": self.created_equipamento_router_id,
-            "equipamento_serializado_id": self.created_eq_serial_1_id
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/movimentacoes", json=mov_data)
-            
-            if response.status_code == 200:
-                self.log("    ✅ Devolucao movement created successfully")
-                
-                # Verify status changed back to disponivel
-                response = self.session.get(f"{BACKEND_URL}/equipamentos-serializados/{self.created_eq_serial_1_id}")
-                if response.status_code == 200:
-                    eq_serial = response.json()
-                    status = eq_serial.get('status')
-                    cliente_id = eq_serial.get('cliente_id')
-                    
-                    if status == "disponivel":
-                        self.log(f"    ✅ Status changed back to 'disponivel'")
-                    else:
-                        self.log(f"    ❌ Status not changed correctly: {status}", "ERROR")
-                        return False
-                    
-                    if cliente_id is None:
-                        self.log(f"    ✅ Cliente_id cleared correctly")
-                    else:
-                        self.log(f"    ❌ Cliente_id not cleared: {cliente_id}", "ERROR")
-                        return False
-            else:
-                self.log(f"    ❌ Failed to create devolucao movement: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating devolucao movement: {str(e)}", "ERROR")
-            return False
-        
-        # Test other status changes
-        status_tests = [
-            ("saida_venda", "vendido"),
-            ("manutencao", "em_manutencao"),
-            ("perda", "baixado")
+        # Test status progression: aberta -> agendada -> em_andamento -> concluida
+        status_updates = [
+            ("agendada", "OS agendada para execução"),
+            ("em_andamento", "Técnico iniciou a instalação"),
+            ("concluida", "Instalação concluída com sucesso")
         ]
         
-        for i, (movimento_tipo, expected_status) in enumerate(status_tests, 3):
-            self.log(f"    8.2.{i} Testing {movimento_tipo} movement...")
-            mov_data = {
-                "tipo": movimento_tipo,
-                "data": "2024-01-26",
-                "equipamento_id": self.created_equipamento_router_id,
-                "equipamento_serializado_id": self.created_eq_serial_1_id
+        for new_status, observacao in status_updates:
+            self.log(f"    8.1.{status_updates.index((new_status, observacao)) + 1} Updating status to: {new_status}...")
+            
+            update_data = {
+                "status": new_status,
+                "observacoes_tecnico": observacao
             }
             
-            if movimento_tipo == "saida_venda":
-                mov_data["cliente_id"] = self.created_cliente_id
+            if new_status == "em_andamento":
+                update_data["data_inicio_execucao"] = "2026-01-16T14:00:00"
+            elif new_status == "concluida":
+                update_data["data_fim_execucao"] = "2026-01-16T16:30:00"
             
             try:
-                response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/movimentacoes", json=mov_data)
+                response = self.session.put(f"{BACKEND_URL}/ordens-servico/{os_id_to_test}/status", json=update_data)
                 
                 if response.status_code == 200:
-                    self.log(f"    ✅ {movimento_tipo} movement created successfully")
+                    updated_os = response.json()
+                    self.log(f"      ✅ Status updated to: {updated_os.get('status')}")
                     
-                    # Verify status changed
-                    response = self.session.get(f"{BACKEND_URL}/equipamentos-serializados/{self.created_eq_serial_1_id}")
-                    if response.status_code == 200:
-                        eq_serial = response.json()
-                        status = eq_serial.get('status')
-                        
-                        if status == expected_status:
-                            self.log(f"    ✅ Status changed to '{expected_status}'")
-                        else:
-                            self.log(f"    ❌ Status not changed correctly: expected '{expected_status}', got '{status}'", "ERROR")
-                            return False
+                    if new_status == "concluida":
+                        self.log(f"      Data Início: {updated_os.get('data_inicio_execucao')}")
+                        self.log(f"      Data Fim: {updated_os.get('data_fim_execucao')}")
                 else:
-                    self.log(f"    ❌ Failed to create {movimento_tipo} movement: {response.status_code} - {response.text}", "ERROR")
+                    self.log(f"      ❌ Failed to update status: {response.status_code} - {response.text}", "ERROR")
                     return False
                     
             except Exception as e:
-                self.log(f"    ❌ Error creating {movimento_tipo} movement: {str(e)}", "ERROR")
+                self.log(f"      ❌ Error updating status: {str(e)}", "ERROR")
                 return False
-        
-        # Test 8b: Non-Serialized Equipment Movements
-        self.log("  8.3 Testing non-serialized equipment movements...")
-        
-        # First, verify initial stock is 0
-        response = self.session.get(f"{BACKEND_URL}/equipamentos/{self.created_equipamento_cabo_id}")
-        if response.status_code == 200:
-            equipamento = response.json()
-            initial_stock = equipamento.get('quantidade_estoque', 0)
-            self.log(f"    Initial stock: {initial_stock}")
-        else:
-            self.log(f"    ❌ Failed to get equipamento: {response.status_code}", "ERROR")
-            return False
-        
-        # Create movement: entrada
-        self.log("    8.3.1 Testing entrada movement...")
-        mov_data = {
-            "tipo": "entrada",
-            "data": "2024-01-20",
-            "equipamento_id": self.created_equipamento_cabo_id,
-            "quantidade": 100
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/movimentacoes", json=mov_data)
-            
-            if response.status_code == 200:
-                self.log("    ✅ Entrada movement created successfully")
-                
-                # Verify stock increased
-                response = self.session.get(f"{BACKEND_URL}/equipamentos/{self.created_equipamento_cabo_id}")
-                if response.status_code == 200:
-                    equipamento = response.json()
-                    new_stock = equipamento.get('quantidade_estoque', 0)
-                    expected_stock = initial_stock + 100
-                    
-                    if new_stock == expected_stock:
-                        self.log(f"    ✅ Stock increased correctly to {new_stock}")
-                    else:
-                        self.log(f"    ❌ Stock not increased correctly: expected {expected_stock}, got {new_stock}", "ERROR")
-                        return False
-            else:
-                self.log(f"    ❌ Failed to create entrada movement: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating entrada movement: {str(e)}", "ERROR")
-            return False
-        
-        # Create movement: saida_venda (30 units)
-        self.log("    8.3.2 Testing saida_venda movement...")
-        mov_data = {
-            "tipo": "saida_venda",
-            "data": "2024-01-21",
-            "equipamento_id": self.created_equipamento_cabo_id,
-            "quantidade": 30,
-            "cliente_id": self.created_cliente_id
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/movimentacoes", json=mov_data)
-            
-            if response.status_code == 200:
-                self.log("    ✅ Saida_venda movement created successfully")
-                
-                # Verify stock decreased
-                response = self.session.get(f"{BACKEND_URL}/equipamentos/{self.created_equipamento_cabo_id}")
-                if response.status_code == 200:
-                    equipamento = response.json()
-                    new_stock = equipamento.get('quantidade_estoque', 0)
-                    expected_stock = 100 - 30  # 70
-                    
-                    if new_stock == expected_stock:
-                        self.log(f"    ✅ Stock decreased correctly to {new_stock}")
-                    else:
-                        self.log(f"    ❌ Stock not decreased correctly: expected {expected_stock}, got {new_stock}", "ERROR")
-                        return False
-            else:
-                self.log(f"    ❌ Failed to create saida_venda movement: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating saida_venda movement: {str(e)}", "ERROR")
-            return False
-        
-        # Test insufficient stock validation
-        self.log("    8.3.3 Testing insufficient stock validation...")
-        mov_data = {
-            "tipo": "saida_venda",
-            "data": "2024-01-22",
-            "equipamento_id": self.created_equipamento_cabo_id,
-            "quantidade": 200,  # More than available (70)
-            "cliente_id": self.created_cliente_id
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/movimentacoes", json=mov_data)
-            
-            if response.status_code == 400:
-                self.log("    ✅ Insufficient stock correctly rejected")
-                response_data = response.json()
-                if "insuficiente" in response_data.get('detail', '').lower():
-                    self.log("    ✅ Correct error message about insufficient stock")
-                else:
-                    self.log(f"    ❌ Unexpected error message: {response_data.get('detail')}", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Insufficient stock should have been rejected: {response.status_code}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error testing insufficient stock: {str(e)}", "ERROR")
-            return False
-        
-        # Create movement: devolucao
-        self.log("    8.3.4 Testing devolucao movement...")
-        mov_data = {
-            "tipo": "devolucao",
-            "data": "2024-01-23",
-            "equipamento_id": self.created_equipamento_cabo_id,
-            "quantidade": 10
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/movimentacoes", json=mov_data)
-            
-            if response.status_code == 200:
-                self.log("    ✅ Devolucao movement created successfully")
-                
-                # Verify stock increased
-                response = self.session.get(f"{BACKEND_URL}/equipamentos/{self.created_equipamento_cabo_id}")
-                if response.status_code == 200:
-                    equipamento = response.json()
-                    new_stock = equipamento.get('quantidade_estoque', 0)
-                    expected_stock = 70 + 10  # 80
-                    
-                    if new_stock == expected_stock:
-                        self.log(f"    ✅ Stock increased correctly to {new_stock}")
-                    else:
-                        self.log(f"    ❌ Stock not increased correctly: expected {expected_stock}, got {new_stock}", "ERROR")
-                        return False
-            else:
-                self.log(f"    ❌ Failed to create devolucao movement: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating devolucao movement: {str(e)}", "ERROR")
-            return False
         
         return True
-    
-    def test_movimentacoes_filters(self):
-        """Test 9: List Movimentações with Filters"""
-        self.log("Testing Movimentações filters...")
+
+    def test_os_checklist(self):
+        """Test 9: OS Checklist Management"""
+        self.log("Testing OS checklist management...")
         
         if not self.token:
             self.log("❌ No auth token available", "ERROR")
             return False
         
-        # Test LIST all movements
-        self.log("  9.1 Testing LIST all movements...")
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/movimentacoes")
-            
-            if response.status_code == 200:
-                movimentacoes = response.json()
-                self.log(f"    ✅ Retrieved {len(movimentacoes)} total movements")
-            else:
-                self.log(f"    ❌ Failed to list movements: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error listing movements: {str(e)}", "ERROR")
-            return False
+        os_id_to_test = self.created_os_id or EXISTING_OS_ID
+        self.log(f"  9.1 Testing checklist update for OS: {os_id_to_test}...")
         
-        # Test FILTER by tipo
-        self.log("  9.2 Testing FILTER by tipo='saida_locacao'...")
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/movimentacoes?tipo=saida_locacao")
-            
-            if response.status_code == 200:
-                movimentacoes = response.json()
-                self.log(f"    ✅ Retrieved {len(movimentacoes)} saida_locacao movements")
-                
-                # Verify all are saida_locacao
-                all_correct_type = all(m.get('tipo') == 'saida_locacao' for m in movimentacoes)
-                if all_correct_type:
-                    self.log("    ✅ All filtered movements have correct tipo")
-                else:
-                    self.log("    ❌ Some filtered movements have incorrect tipo", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to filter by tipo: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error filtering by tipo: {str(e)}", "ERROR")
-            return False
+        checklist_data = {
+            "checklist": [
+                {"item": "Verificar sinal na região", "obrigatorio": True, "concluido": True},
+                {"item": "Instalar equipamento", "obrigatorio": True, "concluido": True},
+                {"item": "Configurar roteador", "obrigatorio": True, "concluido": True},
+                {"item": "Testar velocidade", "obrigatorio": True, "concluido": True},
+                {"item": "Orientar cliente", "obrigatorio": False, "concluido": True}
+            ]
+        }
         
-        # Test FILTER by cliente_id
-        self.log("  9.3 Testing FILTER by cliente_id...")
         try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/movimentacoes?cliente_id={self.created_cliente_id}")
+            response = self.session.put(f"{BACKEND_URL}/ordens-servico/{os_id_to_test}/checklist", json=checklist_data)
             
             if response.status_code == 200:
-                movimentacoes = response.json()
-                self.log(f"    ✅ Retrieved {len(movimentacoes)} movements for cliente")
+                updated_os = response.json()
+                checklist = updated_os.get('checklist', [])
                 
-                # Verify all have correct cliente_id
-                all_correct_cliente = all(m.get('cliente_id') == self.created_cliente_id for m in movimentacoes if m.get('cliente_id'))
-                if all_correct_cliente:
-                    self.log("    ✅ All filtered movements have correct cliente_id")
+                self.log("    ✅ Checklist updated successfully")
+                self.log(f"       Total items: {len(checklist)}")
+                
+                # Verify all items
+                completed_items = sum(1 for item in checklist if item.get('concluido'))
+                self.log(f"       Completed items: {completed_items}/{len(checklist)}")
+                
+                if completed_items == len(checklist):
+                    self.log("    ✅ All checklist items completed")
                 else:
-                    self.log("    ❌ Some filtered movements have incorrect cliente_id", "ERROR")
-                    return False
+                    self.log(f"    ⚠️ Not all items completed: {completed_items}/{len(checklist)}", "WARNING")
+                
             else:
-                self.log(f"    ❌ Failed to filter by cliente_id: {response.status_code} - {response.text}", "ERROR")
+                self.log(f"    ❌ Failed to update checklist: {response.status_code} - {response.text}", "ERROR")
                 return False
                 
         except Exception as e:
-            self.log(f"    ❌ Error filtering by cliente_id: {str(e)}", "ERROR")
-            return False
-        
-        # Test FILTER by equipamento_id
-        self.log("  9.4 Testing FILTER by equipamento_id...")
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/movimentacoes?equipamento_id={self.created_equipamento_router_id}")
-            
-            if response.status_code == 200:
-                movimentacoes = response.json()
-                self.log(f"    ✅ Retrieved {len(movimentacoes)} movements for equipamento")
-                
-                # Verify all have correct equipamento_id
-                all_correct_equipamento = all(m.get('equipamento_id') == self.created_equipamento_router_id for m in movimentacoes)
-                if all_correct_equipamento:
-                    self.log("    ✅ All filtered movements have correct equipamento_id")
-                else:
-                    self.log("    ❌ Some filtered movements have incorrect equipamento_id", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to filter by equipamento_id: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error filtering by equipamento_id: {str(e)}", "ERROR")
+            self.log(f"    ❌ Error updating checklist: {str(e)}", "ERROR")
             return False
         
         return True
-    
-    def cleanup_inventory_test_data(self):
-        """Clean up all created inventory test data"""
-        self.log("Cleaning up inventory test data...")
+
+    def test_contract_signature(self):
+        """Test 10: Digital Contract Signature"""
+        self.log("Testing digital contract signature...")
         
-        cleanup_items = [
-            (f"/equipamentos-serializados/{self.created_eq_serial_2_id}", "Equipamento Serializado 2"),
-            (f"/equipamentos/{self.created_equipamento_cabo_id}", "Equipamento Cabo"),
-            (f"/categorias-equipamentos/{self.created_categoria_cabos_id}", "Categoria Cabos"),
-            (f"/categorias-equipamentos/{self.created_categoria_roteadores_id}", "Categoria Roteadores"),
-            (f"/locais/{self.created_local_id}", "Local"),
-            (f"/fornecedores/{self.created_fornecedor_id}", "Fornecedor"),
-            (f"/clientes/{self.created_cliente_id}", "Cliente")
+        if not self.token:
+            self.log("❌ No auth token available", "ERROR")
+            return False
+        
+        # Use created contract or existing one
+        contrato_id_to_test = self.created_contrato_id or EXISTING_CONTRATO_ID
+        self.log(f"  10.1 Testing contract signature for: {contrato_id_to_test}...")
+        
+        # Mock signature data (base64 encoded signature image)
+        signature_data = {
+            "assinatura_base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+            "assinado_por": "Maria Silva Santos",
+            "ip_assinatura": "192.168.1.100"
+        }
+        
+        try:
+            response = self.session.post(f"{BACKEND_URL}/contratos-cliente/{contrato_id_to_test}/assinar", json=signature_data)
+            
+            if response.status_code == 200:
+                signed_contract = response.json()
+                self.log("    ✅ Contract signed successfully")
+                self.log(f"       Status: {signed_contract.get('status')}")
+                self.log(f"       Assinado por: {signed_contract.get('assinado_por')}")
+                self.log(f"       Data Assinatura: {signed_contract.get('data_assinatura')}")
+                self.log(f"       IP: {signed_contract.get('ip_assinatura')}")
+                
+                # Verify status changed to 'assinado'
+                if signed_contract.get('status') == 'assinado':
+                    self.log("    ✅ Contract status correctly updated to 'assinado'")
+                else:
+                    self.log(f"    ❌ Contract status not updated correctly: {signed_contract.get('status')}", "ERROR")
+                    return False
+                
+            else:
+                self.log(f"    ❌ Failed to sign contract: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error signing contract: {str(e)}", "ERROR")
+            return False
+        
+        return True
+
+    def test_complete_flow_verification(self):
+        """Test 11: Complete Flow Verification"""
+        self.log("Testing complete flow verification...")
+        
+        if not self.token or not self.created_venda_id:
+            self.log("❌ No auth token or venda ID available", "ERROR")
+            return False
+        
+        # Verify the complete flow: Venda -> Contrato -> OS
+        self.log("  11.1 Verifying complete flow integration...")
+        
+        try:
+            # Get the venda details
+            response = self.session.get(f"{BACKEND_URL}/vendas-servico/{self.created_venda_id}")
+            
+            if response.status_code == 200:
+                venda = response.json()
+                
+                self.log("    ✅ Venda details retrieved")
+                self.log(f"       Venda ID: {venda.get('id')}")
+                self.log(f"       Status: {venda.get('status')}")
+                self.log(f"       Tem Contrato: {venda.get('tem_contrato')}")
+                self.log(f"       Contrato ID: {venda.get('contrato_id')}")
+                self.log(f"       OS Instalação ID: {venda.get('os_instalacao_id')}")
+                
+                # Verify contract exists if required
+                contrato_id = venda.get('contrato_id')
+                if contrato_id:
+                    response = self.session.get(f"{BACKEND_URL}/contratos-cliente/{contrato_id}")
+                    if response.status_code == 200:
+                        contrato = response.json()
+                        self.log(f"    ✅ Associated contract found: {contrato.get('status')}")
+                    else:
+                        self.log(f"    ❌ Associated contract not found: {response.status_code}", "ERROR")
+                        return False
+                
+                # Verify OS exists
+                os_id = venda.get('os_instalacao_id')
+                if os_id:
+                    response = self.session.get(f"{BACKEND_URL}/ordens-servico/{os_id}")
+                    if response.status_code == 200:
+                        os_data = response.json()
+                        self.log(f"    ✅ Associated OS found: {os_data.get('numero')} - {os_data.get('status')}")
+                        
+                        # Verify OS is linked to the same venda
+                        if os_data.get('venda_id') == self.created_venda_id:
+                            self.log("    ✅ OS correctly linked to venda")
+                        else:
+                            self.log(f"    ❌ OS not correctly linked to venda", "ERROR")
+                            return False
+                    else:
+                        self.log(f"    ❌ Associated OS not found: {response.status_code}", "ERROR")
+                        return False
+                else:
+                    self.log("    ❌ No OS generated for venda", "ERROR")
+                    return False
+                
+            else:
+                self.log(f"    ❌ Failed to get venda details: {response.status_code} - {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"    ❌ Error verifying complete flow: {str(e)}", "ERROR")
+            return False
+        
+        self.log("    ✅ Complete flow verification successful")
+        return True
+
+    def run_all_tests(self):
+        """Run all tests in sequence"""
+        self.log("=" * 80)
+        self.log("STARTING VENDAS COM CONTRATOS (FASE 1) BACKEND TESTING")
+        self.log("=" * 80)
+        
+        tests = [
+            ("Admin Login", self.test_admin_login),
+            ("Planos de Serviço CRUD", self.test_planos_servico_crud),
+            ("Modelos de Contrato CRUD", self.test_modelos_contrato_crud),
+            ("Contract Preview", self.test_contract_preview),
+            ("Vendas de Serviço CRUD", self.test_vendas_servico_crud),
+            ("Ordens de Serviço CRUD", self.test_ordens_servico_crud),
+            ("Technician Assignment", self.test_technician_assignment),
+            ("OS Status Update", self.test_os_status_update),
+            ("OS Checklist", self.test_os_checklist),
+            ("Contract Signature", self.test_contract_signature),
+            ("Complete Flow Verification", self.test_complete_flow_verification)
         ]
         
-        for endpoint, item_name in cleanup_items:
-            if endpoint.split('/')[-1] != "None":  # Only delete if ID exists
-                try:
-                    response = self.session.delete(f"{BACKEND_URL}{endpoint}")
-                    if response.status_code == 200:
-                        self.log(f"    ✅ {item_name} deleted successfully")
-                    else:
-                        self.log(f"    ⚠️ Failed to delete {item_name}: {response.status_code}")
-                except:
-                    self.log(f"    ⚠️ Error deleting {item_name}")
-    
-    def test_investimentos_crud(self):
-        """Test 2: Investimentos CRUD Operations"""
-        self.log("Testing Investimentos CRUD operations...")
+        passed = 0
+        failed = 0
         
-        if not self.token:
-            self.log("❌ No auth token available", "ERROR")
-            return False
-        
-        # Test CREATE Investment
-        self.log("  2.1 Testing CREATE investment...")
-        investment_data = {
-            "nome": "CDB Banco XYZ",
-            "tipo": "renda_fixa",
-            "valor_investido": 10000.0,
-            "valor_atual": 10500.0,
-            "data_aplicacao": "2024-01-15",
-            "rentabilidade_percentual": 5.0,
-            "instituicao": "Banco XYZ"
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/investimentos", json=investment_data)
+        for test_name, test_func in tests:
+            self.log(f"\n{'=' * 60}")
+            self.log(f"RUNNING: {test_name}")
+            self.log(f"{'=' * 60}")
             
-            if response.status_code == 200:
-                created_investment = response.json()
-                self.created_investment_id = created_investment.get('id')
-                self.log("    ✅ Investment created successfully")
-                self.log(f"       ID: {self.created_investment_id}")
-                self.log(f"       Nome: {created_investment.get('nome')}")
-                self.log(f"       Valor Investido: R$ {created_investment.get('valor_investido')}")
-                self.log(f"       Valor Atual: R$ {created_investment.get('valor_atual')}")
-                self.log(f"       Rentabilidade: {created_investment.get('rentabilidade_percentual')}%")
-            else:
-                self.log(f"    ❌ Failed to create investment: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating investment: {str(e)}", "ERROR")
-            return False
-        
-        # Test LIST Investments
-        self.log("  2.2 Testing LIST investments...")
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/investimentos")
-            
-            if response.status_code == 200:
-                investments = response.json()
-                self.log(f"    ✅ Retrieved {len(investments)} investments")
-                
-                # Verify created investment appears in list
-                found_investment = None
-                for inv in investments:
-                    if inv.get('id') == self.created_investment_id:
-                        found_investment = inv
-                        break
-                
-                if found_investment:
-                    self.log("    ✅ Created investment found in list")
-                    self.log(f"       Nome: {found_investment.get('nome')}")
-                    self.log(f"       Tipo: {found_investment.get('tipo')}")
+            try:
+                if test_func():
+                    self.log(f"✅ {test_name} - PASSED")
+                    passed += 1
                 else:
-                    self.log("    ❌ Created investment NOT found in list", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to list investments: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error listing investments: {str(e)}", "ERROR")
-            return False
-        
-        # Test UPDATE Investment
-        self.log("  2.3 Testing UPDATE investment...")
-        update_data = {
-            "nome": "CDB Banco XYZ",
-            "tipo": "renda_fixa",
-            "valor_investido": 10000.0,
-            "valor_atual": 10800.0,  # Updated value
-            "data_aplicacao": "2024-01-15",
-            "rentabilidade_percentual": 8.0,  # Updated percentage
-            "instituicao": "Banco XYZ"
-        }
-        
-        try:
-            response = self.session.put(f"{BACKEND_URL}/investimentos/{self.created_investment_id}", json=update_data)
-            
-            if response.status_code == 200:
-                updated_investment = response.json()
-                self.log("    ✅ Investment updated successfully")
-                self.log(f"       New Valor Atual: R$ {updated_investment.get('valor_atual')}")
-                self.log(f"       New Rentabilidade: {updated_investment.get('rentabilidade_percentual')}%")
-                
-                # Verify the update
-                if updated_investment.get('valor_atual') == 10800.0:
-                    self.log("    ✅ Valor atual updated correctly")
-                else:
-                    self.log(f"    ❌ Valor atual not updated correctly: {updated_investment.get('valor_atual')}", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to update investment: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error updating investment: {str(e)}", "ERROR")
-            return False
-        
-        # Test DELETE Investment
-        self.log("  2.4 Testing DELETE investment...")
-        try:
-            response = self.session.delete(f"{BACKEND_URL}/investimentos/{self.created_investment_id}")
-            
-            if response.status_code == 200:
-                self.log("    ✅ Investment deleted successfully")
-                
-                # Verify investment no longer in list
-                response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/investimentos")
-                if response.status_code == 200:
-                    investments = response.json()
-                    found_deleted = any(inv.get('id') == self.created_investment_id for inv in investments)
-                    
-                    if not found_deleted:
-                        self.log("    ✅ Investment no longer appears in list")
-                        return True
-                    else:
-                        self.log("    ❌ Investment still appears in list after deletion", "ERROR")
-                        return False
-                else:
-                    self.log(f"    ❌ Failed to verify deletion: {response.status_code}", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to delete investment: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error deleting investment: {str(e)}", "ERROR")
-            return False
-    
-    def test_cartoes_crud(self):
-        """Test 3: Cartões de Crédito CRUD Operations"""
-        self.log("Testing Cartões de Crédito CRUD operations...")
-        
-        if not self.token:
-            self.log("❌ No auth token available", "ERROR")
-            return False
-        
-        # Test CREATE Credit Card
-        self.log("  3.1 Testing CREATE credit card...")
-        card_data = {
-            "nome": "Nubank Platinum",
-            "bandeira": "Mastercard",
-            "limite_total": 5000.0,
-            "dia_fechamento": 10,
-            "dia_vencimento": 15
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/cartoes", json=card_data)
-            
-            if response.status_code == 200:
-                created_card = response.json()
-                self.created_card_id = created_card.get('id')
-                self.log("    ✅ Credit card created successfully")
-                self.log(f"       ID: {self.created_card_id}")
-                self.log(f"       Nome: {created_card.get('nome')}")
-                self.log(f"       Bandeira: {created_card.get('bandeira')}")
-                self.log(f"       Limite Total: R$ {created_card.get('limite_total')}")
-                self.log(f"       Limite Disponível: R$ {created_card.get('limite_disponivel')}")
-                self.log(f"       Fatura Atual: R$ {created_card.get('fatura_atual')}")
-                
-                # Verify initial values
-                if created_card.get('limite_disponivel') == 5000.0:
-                    self.log("    ✅ Limite disponível initialized correctly")
-                else:
-                    self.log(f"    ❌ Limite disponível incorrect: {created_card.get('limite_disponivel')}", "ERROR")
-                    return False
-                    
-                if created_card.get('fatura_atual') == 0.0:
-                    self.log("    ✅ Fatura atual initialized correctly")
-                else:
-                    self.log(f"    ❌ Fatura atual incorrect: {created_card.get('fatura_atual')}", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to create credit card: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error creating credit card: {str(e)}", "ERROR")
-            return False
-        
-        # Test LIST Credit Cards
-        self.log("  3.2 Testing LIST credit cards...")
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/cartoes")
-            
-            if response.status_code == 200:
-                cards = response.json()
-                self.log(f"    ✅ Retrieved {len(cards)} credit cards")
-                
-                # Verify created card appears in list
-                found_card = None
-                for card in cards:
-                    if card.get('id') == self.created_card_id:
-                        found_card = card
-                        break
-                
-                if found_card:
-                    self.log("    ✅ Created credit card found in list")
-                    self.log(f"       Nome: {found_card.get('nome')}")
-                    self.log(f"       Bandeira: {found_card.get('bandeira')}")
-                    self.log(f"       Limite Total: R$ {found_card.get('limite_total')}")
-                else:
-                    self.log("    ❌ Created credit card NOT found in list", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to list credit cards: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error listing credit cards: {str(e)}", "ERROR")
-            return False
-        
-        # Test UPDATE Credit Card
-        self.log("  3.3 Testing UPDATE credit card...")
-        update_data = {
-            "nome": "Nubank Platinum",
-            "bandeira": "Mastercard",
-            "limite_total": 8000.0,  # Updated limit
-            "dia_fechamento": 10,
-            "dia_vencimento": 15
-        }
-        
-        try:
-            response = self.session.put(f"{BACKEND_URL}/cartoes/{self.created_card_id}", json=update_data)
-            
-            if response.status_code == 200:
-                updated_card = response.json()
-                self.log("    ✅ Credit card updated successfully")
-                self.log(f"       New Limite Total: R$ {updated_card.get('limite_total')}")
-                
-                # Verify the update
-                if updated_card.get('limite_total') == 8000.0:
-                    self.log("    ✅ Limite total updated correctly")
-                else:
-                    self.log(f"    ❌ Limite total not updated correctly: {updated_card.get('limite_total')}", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to update credit card: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error updating credit card: {str(e)}", "ERROR")
-            return False
-        
-        # Test DELETE Credit Card
-        self.log("  3.4 Testing DELETE credit card...")
-        try:
-            response = self.session.delete(f"{BACKEND_URL}/cartoes/{self.created_card_id}")
-            
-            if response.status_code == 200:
-                self.log("    ✅ Credit card deleted successfully")
-                
-                # Verify card no longer in list
-                response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/cartoes")
-                if response.status_code == 200:
-                    cards = response.json()
-                    found_deleted = any(card.get('id') == self.created_card_id for card in cards)
-                    
-                    if not found_deleted:
-                        self.log("    ✅ Credit card no longer appears in list")
-                        return True
-                    else:
-                        self.log("    ❌ Credit card still appears in list after deletion", "ERROR")
-                        return False
-                else:
-                    self.log(f"    ❌ Failed to verify deletion: {response.status_code}", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to delete credit card: {response.status_code} - {response.text}", "ERROR")
-                return False
-                
-        except Exception as e:
-            self.log(f"    ❌ Error deleting credit card: {str(e)}", "ERROR")
-            return False
-    
-    def test_transaction_integration(self):
-        """Test 4: Transaction Integration with Accounts and Cards"""
-        self.log("Testing transaction integration with accounts and cards...")
-        
-        if not self.token:
-            self.log("❌ No auth token available", "ERROR")
-            return False
-        
-        # First, we need to get or create categories and cost centers
-        self.log("  4.1 Setting up categories and cost centers...")
-        
-        # Get existing categories
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/categorias")
-            if response.status_code == 200:
-                categories = response.json()
-                if categories:
-                    categoria_id = categories[0]['id']
-                    self.log(f"    ✅ Using existing category: {categories[0]['nome']}")
-                else:
-                    # Create a category
-                    cat_data = {"nome": "Teste", "tipo": "despesa"}
-                    response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/categorias", json=cat_data)
-                    if response.status_code == 200:
-                        categoria_id = response.json()['id']
-                        self.log("    ✅ Created test category")
-                    else:
-                        self.log(f"    ❌ Failed to create category: {response.status_code}", "ERROR")
-                        return False
-            else:
-                self.log(f"    ❌ Failed to get categories: {response.status_code}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error with categories: {str(e)}", "ERROR")
-            return False
-        
-        # Get existing cost centers
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/centros-custo")
-            if response.status_code == 200:
-                cost_centers = response.json()
-                if cost_centers:
-                    centro_custo_id = cost_centers[0]['id']
-                    self.log(f"    ✅ Using existing cost center: {cost_centers[0]['nome']}")
-                else:
-                    # Create a cost center
-                    cc_data = {"nome": "Teste", "area": "Operação"}
-                    response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/centros-custo", json=cc_data)
-                    if response.status_code == 200:
-                        centro_custo_id = response.json()['id']
-                        self.log("    ✅ Created test cost center")
-                    else:
-                        self.log(f"    ❌ Failed to create cost center: {response.status_code}", "ERROR")
-                        return False
-            else:
-                self.log(f"    ❌ Failed to get cost centers: {response.status_code}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error with cost centers: {str(e)}", "ERROR")
-            return False
-        
-        # Create a bank account
-        self.log("  4.2 Creating bank account...")
-        account_data = {
-            "nome": "Conta Teste",
-            "tipo": "corrente",
-            "banco": "Banco Teste",
-            "agencia": "1234",
-            "numero_conta": "56789-0",
-            "saldo_inicial": 1000.0
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/contas", json=account_data)
-            
-            if response.status_code == 200:
-                created_account = response.json()
-                self.created_account_id = created_account.get('id')
-                initial_balance = created_account.get('saldo_atual')
-                self.log(f"    ✅ Bank account created with initial balance: R$ {initial_balance}")
-            else:
-                self.log(f"    ❌ Failed to create bank account: {response.status_code} - {response.text}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error creating bank account: {str(e)}", "ERROR")
-            return False
-        
-        # Create a credit card
-        self.log("  4.3 Creating credit card...")
-        card_data = {
-            "nome": "Cartão Teste",
-            "bandeira": "Visa",
-            "limite_total": 2000.0,
-            "dia_fechamento": 5,
-            "dia_vencimento": 10
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/cartoes", json=card_data)
-            
-            if response.status_code == 200:
-                created_card = response.json()
-                self.created_card_id = created_card.get('id')
-                initial_limit = created_card.get('limite_disponivel')
-                initial_invoice = created_card.get('fatura_atual')
-                self.log(f"    ✅ Credit card created with limit: R$ {initial_limit}, invoice: R$ {initial_invoice}")
-            else:
-                self.log(f"    ❌ Failed to create credit card: {response.status_code} - {response.text}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error creating credit card: {str(e)}", "ERROR")
-            return False
-        
-        # Test RECEITA transaction linked to bank account
-        self.log("  4.4 Testing RECEITA transaction (bank account)...")
-        receita_data = {
-            "tipo": "receita",
-            "fornecedor": "Cliente Teste",
-            "descricao": "Pagamento de serviço",
-            "valor_total": 1000.0,
-            "data_competencia": "2024-01-20",
-            "categoria_id": categoria_id,
-            "centro_custo_id": centro_custo_id,
-            "conta_bancaria_id": self.created_account_id
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/transacoes", json=receita_data)
-            
-            if response.status_code == 200:
-                self.log("    ✅ RECEITA transaction created")
-                
-                # Verify account balance increased
-                response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/contas")
-                if response.status_code == 200:
-                    accounts = response.json()
-                    test_account = next((acc for acc in accounts if acc['id'] == self.created_account_id), None)
-                    
-                    if test_account:
-                        new_balance = test_account.get('saldo_atual')
-                        expected_balance = 1000.0 + 1000.0  # initial + receita
-                        
-                        if new_balance == expected_balance:
-                            self.log(f"    ✅ Account balance updated correctly: R$ {new_balance}")
-                        else:
-                            self.log(f"    ❌ Account balance incorrect: expected R$ {expected_balance}, got R$ {new_balance}", "ERROR")
-                            return False
-                    else:
-                        self.log("    ❌ Test account not found", "ERROR")
-                        return False
-                else:
-                    self.log(f"    ❌ Failed to get updated accounts: {response.status_code}", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to create RECEITA transaction: {response.status_code} - {response.text}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error creating RECEITA transaction: {str(e)}", "ERROR")
-            return False
-        
-        # Test DESPESA transaction linked to bank account
-        self.log("  4.5 Testing DESPESA transaction (bank account)...")
-        despesa_data = {
-            "tipo": "despesa",
-            "fornecedor": "Fornecedor Teste",
-            "descricao": "Compra de material",
-            "valor_total": 300.0,
-            "data_competencia": "2024-01-21",
-            "categoria_id": categoria_id,
-            "centro_custo_id": centro_custo_id,
-            "conta_bancaria_id": self.created_account_id
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/transacoes", json=despesa_data)
-            
-            if response.status_code == 200:
-                self.log("    ✅ DESPESA transaction created")
-                
-                # Verify account balance decreased
-                response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/contas")
-                if response.status_code == 200:
-                    accounts = response.json()
-                    test_account = next((acc for acc in accounts if acc['id'] == self.created_account_id), None)
-                    
-                    if test_account:
-                        new_balance = test_account.get('saldo_atual')
-                        expected_balance = 2000.0 - 300.0  # previous balance - despesa
-                        
-                        if new_balance == expected_balance:
-                            self.log(f"    ✅ Account balance updated correctly: R$ {new_balance}")
-                        else:
-                            self.log(f"    ❌ Account balance incorrect: expected R$ {expected_balance}, got R$ {new_balance}", "ERROR")
-                            return False
-                    else:
-                        self.log("    ❌ Test account not found", "ERROR")
-                        return False
-                else:
-                    self.log(f"    ❌ Failed to get updated accounts: {response.status_code}", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to create DESPESA transaction: {response.status_code} - {response.text}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error creating DESPESA transaction: {str(e)}", "ERROR")
-            return False
-        
-        # Test DESPESA transaction linked to credit card
-        self.log("  4.6 Testing DESPESA transaction (credit card)...")
-        card_despesa_data = {
-            "tipo": "despesa",
-            "fornecedor": "Loja Teste",
-            "descricao": "Compra no cartão",
-            "valor_total": 500.0,
-            "data_competencia": "2024-01-22",
-            "categoria_id": categoria_id,
-            "centro_custo_id": centro_custo_id,
-            "cartao_credito_id": self.created_card_id
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/transacoes", json=card_despesa_data)
-            
-            if response.status_code == 200:
-                self.log("    ✅ Credit card DESPESA transaction created")
-                
-                # Verify card invoice and limit updated
-                response = self.session.get(f"{BACKEND_URL}/empresas/{EMPRESA_ID}/cartoes")
-                if response.status_code == 200:
-                    cards = response.json()
-                    test_card = next((card for card in cards if card['id'] == self.created_card_id), None)
-                    
-                    if test_card:
-                        new_invoice = test_card.get('fatura_atual')
-                        new_limit = test_card.get('limite_disponivel')
-                        expected_invoice = 500.0  # despesa amount
-                        expected_limit = 2000.0 - 500.0  # total limit - despesa
-                        
-                        if new_invoice == expected_invoice:
-                            self.log(f"    ✅ Card invoice updated correctly: R$ {new_invoice}")
-                        else:
-                            self.log(f"    ❌ Card invoice incorrect: expected R$ {expected_invoice}, got R$ {new_invoice}", "ERROR")
-                            return False
-                            
-                        if new_limit == expected_limit:
-                            self.log(f"    ✅ Card available limit updated correctly: R$ {new_limit}")
-                        else:
-                            self.log(f"    ❌ Card limit incorrect: expected R$ {expected_limit}, got R$ {new_limit}", "ERROR")
-                            return False
-                    else:
-                        self.log("    ❌ Test card not found", "ERROR")
-                        return False
-                else:
-                    self.log(f"    ❌ Failed to get updated cards: {response.status_code}", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to create credit card DESPESA transaction: {response.status_code} - {response.text}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error creating credit card DESPESA transaction: {str(e)}", "ERROR")
-            return False
-        
-        self.log("  4.7 Cleaning up test data...")
-        # Clean up created test data
-        try:
-            if self.created_account_id:
-                self.session.delete(f"{BACKEND_URL}/contas/{self.created_account_id}")
-            if self.created_card_id:
-                self.session.delete(f"{BACKEND_URL}/cartoes/{self.created_card_id}")
-            self.log("    ✅ Test data cleaned up")
-        except:
-            pass  # Ignore cleanup errors
-        
-        return True
-    
-    def test_transaction_deletion_balance_recalculation(self):
-        """Test Transaction Deletion with Balance Recalculation Fix"""
-        self.log("Testing Transaction Deletion with Balance Recalculation...")
-        
-        if not self.token:
-            self.log("❌ No auth token available", "ERROR")
-            return False
-        
-        # Step 1: Get initial state
-        self.log("  1. Getting initial state...")
-        
-        # Get empresa_id (should be in user data)
-        empresa_id = EMPRESA_ID
-        self.log(f"     Using empresa_id: {empresa_id}")
-        
-        # Get initial dashboard state
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/dashboard")
-            if response.status_code == 200:
-                initial_dashboard = response.json()
-                initial_receitas = initial_dashboard.get('total_receitas', 0)
-                initial_despesas = initial_dashboard.get('total_despesas', 0)
-                initial_saldo = initial_dashboard.get('saldo', 0)
-                initial_saldo_contas = initial_dashboard.get('saldo_contas', 0)
-                
-                self.log(f"     Initial Dashboard - Receitas: R$ {initial_receitas}")
-                self.log(f"     Initial Dashboard - Despesas: R$ {initial_despesas}")
-                self.log(f"     Initial Dashboard - Saldo: R$ {initial_saldo}")
-                self.log(f"     Initial Dashboard - Saldo em Contas: R$ {initial_saldo_contas}")
-            else:
-                self.log(f"    ❌ Failed to get dashboard: {response.status_code} - {response.text}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error getting dashboard: {str(e)}", "ERROR")
-            return False
-        
-        # Get bank accounts and their initial balances
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
-            if response.status_code == 200:
-                contas = response.json()
-                if not contas:
-                    self.log("    ❌ No bank accounts found. Creating test account...")
-                    # Create a test account
-                    account_data = {
-                        "nome": "Conta Teste Transação",
-                        "tipo": "corrente",
-                        "banco": "Banco Teste",
-                        "saldo_inicial": 1000.0
-                    }
-                    response = self.session.post(f"{BACKEND_URL}/empresas/{empresa_id}/contas", json=account_data)
-                    if response.status_code == 200:
-                        test_account = response.json()
-                        conta_id = test_account.get('id')
-                        initial_saldo_conta = test_account.get('saldo_atual', 0)
-                        self.log(f"     Created test account: {conta_id}")
-                        self.log(f"     Initial account balance: R$ {initial_saldo_conta}")
-                    else:
-                        self.log(f"    ❌ Failed to create test account: {response.status_code}", "ERROR")
-                        return False
-                else:
-                    # Use first available account
-                    conta_id = contas[0].get('id')
-                    initial_saldo_conta = contas[0].get('saldo_atual', 0)
-                    self.log(f"     Using existing account: {conta_id}")
-                    self.log(f"     Initial account balance: R$ {initial_saldo_conta}")
-            else:
-                self.log(f"    ❌ Failed to get bank accounts: {response.status_code} - {response.text}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error getting bank accounts: {str(e)}", "ERROR")
-            return False
-        
-        # Get categories for transaction creation
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/categorias")
-            if response.status_code == 200:
-                categorias = response.json()
-                if categorias:
-                    categoria_id = categorias[0].get('id')
-                    self.log(f"     Using category: {categoria_id}")
-                else:
-                    self.log("    ❌ No categories found", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to get categories: {response.status_code}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error getting categories: {str(e)}", "ERROR")
-            return False
-        
-        # Step 2: Create test RECEITA transaction
-        self.log("  2. Creating test RECEITA transaction (R$ 500)...")
-        
-        receita_data = {
-            "empresa_id": empresa_id,
-            "tipo": "receita",
-            "descricao": "Teste Receita para Deletar",
-            "fornecedor": "Cliente Teste",
-            "valor_total": 500.00,
-            "data_competencia": "2025-01-31",
-            "categoria_id": categoria_id,
-            "centro_custo_id": categoria_id,  # Using same ID for simplicity
-            "conta_bancaria_id": conta_id
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/transacoes", json=receita_data)
-            if response.status_code == 200:
-                created_receita = response.json()
-                receita_transacao_id = created_receita.get('id')
-                self.log(f"     ✅ Receita transaction created: {receita_transacao_id}")
-                self.log(f"     Transaction value: R$ {created_receita.get('valor_total')}")
-            else:
-                self.log(f"    ❌ Failed to create receita transaction: {response.status_code} - {response.text}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error creating receita transaction: {str(e)}", "ERROR")
-            return False
-        
-        # Step 3: Verify balance increased
-        self.log("  3. Verifying balance increased after receita...")
-        
-        # Check account balance
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
-            if response.status_code == 200:
-                contas = response.json()
-                updated_conta = next((c for c in contas if c.get('id') == conta_id), None)
-                if updated_conta:
-                    new_saldo_conta = updated_conta.get('saldo_atual', 0)
-                    expected_saldo = initial_saldo_conta + 500.0
-                    
-                    if abs(new_saldo_conta - expected_saldo) < 0.01:  # Allow for floating point precision
-                        self.log(f"     ✅ Account balance increased correctly: R$ {initial_saldo_conta} → R$ {new_saldo_conta}")
-                    else:
-                        self.log(f"     ❌ Account balance not increased correctly: expected R$ {expected_saldo}, got R$ {new_saldo_conta}", "ERROR")
-                        return False
-                else:
-                    self.log("     ❌ Account not found after transaction", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to get updated accounts: {response.status_code}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error checking account balance: {str(e)}", "ERROR")
-            return False
-        
-        # Check dashboard totals
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/dashboard")
-            if response.status_code == 200:
-                updated_dashboard = response.json()
-                new_receitas = updated_dashboard.get('total_receitas', 0)
-                new_saldo = updated_dashboard.get('saldo', 0)
-                
-                expected_receitas = initial_receitas + 500.0
-                expected_saldo = initial_saldo + 500.0
-                
-                if abs(new_receitas - expected_receitas) < 0.01:
-                    self.log(f"     ✅ Dashboard receitas increased correctly: R$ {initial_receitas} → R$ {new_receitas}")
-                else:
-                    self.log(f"     ❌ Dashboard receitas not increased correctly: expected R$ {expected_receitas}, got R$ {new_receitas}", "ERROR")
-                    return False
-                
-                if abs(new_saldo - expected_saldo) < 0.01:
-                    self.log(f"     ✅ Dashboard saldo increased correctly: R$ {initial_saldo} → R$ {new_saldo}")
-                else:
-                    self.log(f"     ❌ Dashboard saldo not increased correctly: expected R$ {expected_saldo}, got R$ {new_saldo}", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to get updated dashboard: {response.status_code}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error checking dashboard: {str(e)}", "ERROR")
-            return False
-        
-        # Step 4: Delete the transaction (MAIN TEST)
-        self.log("  4. Deleting the receita transaction (MAIN TEST)...")
-        
-        try:
-            response = self.session.delete(f"{BACKEND_URL}/transacoes/{receita_transacao_id}")
-            if response.status_code == 200:
-                delete_response = response.json()
-                saldo_revertido = delete_response.get('saldo_revertido', False)
-                
-                if saldo_revertido:
-                    self.log(f"     ✅ Transaction deleted with saldo_revertido: {saldo_revertido}")
-                else:
-                    self.log(f"     ❌ Response missing 'saldo_revertido': true - got {saldo_revertido}", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to delete transaction: {response.status_code} - {response.text}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error deleting transaction: {str(e)}", "ERROR")
-            return False
-        
-        # Step 5: Verify balance reverted (MAIN VERIFICATION)
-        self.log("  5. Verifying balance reverted after deletion (MAIN VERIFICATION)...")
-        
-        # Check account balance reverted
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
-            if response.status_code == 200:
-                contas = response.json()
-                reverted_conta = next((c for c in contas if c.get('id') == conta_id), None)
-                if reverted_conta:
-                    reverted_saldo_conta = reverted_conta.get('saldo_atual', 0)
-                    
-                    if abs(reverted_saldo_conta - initial_saldo_conta) < 0.01:
-                        self.log(f"     ✅ Account balance reverted correctly: R$ {reverted_saldo_conta} (back to initial R$ {initial_saldo_conta})")
-                    else:
-                        self.log(f"     ❌ Account balance not reverted correctly: expected R$ {initial_saldo_conta}, got R$ {reverted_saldo_conta}", "ERROR")
-                        return False
-                else:
-                    self.log("     ❌ Account not found after deletion", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to get accounts after deletion: {response.status_code}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error checking account balance after deletion: {str(e)}", "ERROR")
-            return False
-        
-        # Check dashboard totals reverted
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/dashboard")
-            if response.status_code == 200:
-                reverted_dashboard = response.json()
-                reverted_receitas = reverted_dashboard.get('total_receitas', 0)
-                reverted_saldo = reverted_dashboard.get('saldo', 0)
-                reverted_saldo_contas = reverted_dashboard.get('saldo_contas', 0)
-                
-                if abs(reverted_receitas - initial_receitas) < 0.01:
-                    self.log(f"     ✅ Dashboard receitas reverted correctly: R$ {reverted_receitas} (back to initial R$ {initial_receitas})")
-                else:
-                    self.log(f"     ❌ Dashboard receitas not reverted correctly: expected R$ {initial_receitas}, got R$ {reverted_receitas}", "ERROR")
-                    return False
-                
-                if abs(reverted_saldo - initial_saldo) < 0.01:
-                    self.log(f"     ✅ Dashboard saldo reverted correctly: R$ {reverted_saldo} (back to initial R$ {initial_saldo})")
-                else:
-                    self.log(f"     ❌ Dashboard saldo not reverted correctly: expected R$ {initial_saldo}, got R$ {reverted_saldo}", "ERROR")
-                    return False
-                
-                if abs(reverted_saldo_contas - initial_saldo_contas) < 0.01:
-                    self.log(f"     ✅ Dashboard saldo em contas reverted correctly: R$ {reverted_saldo_contas}")
-                else:
-                    self.log(f"     ❌ Dashboard saldo em contas not reverted correctly: expected R$ {initial_saldo_contas}, got R$ {reverted_saldo_contas}", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to get dashboard after deletion: {response.status_code}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error checking dashboard after deletion: {str(e)}", "ERROR")
-            return False
-        
-        # Step 6: Test with DESPESA transaction
-        self.log("  6. Testing with DESPESA transaction (R$ 300)...")
-        
-        despesa_data = {
-            "empresa_id": empresa_id,
-            "tipo": "despesa",
-            "descricao": "Teste Despesa para Deletar",
-            "fornecedor": "Fornecedor Teste",
-            "valor_total": 300.00,
-            "data_competencia": "2025-01-31",
-            "categoria_id": categoria_id,
-            "centro_custo_id": categoria_id,
-            "conta_bancaria_id": conta_id
-        }
-        
-        try:
-            response = self.session.post(f"{BACKEND_URL}/transacoes", json=despesa_data)
-            if response.status_code == 200:
-                created_despesa = response.json()
-                despesa_transacao_id = created_despesa.get('id')
-                self.log(f"     ✅ Despesa transaction created: {despesa_transacao_id}")
-            else:
-                self.log(f"    ❌ Failed to create despesa transaction: {response.status_code} - {response.text}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error creating despesa transaction: {str(e)}", "ERROR")
-            return False
-        
-        # Verify account balance decreased
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
-            if response.status_code == 200:
-                contas = response.json()
-                updated_conta = next((c for c in contas if c.get('id') == conta_id), None)
-                if updated_conta:
-                    despesa_saldo_conta = updated_conta.get('saldo_atual', 0)
-                    expected_saldo = initial_saldo_conta - 300.0
-                    
-                    if abs(despesa_saldo_conta - expected_saldo) < 0.01:
-                        self.log(f"     ✅ Account balance decreased correctly: R$ {initial_saldo_conta} → R$ {despesa_saldo_conta}")
-                    else:
-                        self.log(f"     ❌ Account balance not decreased correctly: expected R$ {expected_saldo}, got R$ {despesa_saldo_conta}", "ERROR")
-                        return False
-            else:
-                self.log(f"    ❌ Failed to get accounts after despesa: {response.status_code}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error checking account after despesa: {str(e)}", "ERROR")
-            return False
-        
-        # Delete despesa transaction
-        self.log("  7. Deleting despesa transaction...")
-        
-        try:
-            response = self.session.delete(f"{BACKEND_URL}/transacoes/{despesa_transacao_id}")
-            if response.status_code == 200:
-                delete_response = response.json()
-                saldo_revertido = delete_response.get('saldo_revertido', False)
-                
-                if saldo_revertido:
-                    self.log(f"     ✅ Despesa transaction deleted with saldo_revertido: {saldo_revertido}")
-                else:
-                    self.log(f"     ❌ Response missing 'saldo_revertido': true for despesa", "ERROR")
-                    return False
-            else:
-                self.log(f"    ❌ Failed to delete despesa transaction: {response.status_code} - {response.text}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error deleting despesa transaction: {str(e)}", "ERROR")
-            return False
-        
-        # Verify account balance increased back (reverses the decrease)
-        try:
-            response = self.session.get(f"{BACKEND_URL}/empresas/{empresa_id}/contas")
-            if response.status_code == 200:
-                contas = response.json()
-                final_conta = next((c for c in contas if c.get('id') == conta_id), None)
-                if final_conta:
-                    final_saldo_conta = final_conta.get('saldo_atual', 0)
-                    
-                    if abs(final_saldo_conta - initial_saldo_conta) < 0.01:
-                        self.log(f"     ✅ Account balance reverted after despesa deletion: R$ {final_saldo_conta} (back to initial R$ {initial_saldo_conta})")
-                    else:
-                        self.log(f"     ❌ Account balance not reverted after despesa deletion: expected R$ {initial_saldo_conta}, got R$ {final_saldo_conta}", "ERROR")
-                        return False
-            else:
-                self.log(f"    ❌ Failed to get accounts after despesa deletion: {response.status_code}", "ERROR")
-                return False
-        except Exception as e:
-            self.log(f"    ❌ Error checking account after despesa deletion: {str(e)}", "ERROR")
-            return False
-        
-        self.log("  ✅ Transaction deletion with balance recalculation test PASSED!")
-        return True
-    
-    def run_saas_tests(self):
-        """Run SaaS subscription system tests"""
-        self.log("=" * 80)
-        self.log("STARTING ECHO SHOP FinAI - SAAS SUBSCRIPTION SYSTEM TESTS")
-        self.log("=" * 80)
-        
-        results = {
-            'login': False,
-            'planos_saas': False,
-            'create_subscription': False,
-            'list_subscriptions': False,
-            'verify_payment': False,
-            'verify_empresa_created': False,
-            'verify_user_created': False
-        }
-        
-        # Test 1: Admin Login
-        results['login'] = self.test_admin_login()
-        
-        if not results['login']:
-            self.log("❌ Cannot continue without successful login", "ERROR")
-            return results
-        
-        # SAAS SUBSCRIPTION TESTS
-        self.log("\n" + "=" * 60)
-        self.log("SAAS SUBSCRIPTION SYSTEM TESTS")
-        self.log("=" * 60)
-        
-        # Test 2: List SaaS Plans
-        results['planos_saas'] = self.test_planos_saas()
-        
-        # Test 3: Create Subscription
-        results['create_subscription'] = self.test_create_subscription()
-        
-        # Test 4: List Subscriptions
-        results['list_subscriptions'] = self.test_list_subscriptions()
-        
-        # Test 5: Verify Payment Status
-        results['verify_payment'] = self.test_verify_payment()
-        
-        # Test 6: Verify Empresa Created
-        results['verify_empresa_created'] = self.test_verify_empresa_created()
-        
-        # Test 7: Verify User Created
-        results['verify_user_created'] = self.test_verify_user_created()
-        
-        # Summary
-        self.log("\n" + "=" * 80)
-        self.log("TEST RESULTS SUMMARY")
-        self.log("=" * 80)
-        
-        # SaaS tests
-        self.log("\nSAAS SUBSCRIPTION SYSTEM TESTS:")
-        saas_tests = ['planos_saas', 'create_subscription', 'list_subscriptions', 'verify_payment', 
-                     'verify_empresa_created', 'verify_user_created']
-        
-        for test_name in saas_tests:
-            status = "✅ PASS" if results[test_name] else "❌ FAIL"
-            self.log(f"  {test_name.replace('_', ' ').title()}: {status}")
-        
-        # Overall summary
-        self.log(f"\nLOGIN TEST:")
-        status = "✅ PASS" if results['login'] else "❌ FAIL"
-        self.log(f"  Login: {status}")
-        
-        total_tests = len(results)
-        passed_tests = sum(results.values())
-        
-        self.log(f"\nOverall: {passed_tests}/{total_tests} tests passed")
-        
-        if passed_tests == total_tests:
-            self.log("🎉 ALL TESTS PASSED - SaaS Subscription System working correctly!")
+                    self.log(f"❌ {test_name} - FAILED")
+                    failed += 1
+            except Exception as e:
+                self.log(f"❌ {test_name} - ERROR: {str(e)}")
+                failed += 1
+        
+        # Final summary
+        self.log(f"\n{'=' * 80}")
+        self.log("FINAL TEST SUMMARY")
+        self.log(f"{'=' * 80}")
+        self.log(f"Total Tests: {len(tests)}")
+        self.log(f"Passed: {passed}")
+        self.log(f"Failed: {failed}")
+        self.log(f"Success Rate: {(passed/len(tests)*100):.1f}%")
+        
+        if failed == 0:
+            self.log("🎉 ALL TESTS PASSED! Sistema de Vendas com Contratos working correctly.")
         else:
-            failed_tests = [name for name, passed in results.items() if not passed]
-            self.log(f"⚠️ SOME TESTS FAILED: {', '.join(failed_tests)}")
+            self.log(f"⚠️ {failed} test(s) failed. Please review the errors above.")
         
-        return results
+        return failed == 0
 
 if __name__ == "__main__":
-    tester = SaaSTestRunner()
-    results = tester.run_saas_tests()
+    runner = VendasContratosTestRunner()
+    success = runner.run_all_tests()
+    exit(0 if success else 1)
