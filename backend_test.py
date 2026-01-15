@@ -744,7 +744,7 @@ class VendasContratosTestRunner:
         }
         
         try:
-            response = self.session.post(f"{BACKEND_URL}/contratos-cliente/{contrato_id_to_test}/assinar", json=signature_data)
+            response = self.session.post(f"{BACKEND_URL}/contratos/{contrato_id_to_test}/assinar", json=signature_data)
             
             if response.status_code == 200:
                 signed_contract = response.json()
