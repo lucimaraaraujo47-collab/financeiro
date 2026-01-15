@@ -1,15 +1,18 @@
 backend:
   - task: "CRUD Planos de Serviço"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado sistema de planos de serviço com configuração de contrato e fidelidade"
+      - working: true
+        agent: "testing"
+        comment: "✅ CRUD funcionando: CREATE, LIST, GET, UPDATE testados com sucesso. Minor: UPDATE response não retorna objeto atualizado diretamente"
 
   - task: "CRUD Modelos de Contrato"
     implemented: true
