@@ -11,14 +11,17 @@
 
 // Detecta ambiente e configura URL automaticamente
 const getApiUrl = () => {
-  // Em produção, substituir pela URL real do servidor
-  // return 'https://api.echoshop.com.br/api';
+  // Em produção, usar a URL do servidor de produção
+  // IMPORTANTE: Alterar esta URL quando fazer deploy
+  
+  // URL de preview Emergent (para testes)
+  // return 'https://bizmaster-17.preview.emergentagent.com/api';
   
   // Para testes com Expo Go em dispositivo físico,
   // substitua pelo IP da máquina de desenvolvimento
   // Exemplo: return 'http://192.168.1.100:8001/api';
   
-  // URL padrão para desenvolvimento
+  // URL padrão para desenvolvimento local
   return 'http://192.168.1.100:8001/api';
 };
 
