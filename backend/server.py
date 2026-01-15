@@ -6692,6 +6692,8 @@ async def create_cliente_venda(
     cliente_dict["updated_at"] = datetime.now(timezone.utc)
     
     await db.clientes_venda.insert_one(cliente_dict)
+    # Remove _id before returning
+    cliente_dict.pop("_id", None)
     return cliente_dict
 
 @api_router.get("/clientes-venda/{cliente_id}")
