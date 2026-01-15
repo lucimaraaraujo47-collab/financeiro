@@ -7967,7 +7967,7 @@ async def criar_equipamento_tecnico(empresa_id: str, equip: EquipamentoCreate, c
 @api_router.get("/equipamentos/{equip_id}")
 async def obter_equipamento(equip_id: str, current_user: dict = Depends(get_current_user)):
     """Obtém equipamento com histórico completo"""
-    equip = await db.equipamentos_serie.find_one({"id": equip_id}, {"_id": 0})
+    equip = await db.equipamentos_tecnicos.find_one({"id": equip_id}, {"_id": 0})
     if not equip:
         raise HTTPException(status_code=404, detail="Equipamento não encontrado")
     if equip["empresa_id"] not in current_user.get("empresa_ids", []):
@@ -7978,7 +7978,7 @@ async def obter_equipamento(equip_id: str, current_user: dict = Depends(get_curr
 async def buscar_por_serie(numero_serie: str, current_user: dict = Depends(get_current_user)):
     """Busca equipamento por número de série"""
     empresa_ids = current_user.get("empresa_ids", [])
-    equip = await db.equipamentos_serie.find_one({
+    equip = await db.equipamentos_tecnicos.find_one({
         "numero_serie": numero_serie,
         "empresa_id": {"$in": empresa_ids}
     }, {"_id": 0})
@@ -7989,7 +7989,7 @@ async def buscar_por_serie(numero_serie: str, current_user: dict = Depends(get_c
 @api_router.patch("/equipamentos/{equip_id}/status")
 async def atualizar_status_equipamento(equip_id: str, data: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
     """Atualiza status do equipamento"""
-    equip = await db.equipamentos_serie.find_one({"id": equip_id})
+    equip = await db.equipamentos_tecnicos.find_one({"id": equip_id})
     if not equip:
         raise HTTPException(status_code=404, detail="Equipamento não encontrado")
     
@@ -8003,7 +8003,7 @@ async def atualizar_status_equipamento(equip_id: str, data: Dict[str, Any] = Bod
         "observacao": f"Status alterado de {equip['status']} para {novo_status}. {observacao}"
     }
     
-    await db.equipamentos_serie.update_one(
+    await db.equipamentos_tecnicos.update_one(
         {"id": equip_id},
         {
             "$set": {"status": novo_status, "updated_at": datetime.now(timezone.utc)},
@@ -8016,7 +8016,7 @@ async def atualizar_status_equipamento(equip_id: str, data: Dict[str, Any] = Bod
 @api_router.post("/equipamentos/{equip_id}/transferir")
 async def transferir_equipamento(equip_id: str, data: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
     """Transfere equipamento entre localizações"""
-    equip = await db.equipamentos_serie.find_one({"id": equip_id})
+    equip = await db.equipamentos_tecnicos.find_one({"id": equip_id})
     if not equip:
         raise HTTPException(status_code=404, detail="Equipamento não encontrado")
     
@@ -8064,7 +8064,7 @@ async def transferir_equipamento(equip_id: str, data: Dict[str, Any] = Body(...)
         novo_status = "disponivel"
     
     # Atualizar equipamento
-    await db.equipamentos_serie.update_one(
+    await db.equipamentos_tecnicos.update_one(
         {"id": equip_id},
         {
             "$set": {
@@ -8111,7 +8111,7 @@ async def obter_estoque_tecnico(tecnico_id: str, current_user: dict = Depends(ge
     
     # Buscar detalhes dos equipamentos
     equip_ids = estoque.get("equipamentos", [])
-    equipamentos = await db.equipamentos_serie.find(
+    equipamentos = await db.equipamentos_tecnicos.find(
         {"id": {"$in": equip_ids}, "empresa_id": {"$in": empresa_ids}},
         {"_id": 0, "id": 1, "numero_serie": 1, "tipo": 1, "marca": 1, "modelo": 1, "status": 1}
     ).to_list(500)
@@ -8152,9 +8152,9 @@ async def vincular_equipamento_os(os_id: str, data: Dict[str, Any] = Body(...), 
     
     # Buscar equipamento por ID ou série
     if equipamento_id:
-        equip = await db.equipamentos_serie.find_one({"id": equipamento_id})
+        equip = await db.equipamentos_tecnicos.find_one({"id": equipamento_id})
     elif numero_serie:
-        equip = await db.equipamentos_serie.find_one({
+        equip = await db.equipamentos_tecnicos.find_one({
             "numero_serie": numero_serie,
             "empresa_id": os_doc["empresa_id"]
         })
@@ -8191,7 +8191,7 @@ async def vincular_equipamento_os(os_id: str, data: Dict[str, Any] = Body(...), 
             "observacao": f"Instalado via OS {os_doc['numero']}"
         }
         
-        await db.equipamentos_serie.update_one(
+        await db.equipamentos_tecnicos.update_one(
             {"id": equip["id"]},
             {
                 "$set": {
@@ -8246,7 +8246,7 @@ async def vincular_equipamento_os(os_id: str, data: Dict[str, Any] = Body(...), 
             "observacao": f"Retirado via OS {os_doc['numero']}"
         }
         
-        await db.equipamentos_serie.update_one(
+        await db.equipamentos_tecnicos.update_one(
             {"id": equip["id"]},
             {
                 "$set": {
@@ -8274,20 +8274,20 @@ async def dashboard_equipamentos(empresa_id: str, current_user: dict = Depends(g
         raise HTTPException(status_code=403, detail="Acesso negado")
     
     # Contagem por status
-    total = await db.equipamentos_serie.count_documents({"empresa_id": empresa_id, "ativo": True})
-    disponiveis = await db.equipamentos_serie.count_documents({"empresa_id": empresa_id, "status": "disponivel", "ativo": True})
-    em_uso = await db.equipamentos_serie.count_documents({"empresa_id": empresa_id, "status": "em_uso", "ativo": True})
-    em_manutencao = await db.equipamentos_serie.count_documents({"empresa_id": empresa_id, "status": "em_manutencao", "ativo": True})
-    baixados = await db.equipamentos_serie.count_documents({"empresa_id": empresa_id, "status": "baixado", "ativo": True})
+    total = await db.equipamentos_tecnicos.count_documents({"empresa_id": empresa_id, "ativo": True})
+    disponiveis = await db.equipamentos_tecnicos.count_documents({"empresa_id": empresa_id, "status": "disponivel", "ativo": True})
+    em_uso = await db.equipamentos_tecnicos.count_documents({"empresa_id": empresa_id, "status": "em_uso", "ativo": True})
+    em_manutencao = await db.equipamentos_tecnicos.count_documents({"empresa_id": empresa_id, "status": "em_manutencao", "ativo": True})
+    baixados = await db.equipamentos_tecnicos.count_documents({"empresa_id": empresa_id, "status": "baixado", "ativo": True})
     
     # Contagem por tipo
-    tipos = await db.equipamentos_serie.aggregate([
+    tipos = await db.equipamentos_tecnicos.aggregate([
         {"$match": {"empresa_id": empresa_id, "ativo": True}},
         {"$group": {"_id": "$tipo", "count": {"$sum": 1}}}
     ]).to_list(50)
     
     # Contagem por localização
-    localizacoes = await db.equipamentos_serie.aggregate([
+    localizacoes = await db.equipamentos_tecnicos.aggregate([
         {"$match": {"empresa_id": empresa_id, "ativo": True}},
         {"$group": {"_id": "$localizacao_tipo", "count": {"$sum": 1}}}
     ]).to_list(10)
