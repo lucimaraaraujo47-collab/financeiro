@@ -68,13 +68,14 @@ Sistema integrado de gestão empresarial para provedores de serviços (internet,
 
 **App React Native (🟡 Em Progresso):**
 - Localização: `/app/app-tecnico/`
+- **Pronto para Build e Distribuição**
 - Telas implementadas:
   - ✅ LoginScreen - Autenticação
   - ✅ HomeScreen - Lista de OS do técnico
   - ✅ OSDetailScreen - Detalhes, checklist, ações
   - ✅ SignatureScreen - Captura de assinatura
-  - ✅ CameraScreen - Captura de fotos (NOVO)
-  - ✅ PhotoGalleryScreen - Galeria de fotos da OS (NOVO)
+  - ✅ CameraScreen - Captura de fotos
+  - ✅ PhotoGalleryScreen - Galeria de fotos da OS
 - Funcionalidades:
   - ✅ Autenticação persistente (AsyncStorage)
   - ✅ Visualização de OS atribuídas
@@ -83,7 +84,16 @@ Sistema integrado de gestão empresarial para provedores de serviços (internet,
   - ✅ Captura de assinatura digital
   - ✅ Captura e upload de fotos
   - ✅ Contato direto (telefone, WhatsApp, mapas)
+  - ✅ Configuração de produção (URL API)
+  - ✅ EAS Build configurado
   - ⏳ Funcionalidade offline (pendente)
+
+**Build do App:**
+```bash
+cd app-tecnico
+npm install
+npx eas build --platform android --profile preview  # APK para testes
+```
 
 ### ⏳ Fase 3 - Histórico Vitalício de Equipamentos (PENDENTE)
 - Rastreamento permanente de cada equipamento
