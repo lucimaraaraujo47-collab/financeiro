@@ -174,6 +174,9 @@ function App() {
             <Route path="/vendas-servico" element={<VendasServico user={user} token={token} />} />
             <Route path="/ordens-servico" element={<OrdensServico user={user} token={token} />} />
             
+            {/* Fase 2 - Equipamentos e Estoque */}
+            <Route path="/equipamentos-servico" element={<EquipamentosServico user={user} token={token} />} />
+            
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>
