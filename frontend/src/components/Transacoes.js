@@ -882,107 +882,69 @@ function Transacoes({ user, token }) {
                   </button>
                 </div>
                 
-                {/* Lista de Fornecedores com botões de ação */}
-                <div style={{
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '8px',
-                  maxHeight: '200px',
-                  overflowY: 'auto'
-                }}>
-                  <div 
-                    style={{
-                      padding: '0.5rem 0.75rem',
-                      cursor: 'pointer',
-                      borderBottom: '1px solid var(--border-color)',
-                      backgroundColor: !formData.fornecedor_id ? '#e0f2fe' : 'transparent',
-                      fontSize: '0.875rem'
-                    }}
-                    onClick={() => handleFornecedorChange('')}
-                  >
-                    <em style={{ color: '#6b7280' }}>Nenhum selecionado (digitar manualmente)</em>
-                  </div>
+                {/* Select de Fornecedores - clique para expandir */}
+                <select
+                  className="form-select"
+                  value={formData.fornecedor_id}
+                  onChange={(e) => handleFornecedorChange(e.target.value)}
+                  style={{ marginBottom: '0.5rem' }}
+                >
+                  <option value="">Selecione um fornecedor ou digite abaixo</option>
                   {fornecedores.map(forn => (
-                    <div 
-                      key={forn.id}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '0.5rem 0.75rem',
-                        borderBottom: '1px solid var(--border-color)',
-                        backgroundColor: formData.fornecedor_id === forn.id ? '#e0f2fe' : 'transparent',
-                        transition: 'background-color 0.2s'
-                      }}
-                    >
-                      <div 
-                        style={{ 
-                          flex: 1, 
-                          cursor: 'pointer',
-                          fontSize: '0.875rem'
-                        }}
-                        onClick={() => handleFornecedorChange(forn.id)}
-                      >
-                        <div style={{ fontWeight: formData.fornecedor_id === forn.id ? '600' : '400' }}>
-                          {forn.nome}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                          {forn.cnpj || 'Sem CNPJ/CPF'}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditFornecedor(forn);
-                          }}
-                          style={{
-                            padding: '0.25rem 0.5rem',
-                            fontSize: '0.7rem',
-                            backgroundColor: '#dbeafe',
-                            color: '#1e40af',
-                            border: '1px solid #93c5fd',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
-                          title="Editar fornecedor"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteFornecedor(forn.id, forn.nome);
-                          }}
-                          style={{
-                            padding: '0.25rem 0.5rem',
-                            fontSize: '0.7rem',
-                            backgroundColor: '#fee2e2',
-                            color: '#991b1b',
-                            border: '1px solid #fca5a5',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
-                          }}
-                          title="Excluir fornecedor"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </div>
+                    <option key={forn.id} value={forn.id}>
+                      {forn.nome} {forn.cnpj ? `(${forn.cnpj})` : ''}
+                    </option>
                   ))}
-                </div>
+                </select>
                 
+                {/* Botões de edição apenas quando um fornecedor está selecionado */}
                 {formData.fornecedor_id && (
                   <div style={{ 
-                    marginTop: '0.5rem', 
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
                     padding: '0.5rem', 
                     backgroundColor: '#d1fae5', 
                     borderRadius: '4px',
                     fontSize: '0.8rem',
                     color: '#065f46'
                   }}>
-                    ✅ Selecionado: <strong>{formData.fornecedor}</strong>
+                    <span style={{ flex: 1 }}>✅ <strong>{formData.fornecedor}</strong></span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const forn = fornecedores.find(f => f.id === formData.fornecedor_id);
+                        if (forn) handleEditFornecedor(forn);
+                      }}
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        fontSize: '0.7rem',
+                        backgroundColor: '#dbeafe',
+                        color: '#1e40af',
+                        border: '1px solid #93c5fd',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                      title="Editar fornecedor"
+                    >
+                      ✏️ Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteFornecedor(formData.fornecedor_id, formData.fornecedor)}
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        fontSize: '0.7rem',
+                        backgroundColor: '#fee2e2',
+                        color: '#991b1b',
+                        border: '1px solid #fca5a5',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                      title="Excluir fornecedor"
+                    >
+                      🗑️ Excluir
+                    </button>
                   </div>
                 )}
               </div>
