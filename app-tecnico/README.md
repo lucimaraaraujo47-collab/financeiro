@@ -1,104 +1,121 @@
 # App do Técnico - ECHO SHOP
 
-Aplicativo mobile para técnicos de campo gerenciarem suas ordens de serviço.
+Aplicativo mobile React Native para técnicos de campo gerenciarem suas ordens de serviço.
 
-## Funcionalidades
-
-- ✅ **Login** - Autenticação com credenciais do sistema
-- ✅ **Lista de OS** - Visualização das OS atribuídas ao técnico
-- ✅ **Detalhes da OS** - Informações completas do serviço
-- ✅ **Checklist** - Marcar itens concluídos
-- ✅ **Assinatura Digital** - Coletar assinatura do cliente
-- ✅ **Câmera** - Tirar fotos do serviço (antes/durante/depois)
-- ✅ **Galeria de Fotos** - Visualizar fotos da OS
-- ✅ **Contato Rápido** - Ligar, WhatsApp, Mapas
-- ⏳ **Modo Offline** - Em desenvolvimento
-
-## Requisitos
-
-- Node.js 18+
-- Expo CLI
-- Dispositivo físico ou emulador
-
-## Instalação
+## 🚀 Quick Start
 
 ```bash
+# 1. Instalar dependências
 cd app-tecnico
 npm install
-# ou
-yarn install
+
+# 2. Iniciar o app
+npm start
+
+# 3. Escanear QR code com Expo Go no celular
 ```
 
-## Configuração
+## 📱 Download do App
 
-Edite o arquivo `config.js` com a URL do backend:
+### Para Android (APK)
+
+1. Execute o comando de build:
+   ```bash
+   npx eas build --platform android --profile preview
+   ```
+2. Baixe o APK do link gerado
+3. Instale no dispositivo Android
+
+### Para iOS (TestFlight)
+
+Requer conta Apple Developer. Veja `DEPLOY_GUIDE.md`.
+
+## ✨ Funcionalidades
+
+| Feature | Status |
+|---------|--------|
+| Login com autenticação | ✅ |
+| Lista de OS atribuídas | ✅ |
+| Detalhes da OS | ✅ |
+| Checklist interativo | ✅ |
+| Assinatura digital | ✅ |
+| Câmera para fotos | ✅ |
+| Galeria de fotos | ✅ |
+| Contato rápido (Tel/WhatsApp/Maps) | ✅ |
+| Modo Offline | ⏳ |
+
+## 🔧 Configuração
+
+### URL da API
+
+Edite `config.js`:
 
 ```javascript
-// Para desenvolvimento local (substitua pelo IP da sua máquina)
-return 'http://192.168.1.100:8001/api';
+// Para produção (atual)
+const PRODUCTION_URL = 'https://bizmaster-17.preview.emergentagent.com/api';
 
-// Para produção
-return 'https://seu-servidor.com/api';
+// Para desenvolvimento local
+const DEVELOPMENT_URL = 'http://SEU_IP:8001/api';
 ```
 
-### Descobrindo o IP local
+### Descobrir IP Local
 
 - **Windows:** `ipconfig`
 - **Mac/Linux:** `ifconfig` ou `ip addr`
 
-## Executando
-
-```bash
-# Iniciar Expo
-npx expo start
-
-# Ou com tunnel (para dispositivos em redes diferentes)
-npx expo start --tunnel
-```
-
-## Estrutura
+## 📁 Estrutura
 
 ```
 app-tecnico/
 ├── App.js              # Navegação principal
 ├── config.js           # Configurações e tema
+├── app.json            # Config Expo/build
+├── eas.json            # Config EAS Build
 ├── package.json        # Dependências
+├── DEPLOY_GUIDE.md     # Guia completo de deploy
 └── screens/
     ├── LoginScreen.js      # Tela de login
     ├── HomeScreen.js       # Lista de OS
     ├── OSDetailScreen.js   # Detalhes da OS
-    ├── SignatureScreen.js  # Captura de assinatura
-    ├── CameraScreen.js     # Câmera para fotos
-    └── PhotoGalleryScreen.js # Galeria de fotos
+    ├── SignatureScreen.js  # Assinatura digital
+    ├── CameraScreen.js     # Câmera
+    └── PhotoGalleryScreen.js # Galeria
 ```
 
-## Fluxo de Uso
+## 🔄 Fluxo de Uso
 
-1. **Login** - Técnico faz login com suas credenciais
-2. **Lista de OS** - Vê as OS atribuídas a ele
-3. **Detalhes** - Acessa uma OS para ver informações
-4. **Execução** - Marca checklist, tira fotos
-5. **Assinatura** - Coleta assinatura do cliente
-6. **Conclusão** - Finaliza a OS
+```
+Login → Lista de OS → Selecionar OS → Ver Detalhes
+                                          ↓
+                              Executar Checklist
+                                          ↓
+                              Tirar Fotos (opcional)
+                                          ↓
+                              Coletar Assinatura
+                                          ↓
+                              Concluir OS
+```
 
-## Status da OS
+## 🎨 Status da OS
 
-- `aberta` - Nova, aguardando agendamento
-- `agendada` - Com data marcada
-- `em_andamento` - Técnico executando
-- `concluida` - Serviço finalizado
-- `cancelada` - OS cancelada
+| Status | Cor | Descrição |
+|--------|-----|-----------|
+| Aberta | Cinza | Nova, aguardando agendamento |
+| Agendada | Roxo | Data marcada |
+| Em Andamento | Laranja | Técnico executando |
+| Concluída | Verde | Finalizada |
+| Cancelada | Vermelho | Cancelada |
 
-## Credenciais de Teste
+## 🔐 Credenciais de Teste
 
 ```
 Email: faraujoneto2025@gmail.com
 Senha: Rebeca@19
 ```
 
-## Tecnologias
+## 📦 Tecnologias
 
-- React Native
+- React Native 0.73
 - Expo SDK 50
 - React Navigation 6
 - Axios
@@ -106,9 +123,15 @@ Senha: Rebeca@19
 - expo-camera
 - react-native-signature-canvas
 
-## Próximos Passos
+## 📖 Documentação Completa
 
-1. Implementar modo offline com sincronização
-2. Push notifications para novas OS
-3. Geolocalização para rota até o cliente
-4. Escaneamento de código de barras de equipamentos
+Veja `DEPLOY_GUIDE.md` para:
+- Build APK/IPA
+- Publicação nas lojas
+- Updates OTA
+- Troubleshooting
+
+## 🆘 Suporte
+
+- [Documentação Expo](https://docs.expo.dev)
+- [EAS Build](https://docs.expo.dev/build/introduction/)
