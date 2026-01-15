@@ -8267,9 +8267,9 @@ async def vincular_equipamento_os(os_id: str, data: Dict[str, Any] = Body(...), 
         return {"message": f"Equipamento {equip['numero_serie']} retirado", "equipamento": equip["id"]}
 
 # --- Dashboard de Equipamentos ---
-@api_router.get("/empresas/{empresa_id}/equipamentos/dashboard")
-async def dashboard_equipamentos(empresa_id: str, current_user: dict = Depends(get_current_user)):
-    """Dashboard com resumo de equipamentos"""
+@api_router.get("/empresas/{empresa_id}/equipamentos-tecnicos/dashboard")
+async def dashboard_equipamentos_tecnicos(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    """Dashboard com resumo de equipamentos técnicos"""
     if empresa_id not in current_user.get("empresa_ids", []):
         raise HTTPException(status_code=403, detail="Acesso negado")
     
