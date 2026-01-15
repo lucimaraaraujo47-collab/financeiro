@@ -4618,9 +4618,9 @@ async def get_dashboard(empresa_id: str, current_user: dict = Depends(get_curren
     saldo_cartoes = sum(c.get("limite_disponivel", 0) for c in cartoes)
     num_cartoes = len(cartoes)
     
-    # Despesas por categoria
+    # Despesas por categoria (mês atual)
     cat_map = {}
-    for t in transacoes:
+    for t in transacoes_mes_atual:
         if t["tipo"] == "despesa":
             cat_id = t.get("categoria_id")
             if cat_id:
@@ -4632,9 +4632,9 @@ async def get_dashboard(empresa_id: str, current_user: dict = Depends(get_curren
     despesas_por_categoria = [{"categoria": v["nome"], "valor": v["valor"]} for v in cat_map.values()]
     despesas_por_categoria.sort(key=lambda x: x["valor"], reverse=True)
     
-    # Despesas por centro de custo
+    # Despesas por centro de custo (mês atual)
     cc_map = {}
-    for t in transacoes:
+    for t in transacoes_mes_atual:
         if t["tipo"] == "despesa":
             cc_id = t.get("centro_custo_id")
             if cc_id:
@@ -4646,26 +4646,8 @@ async def get_dashboard(empresa_id: str, current_user: dict = Depends(get_curren
     despesas_por_centro_custo = [{"centro_custo": v["nome"], "valor": v["valor"]} for v in cc_map.values()]
     despesas_por_centro_custo.sort(key=lambda x: x["valor"], reverse=True)
     
-    # Recent transactions - handle mixed datetime/string types and timezone awareness
-    def get_created_at_timestamp(x):
-        created = x.get("created_at", "")
-        if isinstance(created, datetime):
-            # Make timezone-aware if naive
-            if created.tzinfo is None:
-                return created.replace(tzinfo=timezone.utc)
-            return created
-        elif isinstance(created, str):
-            try:
-                dt = datetime.fromisoformat(created.replace('Z', '+00:00'))
-                # Make timezone-aware if naive
-                if dt.tzinfo is None:
-                    return dt.replace(tzinfo=timezone.utc)
-                return dt
-            except:
-                return datetime.min.replace(tzinfo=timezone.utc)
-        return datetime.min.replace(tzinfo=timezone.utc)
-    
-    transacoes_recentes = sorted(transacoes, key=get_created_at_timestamp, reverse=True)[:10]
+    # Transações recentes do mês atual
+    transacoes_recentes = sorted(transacoes_mes_atual, key=get_transaction_date, reverse=True)[:10]
     
     return DashboardMetrics(
         total_receitas=total_receitas,
