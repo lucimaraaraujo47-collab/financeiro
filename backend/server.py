@@ -7867,10 +7867,16 @@ async def listar_depositos(empresa_id: str, current_user: dict = Depends(get_cur
             "nome": "Depósito Central",
             "tipo": "central",
             "ativo": True,
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.depositos_estoque.insert_one(deposito_central)
+        deposito_central.pop("_id", None)
         depositos = [deposito_central]
+    
+    # Converter datetime para string se necessário
+    for dep in depositos:
+        if isinstance(dep.get("created_at"), datetime):
+            dep["created_at"] = dep["created_at"].isoformat()
     
     return depositos
 
