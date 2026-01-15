@@ -38,6 +38,8 @@ import VendasServico from './components/VendasServico';
 import OrdensServico from './components/OrdensServico';
 // Fase 2 - Equipamentos e Estoque
 import EquipamentosServico from './components/EquipamentosServico';
+// App do Técnico - Download
+import AppTecnicoDownload from './components/AppTecnicoDownload';
 
 // Use relative URL - Kubernetes Ingress will route /api to backend
 const API = '/api';
