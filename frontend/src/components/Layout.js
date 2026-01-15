@@ -384,6 +384,15 @@ function Layout({ user, onLogout, children }) {
                     <span className="nav-text">Backup</span>
                   </Link>
                 )}
+
+                <Link 
+                  to="/app-tecnico" 
+                  className={`nav-item nav-subitem ${isActive('/app-tecnico') ? 'active' : ''}`}
+                  data-testid="nav-app-tecnico"
+                >
+                  <span className="nav-icon">📱</span>
+                  <span className="nav-text">App Técnico</span>
+                </Link>
               </div>
             )}
           </div>
