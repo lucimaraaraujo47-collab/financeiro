@@ -1001,6 +1001,203 @@ class ConfiguracaoCobrancaCreate(BaseModel):
 
 # ==================== END VENDAS MODELS ====================
 
+# ==================== PLANOS DE SERVIÇO COM CONTRATO ====================
+
+class PlanoServico(BaseModel):
+    """Plano de serviço com configuração de contrato e fidelidade"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str  # Ex: "Internet 300MB", "Manutenção Preventiva"
+    tipo_servico: str  # internet, manutencao, instalacao, consultoria
+    valor: float
+    periodicidade: str = "mensal"  # mensal, trimestral, anual, unico
+    # Configurações de contrato
+    tem_contrato: bool = False
+    prazo_fidelidade_meses: int = 0  # 0 = sem fidelidade
+    valor_multa_cancelamento: float = 0.0
+    modelo_contrato_id: Optional[str] = None  # Referência ao modelo de contrato
+    # Detalhes
+    descricao: Optional[str] = None
+    beneficios: List[str] = []
+    ativo: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class PlanoServicoCreate(BaseModel):
+    nome: str
+    tipo_servico: str
+    valor: float
+    periodicidade: str = "mensal"
+    tem_contrato: bool = False
+    prazo_fidelidade_meses: int = 0
+    valor_multa_cancelamento: float = 0.0
+    modelo_contrato_id: Optional[str] = None
+    descricao: Optional[str] = None
+    beneficios: List[str] = []
+
+# ==================== MODELOS DE CONTRATO ====================
+
+class ModeloContrato(BaseModel):
+    """Modelo de contrato com variáveis dinâmicas e versionamento"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str  # Ex: "Contrato Padrão Internet", "Contrato Fidelidade 12 meses"
+    descricao: Optional[str] = None
+    # Conteúdo do contrato com variáveis
+    # Variáveis: {{nome_cliente}}, {{cpf_cnpj}}, {{endereco}}, {{plano}}, {{valor}}, 
+    #            {{fidelidade}}, {{multa}}, {{data_inicio}}, {{data_fim}}
+    conteudo_html: str
+    # Versionamento
+    versao: int = 1
+    ativo: bool = True
+    # Metadados
+    variaveis_disponiveis: List[str] = [
+        "nome_cliente", "cpf_cnpj", "endereco_completo", "telefone", "email",
+        "plano_nome", "plano_valor", "periodicidade", "fidelidade_meses", 
+        "valor_multa", "data_inicio", "data_fim", "data_assinatura"
+    ]
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ModeloContratoCreate(BaseModel):
+    nome: str
+    descricao: Optional[str] = None
+    conteudo_html: str
+
+class ModeloContratoUpdate(BaseModel):
+    nome: Optional[str] = None
+    descricao: Optional[str] = None
+    conteudo_html: Optional[str] = None
+
+# ==================== CONTRATOS DE CLIENTES ====================
+
+class ContratoCliente(BaseModel):
+    """Contrato gerado para um cliente específico"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    cliente_id: str
+    venda_servico_id: str  # Referência à venda
+    plano_id: str
+    modelo_contrato_id: str
+    # Dados preenchidos
+    conteudo_preenchido: str  # HTML com variáveis substituídas
+    # Status e assinatura
+    status: str = "pendente"  # pendente, assinado, cancelado, expirado
+    data_assinatura: Optional[str] = None
+    assinatura_base64: Optional[str] = None  # Imagem da assinatura digital
+    assinado_por: Optional[str] = None  # Nome de quem assinou
+    ip_assinatura: Optional[str] = None
+    # Fidelidade
+    data_inicio: str
+    data_fim_fidelidade: Optional[str] = None
+    # Metadados
+    versao_modelo: int = 1
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# ==================== VENDAS DE SERVIÇO ====================
+
+class VendaServico(BaseModel):
+    """Venda de um plano de serviço a um cliente"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    cliente_id: str
+    plano_id: str
+    vendedor_id: str  # Usuário que realizou a venda
+    # Dados da venda
+    valor_venda: float
+    forma_pagamento: str  # pix, boleto, cartao, dinheiro
+    dia_vencimento: int = 10  # Dia do mês para cobrança
+    # Status
+    status: str = "aguardando_instalacao"  # aguardando_instalacao, aguardando_contrato, ativo, suspenso, cancelado
+    # Contrato
+    tem_contrato: bool = False
+    contrato_id: Optional[str] = None
+    contrato_assinado: bool = False
+    # OS
+    os_instalacao_id: Optional[str] = None
+    # Financeiro
+    asaas_customer_id: Optional[str] = None
+    asaas_subscription_id: Optional[str] = None
+    primeiro_pagamento_id: Optional[str] = None
+    # Datas
+    data_venda: str
+    data_ativacao: Optional[str] = None
+    data_cancelamento: Optional[str] = None
+    motivo_cancelamento: Optional[str] = None
+    # Observações
+    observacoes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class VendaServicoCreate(BaseModel):
+    cliente_id: str
+    plano_id: str
+    forma_pagamento: str
+    dia_vencimento: int = 10
+    observacoes: Optional[str] = None
+
+# ==================== ORDENS DE SERVIÇO ====================
+
+class OrdemServico(BaseModel):
+    """Ordem de serviço para instalação, manutenção, troca ou retirada"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    numero: str  # Número sequencial legível: OS-2024-0001
+    cliente_id: str
+    venda_id: Optional[str] = None
+    tecnico_id: Optional[str] = None
+    # Tipo e status
+    tipo: str  # instalacao, manutencao, troca, retirada
+    status: str = "aberta"  # aberta, agendada, em_andamento, aguardando_assinatura, concluida, cancelada
+    prioridade: str = "normal"  # baixa, normal, alta, urgente
+    # Agendamento
+    data_agendamento: Optional[str] = None
+    horario_previsto: Optional[str] = None
+    # Execução
+    data_inicio_execucao: Optional[str] = None
+    data_fim_execucao: Optional[str] = None
+    # Localização
+    endereco_servico: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    # Checklist e fotos
+    checklist: List[Dict[str, Any]] = []  # [{item, obrigatorio, concluido}]
+    fotos: List[Dict[str, str]] = []  # [{url, descricao, tipo}]
+    # Equipamentos
+    equipamentos_instalados: List[str] = []  # IDs dos equipamentos
+    equipamentos_retirados: List[str] = []
+    # Contrato
+    contrato_id: Optional[str] = None
+    contrato_assinado: bool = False
+    # Observações
+    descricao: Optional[str] = None
+    observacoes_tecnico: Optional[str] = None
+    # Custos
+    custo_deslocamento: float = 0.0
+    distancia_km: float = 0.0
+    # Timestamps
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class OrdemServicoCreate(BaseModel):
+    cliente_id: str
+    venda_id: Optional[str] = None
+    tecnico_id: Optional[str] = None
+    tipo: str
+    prioridade: str = "normal"
+    data_agendamento: Optional[str] = None
+    horario_previsto: Optional[str] = None
+    endereco_servico: str
+    descricao: Optional[str] = None
+
+# ==================== END NOVOS MODELS FASE 1 ====================
+
 class Transacao(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
