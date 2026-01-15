@@ -7646,6 +7646,9 @@ async def atualizar_checklist_os(os_id: str, data: Dict[str, Any] = Body(...), c
     item_index = data.get("item_index")
     concluido = data.get("concluido", False)
     
+    if item_index is None:
+        raise HTTPException(status_code=400, detail="item_index é obrigatório")
+    
     checklist = os.get("checklist", [])
     if 0 <= item_index < len(checklist):
         checklist[item_index]["concluido"] = concluido
@@ -7653,8 +7656,9 @@ async def atualizar_checklist_os(os_id: str, data: Dict[str, Any] = Body(...), c
             {"id": os_id},
             {"$set": {"checklist": checklist, "updated_at": datetime.now(timezone.utc)}}
         )
-    
-    return {"message": "Checklist atualizado"}
+        return {"message": "Checklist atualizado", "checklist": checklist}
+    else:
+        raise HTTPException(status_code=400, detail="Índice do item inválido")
 
 @api_router.post("/ordens-servico/{os_id}/fotos")
 async def adicionar_foto_os(os_id: str, data: Dict[str, str] = Body(...), current_user: dict = Depends(get_current_user)):
