@@ -46,15 +46,18 @@ backend:
 
   - task: "CRUD Vendas de Serviço"
     implemented: true
-    working: "NA"
+    working: false
     file: "server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado sistema de vendas de serviço com geração automática de contrato e OS"
+      - working: false
+        agent: "testing"
+        comment: "❌ CRUD parcialmente funcionando: CREATE gera contrato automaticamente mas venda criada não aparece na listagem. UPDATE não testado devido ao problema anterior"
 
   - task: "CRUD Ordens de Serviço"
     implemented: true
