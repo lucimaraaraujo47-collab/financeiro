@@ -62,7 +62,7 @@ function OrdensServico({ user, token }) {
         
         const [ordensRes, tecnicosRes] = await Promise.all([
           axios.get(url, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(`${API}/empresas/${emp.id}/usuarios`, { headers: { Authorization: `Bearer ${token}` } })
+          axios.get(`${API}/users`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
         
         setOrdens(ordensRes.data || []);
