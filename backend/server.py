@@ -7131,9 +7131,11 @@ async def assinar_contrato(contrato_id: str, assinatura: Dict[str, Any] = Body(.
     if contrato["status"] == "assinado":
         raise HTTPException(status_code=400, detail="Contrato já foi assinado")
     
+    data_assinatura = datetime.now(timezone.utc).isoformat()
+    
     update_data = {
         "status": "assinado",
-        "data_assinatura": datetime.now(timezone.utc).isoformat(),
+        "data_assinatura": data_assinatura,
         "assinatura_base64": assinatura.get("assinatura_base64"),
         "assinado_por": assinatura.get("assinado_por"),
         "ip_assinatura": assinatura.get("ip_assinatura"),
@@ -7157,7 +7159,12 @@ async def assinar_contrato(contrato_id: str, assinatura: Dict[str, Any] = Body(.
             {"$set": {"contrato_assinado": True, "updated_at": datetime.now(timezone.utc)}}
         )
     
-    return {"message": "Contrato assinado com sucesso"}
+    # Retornar contrato atualizado
+    contrato_atualizado = await db.contratos_cliente.find_one({"id": contrato_id}, {"_id": 0})
+    return {
+        "message": "Contrato assinado com sucesso",
+        "contrato": contrato_atualizado
+    }
 
 # ==================== VENDAS DE SERVIÇO (NOVA) ====================
 
