@@ -804,7 +804,7 @@ class VendasContratosTestRunner:
                 # Verify contract exists if required
                 contrato_id = venda.get('contrato_id')
                 if contrato_id:
-                    response = self.session.get(f"{BACKEND_URL}/contratos-cliente/{contrato_id}")
+                    response = self.session.get(f"{BACKEND_URL}/contratos/{contrato_id}")
                     if response.status_code == 200:
                         contrato = response.json()
                         self.log(f"    ✅ Associated contract found: {contrato.get('status')}")
