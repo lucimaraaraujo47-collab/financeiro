@@ -65,46 +65,79 @@ function Dashboard({ user, token }) {
   const maxValue = Math.max(...dashboard.despesas_por_categoria.map(d => d.valor), 1);
   const maxCC = Math.max(...dashboard.despesas_por_centro_custo.map(d => d.valor), 1);
 
+  // Nome do mês atual
+  const mesAtual = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
   return (
     <div className="dashboard" data-testid="dashboard">
       <div className="dashboard-header">
         <h1 className="dashboard-title">Dashboard Financeiro</h1>
         <p className="dashboard-subtitle">{empresa.razao_social}</p>
+        <p style={{ 
+          fontSize: '0.95rem', 
+          color: '#6b7280', 
+          marginTop: '0.5rem',
+          textTransform: 'capitalize'
+        }}>
+          📅 Período: <strong style={{ color: '#3b82f6' }}>{mesAtual}</strong>
+        </p>
       </div>
 
-      <div className="metrics-grid">
+      {/* Saldo Real em Contas - Destaque */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+        borderRadius: '16px',
+        padding: '1.5rem',
+        marginBottom: '1.5rem',
+        color: 'white',
+        boxShadow: '0 4px 15px rgba(59, 130, 246, 0.3)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <div style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '0.25rem' }}>
+              💰 Saldo Real em Contas Bancárias
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: '700' }} data-testid="saldo-contas-real">
+              R$ {(dashboard.saldo_contas || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '0.25rem' }}>
+              {dashboard.num_contas || 0} conta(s) ativa(s)
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '0.25rem' }}>
+              💳 Limite Disponível em Cartões
+            </div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '600' }} data-testid="limite-cartoes-header">
+              R$ {(dashboard.saldo_cartoes || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '0.25rem' }}>
+              {dashboard.num_cartoes || 0} cartão(ões)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Métricas do Mês */}
+      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <div className="metric-card">
-          <div className="metric-label">Receitas</div>
+          <div className="metric-label">Receitas do Mês</div>
           <div className="metric-value positive" data-testid="total-receitas">
             R$ {dashboard.total_receitas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
         </div>
 
         <div className="metric-card">
-          <div className="metric-label">Despesas</div>
+          <div className="metric-label">Despesas do Mês</div>
           <div className="metric-value negative" data-testid="total-despesas">
             R$ {dashboard.total_despesas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
         </div>
 
         <div className="metric-card">
-          <div className="metric-label">Saldo (Receitas - Despesas)</div>
+          <div className="metric-label">Resultado do Mês</div>
           <div className={`metric-value ${dashboard.saldo >= 0 ? 'positive' : 'negative'}`} data-testid="saldo">
             R$ {dashboard.saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </div>
-        </div>
-
-        <div className="metric-card">
-          <div className="metric-label">💰 Saldo em Contas ({dashboard.num_contas || 0})</div>
-          <div className={`metric-value ${dashboard.saldo_contas >= 0 ? 'positive' : 'negative'}`} data-testid="saldo-contas">
-            R$ {(dashboard.saldo_contas || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </div>
-        </div>
-
-        <div className="metric-card">
-          <div className="metric-label">💳 Limite Disponível ({dashboard.num_cartoes || 0} cartões)</div>
-          <div className="metric-value positive" data-testid="limite-cartoes">
-            R$ {(dashboard.saldo_cartoes || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
         </div>
       </div>
