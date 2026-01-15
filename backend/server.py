@@ -7801,6 +7801,505 @@ async def adicionar_foto_os(os_id: str, data: Dict[str, str] = Body(...), curren
 
 # ==================== END FASE 1 ENDPOINTS ====================
 
+# ==================== EQUIPAMENTOS E ESTOQUE (FASE 2) ====================
+
+# --- Tipos de Equipamento ---
+@api_router.get("/empresas/{empresa_id}/tipos-equipamento")
+async def listar_tipos_equipamento(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    """Lista tipos de equipamento da empresa"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    tipos = await db.tipos_equipamento.find({"empresa_id": empresa_id, "ativo": True}, {"_id": 0}).to_list(100)
+    
+    # Se não existir, criar tipos padrão
+    if not tipos:
+        tipos_padrao = [
+            {"nome": "Roteador", "descricao": "Roteador WiFi"},
+            {"nome": "ONU", "descricao": "Optical Network Unit"},
+            {"nome": "Modem", "descricao": "Modem de internet"},
+            {"nome": "Cabo Fibra", "descricao": "Cabo de fibra óptica"},
+            {"nome": "Antena", "descricao": "Antena de transmissão"},
+            {"nome": "Switch", "descricao": "Switch de rede"},
+            {"nome": "Conversor", "descricao": "Conversor de mídia"}
+        ]
+        for t in tipos_padrao:
+            t["id"] = str(uuid.uuid4())
+            t["empresa_id"] = empresa_id
+            t["ativo"] = True
+            t["campos_extras"] = []
+            await db.tipos_equipamento.insert_one(t)
+        tipos = await db.tipos_equipamento.find({"empresa_id": empresa_id, "ativo": True}, {"_id": 0}).to_list(100)
+    
+    return tipos
+
+@api_router.post("/empresas/{empresa_id}/tipos-equipamento")
+async def criar_tipo_equipamento(empresa_id: str, data: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
+    """Cria novo tipo de equipamento"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    tipo_dict = {
+        "id": str(uuid.uuid4()),
+        "empresa_id": empresa_id,
+        "nome": data.get("nome"),
+        "descricao": data.get("descricao"),
+        "campos_extras": data.get("campos_extras", []),
+        "ativo": True
+    }
+    
+    await db.tipos_equipamento.insert_one(tipo_dict)
+    tipo_dict.pop("_id", None)
+    return tipo_dict
+
+# --- Depósitos ---
+@api_router.get("/empresas/{empresa_id}/depositos")
+async def listar_depositos(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    """Lista depósitos da empresa"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    depositos = await db.depositos_estoque.find({"empresa_id": empresa_id, "ativo": True}, {"_id": 0}).to_list(100)
+    
+    # Se não existir, criar depósito central
+    if not depositos:
+        deposito_central = {
+            "id": str(uuid.uuid4()),
+            "empresa_id": empresa_id,
+            "nome": "Depósito Central",
+            "tipo": "central",
+            "ativo": True,
+            "created_at": datetime.now(timezone.utc)
+        }
+        await db.depositos_estoque.insert_one(deposito_central)
+        depositos = [deposito_central]
+    
+    return depositos
+
+@api_router.post("/empresas/{empresa_id}/depositos")
+async def criar_deposito(empresa_id: str, data: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
+    """Cria novo depósito"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    deposito_dict = {
+        "id": str(uuid.uuid4()),
+        "empresa_id": empresa_id,
+        "nome": data.get("nome"),
+        "endereco": data.get("endereco"),
+        "responsavel_id": data.get("responsavel_id"),
+        "responsavel_nome": data.get("responsavel_nome"),
+        "tipo": data.get("tipo", "filial"),
+        "ativo": True,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.depositos_estoque.insert_one(deposito_dict)
+    deposito_dict.pop("_id", None)
+    return deposito_dict
+
+# --- Equipamentos ---
+@api_router.get("/empresas/{empresa_id}/equipamentos")
+async def listar_equipamentos(
+    empresa_id: str, 
+    status: Optional[str] = None,
+    tipo: Optional[str] = None,
+    localizacao_tipo: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Lista equipamentos com filtros"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    query = {"empresa_id": empresa_id, "ativo": True}
+    if status:
+        query["status"] = status
+    if tipo:
+        query["tipo"] = tipo
+    if localizacao_tipo:
+        query["localizacao_tipo"] = localizacao_tipo
+    
+    equipamentos = await db.equipamentos_serie.find(query, {"_id": 0}).to_list(5000)
+    return equipamentos
+
+@api_router.post("/empresas/{empresa_id}/equipamentos")
+async def criar_equipamento(empresa_id: str, equip: EquipamentoCreate, current_user: dict = Depends(get_current_user)):
+    """Cria novo equipamento"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Verificar se número de série já existe
+    existe = await db.equipamentos_serie.find_one({
+        "empresa_id": empresa_id, 
+        "numero_serie": equip.numero_serie
+    })
+    if existe:
+        raise HTTPException(status_code=400, detail="Número de série já cadastrado")
+    
+    # Buscar depósito central
+    deposito = await db.depositos_estoque.find_one({"empresa_id": empresa_id, "tipo": "central"}, {"_id": 0})
+    
+    equip_dict = equip.model_dump()
+    equip_dict["id"] = str(uuid.uuid4())
+    equip_dict["empresa_id"] = empresa_id
+    equip_dict["status"] = "disponivel"
+    equip_dict["localizacao_tipo"] = "deposito"
+    equip_dict["localizacao_id"] = deposito["id"] if deposito else None
+    equip_dict["localizacao_nome"] = deposito["nome"] if deposito else "Sem depósito"
+    equip_dict["ativo"] = True
+    equip_dict["historico"] = [{
+        "data": datetime.now(timezone.utc).isoformat(),
+        "tipo": "cadastro",
+        "observacao": "Equipamento cadastrado no sistema",
+        "local_destino": deposito["nome"] if deposito else "Sistema"
+    }]
+    equip_dict["created_at"] = datetime.now(timezone.utc)
+    equip_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.equipamentos_serie.insert_one(equip_dict)
+    equip_dict.pop("_id", None)
+    return equip_dict
+
+@api_router.get("/equipamentos/{equip_id}")
+async def obter_equipamento(equip_id: str, current_user: dict = Depends(get_current_user)):
+    """Obtém equipamento com histórico completo"""
+    equip = await db.equipamentos_serie.find_one({"id": equip_id}, {"_id": 0})
+    if not equip:
+        raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+    if equip["empresa_id"] not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    return equip
+
+@api_router.get("/equipamentos/serie/{numero_serie}")
+async def buscar_por_serie(numero_serie: str, current_user: dict = Depends(get_current_user)):
+    """Busca equipamento por número de série"""
+    empresa_ids = current_user.get("empresa_ids", [])
+    equip = await db.equipamentos_serie.find_one({
+        "numero_serie": numero_serie,
+        "empresa_id": {"$in": empresa_ids}
+    }, {"_id": 0})
+    if not equip:
+        raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+    return equip
+
+@api_router.patch("/equipamentos/{equip_id}/status")
+async def atualizar_status_equipamento(equip_id: str, data: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
+    """Atualiza status do equipamento"""
+    equip = await db.equipamentos_serie.find_one({"id": equip_id})
+    if not equip:
+        raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+    
+    novo_status = data.get("status")
+    observacao = data.get("observacao", "")
+    
+    # Adicionar ao histórico
+    historico_item = {
+        "data": datetime.now(timezone.utc).isoformat(),
+        "tipo": "alteracao_status",
+        "observacao": f"Status alterado de {equip['status']} para {novo_status}. {observacao}"
+    }
+    
+    await db.equipamentos_serie.update_one(
+        {"id": equip_id},
+        {
+            "$set": {"status": novo_status, "updated_at": datetime.now(timezone.utc)},
+            "$push": {"historico": historico_item}
+        }
+    )
+    
+    return {"message": f"Status atualizado para {novo_status}"}
+
+@api_router.post("/equipamentos/{equip_id}/transferir")
+async def transferir_equipamento(equip_id: str, data: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
+    """Transfere equipamento entre localizações"""
+    equip = await db.equipamentos_serie.find_one({"id": equip_id})
+    if not equip:
+        raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+    
+    destino_tipo = data.get("destino_tipo")  # deposito, tecnico, cliente
+    destino_id = data.get("destino_id")
+    destino_nome = data.get("destino_nome")
+    motivo = data.get("motivo", "")
+    
+    # Criar registro de transferência
+    transferencia = {
+        "id": str(uuid.uuid4()),
+        "empresa_id": equip["empresa_id"],
+        "equipamento_id": equip_id,
+        "equipamento_serie": equip["numero_serie"],
+        "origem_tipo": equip["localizacao_tipo"],
+        "origem_id": equip.get("localizacao_id", ""),
+        "origem_nome": equip.get("localizacao_nome", ""),
+        "destino_tipo": destino_tipo,
+        "destino_id": destino_id,
+        "destino_nome": destino_nome,
+        "motivo": motivo,
+        "responsavel_id": current_user["id"],
+        "responsavel_nome": current_user.get("nome", ""),
+        "data_transferencia": datetime.now(timezone.utc)
+    }
+    
+    await db.transferencias_equipamento.insert_one(transferencia)
+    
+    # Histórico
+    historico_item = {
+        "data": datetime.now(timezone.utc).isoformat(),
+        "tipo": "transferencia",
+        "local_origem": equip.get("localizacao_nome", ""),
+        "local_destino": destino_nome,
+        "tecnico_id": current_user["id"],
+        "tecnico_nome": current_user.get("nome", ""),
+        "observacao": motivo
+    }
+    
+    # Determinar novo status
+    novo_status = "disponivel"
+    if destino_tipo == "cliente":
+        novo_status = "em_uso"
+    elif destino_tipo == "tecnico":
+        novo_status = "disponivel"
+    
+    # Atualizar equipamento
+    await db.equipamentos_serie.update_one(
+        {"id": equip_id},
+        {
+            "$set": {
+                "localizacao_tipo": destino_tipo,
+                "localizacao_id": destino_id,
+                "localizacao_nome": destino_nome,
+                "status": novo_status,
+                "updated_at": datetime.now(timezone.utc)
+            },
+            "$push": {"historico": historico_item}
+        }
+    )
+    
+    # Se transferiu para técnico, atualizar estoque do técnico
+    if destino_tipo == "tecnico":
+        await db.estoque_tecnico.update_one(
+            {"tecnico_id": destino_id, "empresa_id": equip["empresa_id"]},
+            {
+                "$addToSet": {"equipamentos": equip_id},
+                "$set": {"ultima_atualizacao": datetime.now(timezone.utc)}
+            },
+            upsert=True
+        )
+    
+    # Se saiu do técnico, remover do estoque dele
+    if equip["localizacao_tipo"] == "tecnico" and equip.get("localizacao_id"):
+        await db.estoque_tecnico.update_one(
+            {"tecnico_id": equip["localizacao_id"]},
+            {"$pull": {"equipamentos": equip_id}}
+        )
+    
+    transferencia.pop("_id", None)
+    return {"message": "Equipamento transferido", "transferencia": transferencia}
+
+# --- Estoque do Técnico ---
+@api_router.get("/tecnicos/{tecnico_id}/estoque")
+async def obter_estoque_tecnico(tecnico_id: str, current_user: dict = Depends(get_current_user)):
+    """Obtém estoque do técnico com detalhes dos equipamentos"""
+    empresa_ids = current_user.get("empresa_ids", [])
+    
+    estoque = await db.estoque_tecnico.find_one({"tecnico_id": tecnico_id}, {"_id": 0})
+    if not estoque:
+        return {"tecnico_id": tecnico_id, "equipamentos": [], "total": 0}
+    
+    # Buscar detalhes dos equipamentos
+    equip_ids = estoque.get("equipamentos", [])
+    equipamentos = await db.equipamentos_serie.find(
+        {"id": {"$in": equip_ids}, "empresa_id": {"$in": empresa_ids}},
+        {"_id": 0, "id": 1, "numero_serie": 1, "tipo": 1, "marca": 1, "modelo": 1, "status": 1}
+    ).to_list(500)
+    
+    return {
+        "tecnico_id": tecnico_id,
+        "equipamentos": equipamentos,
+        "total": len(equipamentos)
+    }
+
+@api_router.get("/empresas/{empresa_id}/estoque-tecnicos")
+async def listar_estoque_todos_tecnicos(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    """Lista estoque de todos os técnicos"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    estoques = await db.estoque_tecnico.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(100)
+    
+    # Enriquecer com dados do técnico
+    for est in estoques:
+        tecnico = await db.users.find_one({"id": est["tecnico_id"]}, {"_id": 0, "nome": 1})
+        est["tecnico_nome"] = tecnico.get("nome", "Desconhecido") if tecnico else "Desconhecido"
+        est["total_equipamentos"] = len(est.get("equipamentos", []))
+    
+    return estoques
+
+# --- Vincular equipamento à OS ---
+@api_router.post("/ordens-servico/{os_id}/equipamentos")
+async def vincular_equipamento_os(os_id: str, data: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
+    """Vincula equipamento a uma OS (instalação)"""
+    os_doc = await db.ordens_servico.find_one({"id": os_id})
+    if not os_doc:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    
+    equipamento_id = data.get("equipamento_id")
+    numero_serie = data.get("numero_serie")
+    acao = data.get("acao", "instalar")  # instalar, retirar
+    
+    # Buscar equipamento por ID ou série
+    if equipamento_id:
+        equip = await db.equipamentos_serie.find_one({"id": equipamento_id})
+    elif numero_serie:
+        equip = await db.equipamentos_serie.find_one({
+            "numero_serie": numero_serie,
+            "empresa_id": os_doc["empresa_id"]
+        })
+    else:
+        raise HTTPException(status_code=400, detail="Informe equipamento_id ou numero_serie")
+    
+    if not equip:
+        raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+    
+    # Buscar cliente da OS
+    cliente = await db.clientes_venda.find_one({"id": os_doc["cliente_id"]}, {"_id": 0})
+    
+    if acao == "instalar":
+        # Verificar se está disponível
+        if equip["status"] not in ["disponivel"]:
+            raise HTTPException(status_code=400, detail=f"Equipamento não está disponível (status: {equip['status']})")
+        
+        # Adicionar à OS
+        await db.ordens_servico.update_one(
+            {"id": os_id},
+            {"$addToSet": {"equipamentos_instalados": equip["id"]}}
+        )
+        
+        # Atualizar equipamento
+        historico_item = {
+            "data": datetime.now(timezone.utc).isoformat(),
+            "tipo": "instalacao",
+            "cliente_id": os_doc["cliente_id"],
+            "cliente_nome": cliente.get("nome_completo", "") if cliente else "",
+            "os_id": os_id,
+            "os_numero": os_doc["numero"],
+            "tecnico_id": current_user["id"],
+            "tecnico_nome": current_user.get("nome", ""),
+            "observacao": f"Instalado via OS {os_doc['numero']}"
+        }
+        
+        await db.equipamentos_serie.update_one(
+            {"id": equip["id"]},
+            {
+                "$set": {
+                    "status": "em_uso",
+                    "localizacao_tipo": "cliente",
+                    "localizacao_id": os_doc["cliente_id"],
+                    "localizacao_nome": cliente.get("nome_completo", "") if cliente else "",
+                    "cliente_id": os_doc["cliente_id"],
+                    "cliente_nome": cliente.get("nome_completo", "") if cliente else "",
+                    "os_instalacao_id": os_id,
+                    "data_instalacao": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc)
+                },
+                "$push": {"historico": historico_item}
+            }
+        )
+        
+        # Remover do estoque do técnico se estava lá
+        if equip["localizacao_tipo"] == "tecnico":
+            await db.estoque_tecnico.update_one(
+                {"tecnico_id": equip["localizacao_id"]},
+                {"$pull": {"equipamentos": equip["id"]}}
+            )
+        
+        return {"message": f"Equipamento {equip['numero_serie']} instalado", "equipamento": equip["id"]}
+    
+    elif acao == "retirar":
+        # Adicionar à lista de retirados
+        await db.ordens_servico.update_one(
+            {"id": os_id},
+            {"$addToSet": {"equipamentos_retirados": equip["id"]}}
+        )
+        
+        # Buscar depósito central
+        deposito = await db.depositos_estoque.find_one({
+            "empresa_id": os_doc["empresa_id"],
+            "tipo": "central"
+        }, {"_id": 0})
+        
+        # Atualizar equipamento
+        historico_item = {
+            "data": datetime.now(timezone.utc).isoformat(),
+            "tipo": "retirada",
+            "cliente_id": os_doc["cliente_id"],
+            "cliente_nome": cliente.get("nome_completo", "") if cliente else "",
+            "os_id": os_id,
+            "os_numero": os_doc["numero"],
+            "tecnico_id": current_user["id"],
+            "tecnico_nome": current_user.get("nome", ""),
+            "local_origem": equip.get("localizacao_nome", ""),
+            "local_destino": deposito["nome"] if deposito else "Depósito",
+            "observacao": f"Retirado via OS {os_doc['numero']}"
+        }
+        
+        await db.equipamentos_serie.update_one(
+            {"id": equip["id"]},
+            {
+                "$set": {
+                    "status": "disponivel",
+                    "localizacao_tipo": "deposito",
+                    "localizacao_id": deposito["id"] if deposito else None,
+                    "localizacao_nome": deposito["nome"] if deposito else "Depósito",
+                    "cliente_id": None,
+                    "cliente_nome": None,
+                    "os_instalacao_id": None,
+                    "data_instalacao": None,
+                    "updated_at": datetime.now(timezone.utc)
+                },
+                "$push": {"historico": historico_item}
+            }
+        )
+        
+        return {"message": f"Equipamento {equip['numero_serie']} retirado", "equipamento": equip["id"]}
+
+# --- Dashboard de Equipamentos ---
+@api_router.get("/empresas/{empresa_id}/equipamentos/dashboard")
+async def dashboard_equipamentos(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    """Dashboard com resumo de equipamentos"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Contagem por status
+    total = await db.equipamentos_serie.count_documents({"empresa_id": empresa_id, "ativo": True})
+    disponiveis = await db.equipamentos_serie.count_documents({"empresa_id": empresa_id, "status": "disponivel", "ativo": True})
+    em_uso = await db.equipamentos_serie.count_documents({"empresa_id": empresa_id, "status": "em_uso", "ativo": True})
+    em_manutencao = await db.equipamentos_serie.count_documents({"empresa_id": empresa_id, "status": "em_manutencao", "ativo": True})
+    baixados = await db.equipamentos_serie.count_documents({"empresa_id": empresa_id, "status": "baixado", "ativo": True})
+    
+    # Contagem por tipo
+    tipos = await db.equipamentos_serie.aggregate([
+        {"$match": {"empresa_id": empresa_id, "ativo": True}},
+        {"$group": {"_id": "$tipo", "count": {"$sum": 1}}}
+    ]).to_list(50)
+    
+    # Contagem por localização
+    localizacoes = await db.equipamentos_serie.aggregate([
+        {"$match": {"empresa_id": empresa_id, "ativo": True}},
+        {"$group": {"_id": "$localizacao_tipo", "count": {"$sum": 1}}}
+    ]).to_list(10)
+    
+    return {
+        "total": total,
+        "por_status": {
+            "disponivel": disponiveis,
+            "em_uso": em_uso,
+            "em_manutencao": em_manutencao,
+            "baixado": baixados
+        },
+        "por_tipo": {t["_id"]: t["count"] for t in tipos if t["_id"]},
+        "por_localizacao": {l["_id"]: l["count"] for l in localizacoes if l["_id"]}
+    }
+
+# ==================== END EQUIPAMENTOS ENDPOINTS ====================
+
 # Include router
 app.include_router(api_router)
 
