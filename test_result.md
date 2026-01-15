@@ -121,15 +121,18 @@ backend:
 
   - task: "Checklist OS"
     implemented: true
-    working: "NA"
+    working: false
     file: "server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "medium"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado sistema de checklist para ordens de serviço"
+      - working: false
+        agent: "testing"
+        comment: "❌ Checklist com erro: endpoint PATCH /ordens-servico/{id}/checklist retorna 500 Internal Server Error. Erro: TypeError '<=' not supported between instances of 'int' and 'NoneType'"
 
   - task: "Assinatura Digital Contrato"
     implemented: true
