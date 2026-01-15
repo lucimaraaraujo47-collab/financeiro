@@ -31,6 +31,11 @@ import Vendas from './components/Vendas';
 import Assinaturas from './components/Assinaturas';
 import DashboardVendas from './components/DashboardVendas';
 import Layout from './components/Layout';
+// Fase 1 - Sistema de Vendas com Contratos
+import PlanosServico from './components/PlanosServico';
+import ModelosContrato from './components/ModelosContrato';
+import VendasServico from './components/VendasServico';
+import OrdensServico from './components/OrdensServico';
 
 // Use relative URL - Kubernetes Ingress will route /api to backend
 const API = '/api';
