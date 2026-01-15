@@ -218,9 +218,9 @@ function Equipamentos({ user, token }) {
                     <td>{eq.fabricante || '-'}</td>
                     <td>{eq.modelo || '-'}</td>
                     <td><span className="badge">{eq.tipo_controle}</span></td>
-                    <td>R$ {eq.custo_aquisicao.toFixed(2)}</td>
-                    <td>R$ {eq.valor_venda.toFixed(2)}</td>
-                    <td>R$ {eq.valor_locacao_mensal.toFixed(2)}</td>
+                    <td>R$ {(eq.custo_aquisicao || 0).toFixed(2)}</td>
+                    <td>R$ {(eq.valor_venda || 0).toFixed(2)}</td>
+                    <td>R$ {(eq.valor_locacao_mensal || 0).toFixed(2)}</td>
                     <td>{eq.quantidade_estoque}</td>
                     <td>
                       <button className="btn-danger" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={() => handleDelete(eq.id)}>
