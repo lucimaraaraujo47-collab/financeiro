@@ -1198,6 +1198,117 @@ class OrdemServicoCreate(BaseModel):
 
 # ==================== END NOVOS MODELS FASE 1 ====================
 
+# ==================== EQUIPAMENTOS E ESTOQUE (FASE 2) ====================
+
+class HistoricoEquipamento(BaseModel):
+    """Registro de histórico de um equipamento"""
+    data: str
+    tipo: str  # instalacao, retirada, manutencao, transferencia, baixa
+    cliente_id: Optional[str] = None
+    cliente_nome: Optional[str] = None
+    os_id: Optional[str] = None
+    os_numero: Optional[str] = None
+    tecnico_id: Optional[str] = None
+    tecnico_nome: Optional[str] = None
+    local_origem: Optional[str] = None  # deposito, tecnico_id, cliente_id
+    local_destino: Optional[str] = None
+    observacao: Optional[str] = None
+
+class Equipamento(BaseModel):
+    """Equipamento com número de série e histórico vitalício"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    # Identificação
+    numero_serie: str  # Único por empresa
+    tipo: str  # roteador, onu, cabo, modem, antena, etc
+    marca: Optional[str] = None
+    modelo: Optional[str] = None
+    descricao: Optional[str] = None
+    # Status
+    status: str = "disponivel"  # disponivel, em_uso, em_manutencao, indisponivel, baixado
+    # Localização atual
+    localizacao_tipo: str = "deposito"  # deposito, tecnico, cliente
+    localizacao_id: Optional[str] = None  # ID do depósito, técnico ou cliente
+    localizacao_nome: Optional[str] = None
+    # Se em uso com cliente
+    cliente_id: Optional[str] = None
+    cliente_nome: Optional[str] = None
+    os_instalacao_id: Optional[str] = None
+    data_instalacao: Optional[str] = None
+    # Histórico vitalício (nunca é apagado)
+    historico: List[Dict[str, Any]] = []
+    # Metadados
+    data_aquisicao: Optional[str] = None
+    valor_aquisicao: Optional[float] = None
+    garantia_ate: Optional[str] = None
+    ativo: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class EquipamentoCreate(BaseModel):
+    numero_serie: str
+    tipo: str
+    marca: Optional[str] = None
+    modelo: Optional[str] = None
+    descricao: Optional[str] = None
+    data_aquisicao: Optional[str] = None
+    valor_aquisicao: Optional[float] = None
+    garantia_ate: Optional[str] = None
+
+class TipoEquipamento(BaseModel):
+    """Tipos de equipamento cadastrados"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str  # roteador, onu, cabo_fibra, modem, antena
+    descricao: Optional[str] = None
+    campos_extras: List[str] = []  # campos adicionais específicos do tipo
+    ativo: bool = True
+
+class DepositoEstoque(BaseModel):
+    """Depósito/Local de estoque"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    nome: str
+    endereco: Optional[str] = None
+    responsavel_id: Optional[str] = None
+    responsavel_nome: Optional[str] = None
+    tipo: str = "central"  # central, filial, tecnico
+    ativo: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class EstoqueTecnico(BaseModel):
+    """Estoque móvel do técnico"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    tecnico_id: str
+    tecnico_nome: str
+    equipamentos: List[str] = []  # Lista de IDs de equipamentos
+    ultima_atualizacao: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class TransferenciaEquipamento(BaseModel):
+    """Registro de transferência de equipamento"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    empresa_id: str
+    equipamento_id: str
+    equipamento_serie: str
+    origem_tipo: str  # deposito, tecnico, cliente
+    origem_id: str
+    origem_nome: str
+    destino_tipo: str
+    destino_id: str
+    destino_nome: str
+    motivo: Optional[str] = None
+    responsavel_id: str
+    responsavel_nome: str
+    data_transferencia: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# ==================== END EQUIPAMENTOS MODELS ====================
+
 class Transacao(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
