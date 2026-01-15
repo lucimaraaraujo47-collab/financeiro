@@ -166,6 +166,12 @@ function App() {
             <Route path="/vendas/dashboard" element={<DashboardVendas user={user} token={token} />} />
             <Route path="/assinaturas" element={<Assinaturas user={user} token={token} />} />
             
+            {/* Fase 1 - Sistema de Vendas com Contratos */}
+            <Route path="/planos-servico" element={<PlanosServico user={user} token={token} />} />
+            <Route path="/modelos-contrato" element={<ModelosContrato user={user} token={token} />} />
+            <Route path="/vendas-servico" element={<VendasServico user={user} token={token} />} />
+            <Route path="/ordens-servico" element={<OrdensServico user={user} token={token} />} />
+            
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>
