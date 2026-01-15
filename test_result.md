@@ -220,3 +220,5 @@ test_plan:
 agent_communication:
   - agent: "main"
     message: "Sistema de Vendas com Contratos (Fase 1) implementado. Necessário testar todos os CRUDs e fluxos integrados."
+  - agent: "testing"
+    message: "Testes concluídos. 6/11 testes passaram (54.5%). Principais problemas: responses de UPDATE não retornam objetos atualizados, checklist com erro de código, assinatura não atualiza status do contrato. Fluxo principal Venda→Contrato→OS funcionando."
