@@ -11,7 +11,7 @@ from datetime import datetime
 import uuid
 
 # Configuration
-BACKEND_URL = "https://billingportal-5.preview.emergentagent.com/api"
+BACKEND_URL = "https://bizmaster-17.preview.emergentagent.com/api"
 ADMIN_EMAIL = "admin@echoshop.com"
 ADMIN_PASSWORD = "admin123"
 

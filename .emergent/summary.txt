@@ -1,186 +1,190 @@
 <analysis>**original_problem_statement:**
-The user initially requested fixes for login and deployment issues. The project then evolved into building a full-fledged multi-tenant SaaS platform. The most recent requests included fixing deployment failures, implementing a complete SaaS sales and automated billing/suspension workflow, replacing the QR-code WhatsApp integration with the official Meta Business API, and addressing several UI/UX bugs and feature enhancements, such as fixing date display issues, adding supplier management, and sorting transactions.
+The user provided a comprehensive and definitive new prompt to build a large-scale, integrated business management system. This new scope supersedes all previous requests.
 
 **PRODUCT REQUIREMENTS:**
-1.  **Fix Deployment Failures:** The user has provided deployment logs and needs the agent to identify and fix the root cause of the failure.
-2.  **SaaS Sales Automation:** A seller should be able to sign up a new client company, select a subscription plan, and have the system automatically:
-    - Create the new company and its first user.
-    - Send login credentials (email + password) to the new client.
-    - Generate an initial PIX payment.
-    - Generate recurring monthly boletos.
-    - Monitor payments via Asaas webhooks.
-    - Automatically suspend service for non-payment after 5 days, with prior email warnings.
-3.  **Meta WhatsApp API Integration:** Replace the non-deployable QR-code based WhatsApp solution (Baileys) with the official Meta Business API.
-4.  **Supplier Management:** Provide full CRUD functionality for suppliers, including adding edit/delete buttons directly on the transactions page.
-5.  **Bug Fixes:**
-    - Resolve a bug causing a black screen when creating a transaction after adding a new supplier.
-    - Correct a timezone issue causing dates to be displayed one day off.
-6.  **UI/UX Improvements:**
-    - Sort the transaction list by date (most recent first).
-    - Remove the Made with Emergent branding.
+The goal is to build a system that acts as a central, professional, and scalable platform integrating sales, automated contracts, service orders (OS), a mobile technician app, route management with cost calculation, equipment stock with a lifetime history, a complete financial module, a customer portal, and external integrations.
+
+The system must ensure full traceability, legal security, and financial control. The project is broken down into phases.
+
+- **Phase 1 (Completed):** Implement the core sales flow, including creating service plans, contract templates, and a New Sale process that automatically generates a service order and a contract linked to the sale.
+- **Phase 2 (In Progress):** Create the technician-facing part of the system. This includes backend management for equipment and stock, and a React Native mobile app for technicians to manage service orders.
+- **Future Phases:**
+    - Full equipment lifecycle tracking (permanent history).
+    - Advanced stock management (technician-specific stock, maintenance flows).
+    - Route calculation with operational costs (fuel, tolls) via OpenRouteService.
+    - Full financial integration (automatic registration of sales, recurring payments).
+    - Automated service cancellation flow with penalty calculation and equipment retrieval.
+    - A customer portal for viewing bills and opening support tickets.
+    - External integrations (e.g., Leroy Merlin via RPA).
 
 **User's preferred language**: Portuguese (Brazil). The next agent MUST respond in Portuguese.
 
 **what currently exists?**
-The application is a functional multi-tenant SaaS boilerplate. Key features implemented include:
--   **Core SaaS Onboarding:** A complete flow at  allows a seller to create a new tenant company, its first user, and the initial PIX payment via Asaas. A welcome email with credentials is automatically sent.
--   **User and Company Management:** Full CRUD interfaces exist for master admins to manage companies () and users ().
--   **Sales Gateway:** The Asaas integration is functional for creating one-off sales and initial subscription payments using a sandbox key.
--   **Email Notifications:** Gmail SMTP is configured and working for sending automated emails.
--   **Bug Fixes & Enhancements:** The black screen bug, the date display issue, and transaction sorting have all been resolved. A full CRUD UI for suppliers () has been built, and edit/delete controls were added to the transaction form. The admin password was changed and the Emergent badge was removed as requested.
+The application now includes the foundational modules for the new, large-scale system requested by the user.
+
+- **Phase 1 (Sales & Contracts) is complete:**
+    - **Backend:** New Pydantic models and FastAPI endpoints in  for Service Plans, Contract Templates, Service Sales, and Service Orders.
+    - **Frontend:** New React components (, , , ) allow for full CRUD management of the new sales entities.
+    - **Core Workflow:** The end-to-end flow of creating a sale, which automatically generates a linked contract and a service order, is fully functional and tested. The subsequent steps of signing the contract and completing the service order also work.
+
+- **Phase 2 (Equipment & Technician App) has been started:**
+    - **Backend (Equipment):** Models and API endpoints for managing  (Equipment) and  (Stock) have been implemented, including a dashboard endpoint.
+    - **Frontend (Equipment):** A new component () has been created for managing equipment, showing a dashboard and a detailed list.
+    - **Mobile App (Scaffolding):** The basic project structure and boilerplate files for a **React Native** mobile app for technicians have been created in the  directory.
 
 **Last working item**:
--   **Last item agent was working:** The user reported a deployment failure and provided logs. The agent was tasked with analyzing these logs to identify and fix the issue. The provided logs do not contain any application errors ( level messages), only  and s, with the backend starting up successfully and serving  responses. This suggests the issue is likely within the deployment configuration or environment, not the application code itself.
--   **Status:** NOT STARTED
--   **Agent Testing Done:** N
--   **Which testing method agent to use?** **deployment_agent**. The user explicitly requested using the deployment agent. This agent is specialized in diagnosing deployment issues that are not apparent from application logs alone.
+-   **Last item agent was working:** The agent finished scaffolding the project structure for the **React Native Technician App**. This involved creating the initial directories (, ), configuration files (, ), and the main  file.
+-   **Status:** IN PROGRESS
+-   **Agent Testing Done:** N/A
+-   **Which testing method agent to use?** Building and running the React Native application. This will likely require manual testing as the standard web testing agents are not applicable.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Deployment is Failing (P0 - CRITICAL BLOCKER)**
-    -   **Description:** The user's primary goal is to have a working, deployed application. The deployment process is failing, but the application logs show a successful startup.
-    -   **Attempted fixes:** None. The agent has just received the logs.
-    -   **Next debug checklist:**
-        1.  Invoke the  immediately, as requested by the user, providing it with the logs from the user message.
-        2.  Analyze the output from the  to understand the root cause.
-        3.  Implement any necessary code-level changes suggested by the deployment agent to resolve the issue.
-    -   **Why fix this issue and what will be achieved with the fix?** This is the highest priority. Without a successful deployment, the application is unusable for the user in a production setting.
-    -   **Status:** NOT STARTED
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** The fix is validated by a successful deployment, not by traditional testing agents.
-
--   **Issue 2: Implement Meta Business API for WhatsApp (P2)**
-    -   **Description:** The user wants a stable, deployable WhatsApp integration. They have confirmed possession of a Meta Developer Account, App, and Business Account, and are ready to proceed with the official API.
-    -   **Attempted fixes:** The agent has explained the process for generating the necessary permanent credentials and is waiting for the user to provide them.
-    -   **Next debug checklist:**
-        1.  Once the user provides the **Phone Number ID**, a **Permanent Access Token**, and a **Verify Token**, add them to the environment configuration ().
-        2.  Implement the webhook endpoint  in  to receive incoming messages and status updates from Meta.
-        3.  Refactor the message sending logic to use the Meta API via  requests instead of the old Baileys implementation.
-    -   **Why fix this issue and what will be achieved with the fix?** This will replace the unstable, non-deployable QR code solution with a professional, robust integration that works in a production environment.
-    -   **Status:** BLOCKED (Awaiting credentials from the user).
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Backend.
+-   There are no outstanding bugs or errors. The current focus is on feature development.
 
 **In progress Task List**:
--   None.
+-   **Task 1: Implement Phase 2 - Technician App (P0)**
+    -   **Where to resume:** . The file structure is ready. The next steps are to build the UI screens and implement the logic for the mobile app.
+    -   **What will be achieved with this?** A functional mobile app for technicians that allows them to log in, view their assigned service orders, access OS details, manage checklists, capture client signatures, and work offline.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** Mobile App (manual) & Backend.
+    -   **Blocked on something:** No.
 
 **Upcoming and Future Tasks**
 
-*   **Upcoming Tasks:**
-    *   **P1: Implement Automated SaaS Billing and Suspension:** This is the next logical step after fixing the deployment and is crucial for the business model.
-        -   **Where to resume:** In .
-        -   **Plan:**
-            1.  Implement a scheduled task (e.g., using ) that runs daily.
-            2.  The task should check for active subscriptions nearing their renewal date.
-            3.  For each, generate the next month's invoice () via the Asaas API.
-            4.  Implement a webhook endpoint () to receive payment status updates (paid, overdue).
-            5.  If a payment is overdue by 5 days, update the corresponding company's  status to  in the database.
-            6.  Send automated reminder emails before and after the due date.
+*   **Upcoming Tasks (Phase 2 Continued):**
+    *   **P0: Build React Native App UI/UX:**
+        *   Implement Login screen.
+        *   Implement Service Order list screen.
+        *   Implement Service Order detail screen with customer info, address, and checklist.
+        *   Implement a screen for digital signature capture on the device.
+        *   Implement functionality to use the device's camera for photo evidence.
+    *   **P1: Implement App Logic & Backend Integration:**
+        *   Connect the app to the backend API to fetch service orders assigned to the logged-in technician.
+        *   Implement logic to update the OS checklist, status, and signature on the backend.
+        *   Implement the equipment flow within the app (e.g., linking an equipment serial number to an installation OS).
+    *   **P2: Implement Offline Functionality:**
+        *   Enable the app to store data locally so technicians can work without an internet connection.
+        *   Implement a synchronization mechanism to push updates to the backend when the connection is restored.
 
-*   **Future Tasks:**
-    *   Galax Pay Integration.
-    *   Finalize and build out the Sales Reports module.
+*   **Future Tasks (As per PROMPT DEFINITIVO):**
+    *   **Equipment Lifecycle:** Implement the permanent, vitalício (lifetime) history tracking for every piece of equipment.
+    *   **Advanced Stock:** Implement technician-specific stock and a flow for sending/receiving equipment for maintenance.
+    *   **Route Calculation:** Integrate  to calculate route costs (distance, fuel, tolls) for service orders.
+    *   **Financial Automation:** Create automated financial entries based on sales, monthly renewals, and cancellations.
+    *   **Customer Portal:** Develop the frontend and backend for the client-facing area.
+    *   **Integrations:** Implement integrations for Leroy Merlin (RPA) and other required external services.
 
 **Completed work in this session**
--   **Fixed Critical Admin Login & Configured Gmail:** Resolved the primary user login issue by correcting the user profile and successfully integrated Gmail for email sending.
--   **Resolved Asaas Integration:** Debugged and configured the Asaas sales gateway, enabling successful creation of test sales.
--   **Implemented Full SaaS Onboarding Flow:** Created and tested a new module () for sellers to onboard new clients, including automatic company/user creation, initial PIX payment generation, and a welcome email with credentials.
--   **Implemented Full User & Supplier Management:** Built complete CRUD interfaces for Users () and Suppliers ().
--   **Fixed Black Screen & Date Display Bugs:** Resolved a critical UI freeze on the transactions page and corrected a timezone-related date display error across the application.
--   **Enhanced Transaction UI/UX:** Sorted the transaction list by date and added inline edit/delete functionality for suppliers directly in the transaction form.
--   **UI Customization:** Changed the admin password and removed the Made with Emergent branding as requested.
+- **Dashboard & UI Fixes:**
+  - Refactored the main Dashboard to show data filtered by the current month and display the real bank account balance.
+  - Improved the  form by converting the static supplier list into a collapsible and searchable dropdown.
+- **Phase 1 - Sales, Contracts & OS Flow (COMPLETE):**
+  - **Backend:** Implemented Pydantic models and FastAPI CRUD endpoints for , , , and  in .
+  - **Frontend:** Created new React components (, , , ) with forms, lists, and modals to manage the entire sales process.
+  - **E2E Workflow:** Successfully built and tested the core business logic: creating a new sale now automatically generates a corresponding service order and a contract, which can then be signed and completed.
+- **Phase 2 - Equipment Backend & Frontend (STARTED):**
+  - **Backend:** Added models and API endpoints to manage service equipment () and view a stock dashboard. Resolved a critical bug involving conflicting route names and incorrect database collection usage.
+  - **Frontend:** Created the  component to display an equipment dashboard and a filterable list of all equipment.
+- **Phase 2 - Technician App Scaffolding (STARTED):**
+  - Initialized a complete project structure for a React Native mobile application in .
 
 **Earlier issues found/mentioned but not fixed**
--   None. All raised issues are either completed or listed in the pending section.
+-   **Issue 1: Original Deployment Failure**
+    -   **Description:** The job was forked to fix a deployment failure. The agent performed an initial diagnosis and found the local environment to be working correctly. However, the user then provided the PROMPT DEFINITIVO, which completely changed the project's scope and priorities.
+    -   **Why it's not fixed:** The focus shifted to the massive new feature build-out as per the user's new directive. The root cause of the deployment issue was never fully determined.
+    -   **Status:** Deprioritized by user.
 
 **Known issue recurrence from previous fork**
 -   **Issue recurrence in previous fork:** Database state being reset on deploy.
 -   **Recurrence count:** 2
--   **Status:** NOT STARTED. This was not directly addressed in this session. The  should be informed of this possibility as it might be related to the current deployment failures.
+-   **Status:** NOT STARTED. This is likely linked to the unresolved deployment issue and may resurface when a deployment is attempted again.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **FastAPI & Pydantic:** Used for the monolithic backend, with extensive use of Pydantic models for data validation and dependency injection for security.
--   **React:** Advanced state management within large components (, ), conditional rendering, and dynamic UI construction.
--   **Asaas API:** Integration for creating customers, PIX charges, and boletos.
--   **Python :** Used for sending emails via an external Gmail account.
--   **Date/Timezone Handling:** Corrected common JavaScript timezone pitfalls by parsing date strings in UTC before formatting for local display.
+-   **Backend:** FastAPI, Pydantic for data modeling and validation.
+-   **Frontend:** React, Axios for API calls, conditional rendering, state management with Hooks.
+-   **Mobile:** **React Native** (newly introduced for the technician app).
+-   **Database:** MongoDB. Addressed and fixed an issue with  serialization.
+-   **Workflow Automation:** Implemented a business process where creating one entity (Venda) triggers the creation of others (Contrato, OS) in a single transaction.
+-   **Dynamic Document Generation:** Created a contract preview feature that replaces placeholders () in a text template with sample data.
 
 **key DB schema**
--   **users:** 
--   **empresas:** 
--   **gateways_pagamento:** 
--   **assinaturas_saas:**  (New)
+-   **planos_servico:** 
+-   **modelos_contrato:** 
+-   **vendas_servico:** 
+-   **ordens_servico:** 
+-   **equipamentos_tecnicos:** 
 
 **changes in tech stack**
--   None.
+-   Introduction of **React Native** for the development of the technician's mobile app.
 
 **All files of reference**
--   **/app/backend/server.py**: Core application logic. Contains new endpoints for SaaS subscriptions, user CRUD, and fixes for Asaas integration.
--   **/app/frontend/src/components/Transacoes.js**: A critical and large component. Heavily modified to fix the black screen bug, correct date displays, and add inline supplier management.
--   **/app/frontend/src/components/Assinaturas.js**: New component implementing the complete SaaS client onboarding UI.
--   **/app/frontend/src/components/Usuarios.js**: New component for the master admin to manage all users.
--   **/app/frontend/src/components/Fornecedores.js**: New component providing full CRUD for suppliers.
--   **/app/frontend/src/App.js**: Main router. Modified to add new routes (, ) and fix routing conflicts.
--   **/app/backend/.env**: Updated with Gmail App Password and Asaas API Key.
+*   **/app/backend/server.py**: Core application logic. Massively updated with dozens of new models and API endpoints for sales, contracts, service orders, and equipment.
+*   **/app/frontend/src/App.js**: Updated with new routes for all Phase 1 and 2 components.
+*   **/app/frontend/src/components/Layout.js**: Navigation menu updated to include links to the new pages.
+*   **/app/frontend/src/components/PlanosServico.js**: New file for Service Plan management.
+*   **/app/frontend/src/components/ModelosContrato.js**: New file for Contract Template management.
+*   **/app/frontend/src/components/VendasServico.js**: New file for the Service Sales page and form.
+*   **/app/frontend/src/components/OrdensServico.js**: New file for the Service Orders page.
+*   **/app/frontend/src/components/EquipamentosServico.js**: New file for the Equipment management page.
+*   **/app/app-tecnico/**: New directory containing the boilerplate for the React Native mobile app.
 
 **Areas that need refactoring**:
--   **/app/backend/server.py**: This file is now extremely large and complex. It urgently needs to be broken down into a standard FastAPI project structure (e.g., , , ).
--   **/app/frontend/src/components/Transacoes.js**: Remains a very large component. It should be refactored into smaller, more manageable sub-components.
+-   **/app/backend/server.py**: This monolithic file is now over 8,000 lines long and extremely difficult to maintain. It is critical to refactor this into a standard FastAPI project structure with separate directories for , , , and  before adding more features.
 
 **key api endpoints**
--   : Creates a new SaaS subscription, tenant company, user, and initial PIX payment.
--   : Checks the status of the initial PIX payment.
--   : Full CRUD for user management.
--   : Update and delete endpoints for suppliers.
--   : Creates a one-off sale for a tenant. (Now fixed and functional).
+-   : Creates a new service sale, triggering OS and contract generation.
+-   : Lists all service orders for a company.
+-   : Signs the contract associated with an OS.
+-   : Completes a service order.
+-   : Creates new equipment.
+-   : Lists equipment.
+-   : Gets dashboard stats for equipment.
 
 **Critical Info for New Agent**
--   **Deployment is P0:** Your absolute first action must be to use the  to diagnose and fix the user's deployment failure. This is their main blocker.
--   **WhatsApp Integration is Blocked:** Do not attempt to work on the WhatsApp feature until the user provides the three required credentials from the Meta Business platform.
--   **Asaas Keys:** The system is currently configured with a **sandbox** key for Asaas. The user has previously provided production keys. Before implementing recurring billing, clarify with the user if development should continue in sandbox mode or switch to production.
--   **Codebase Structure:** Be aware that you are working with a large monolith backend () and several very large frontend components. Tread carefully when making edits to avoid introducing regressions.
+-   **The PROMPT DEFINITIVO is the new mandate.** All work should align with the phases and requirements outlined in that user message. The previous project goals are obsolete.
+-   **You are starting Phase 2.** The immediate task is to build the React Native mobile app for technicians. The backend for equipment is already in place.
+-   **BEWARE :** This backend file is a massive monolith. Be extremely careful when editing it. The agent spent significant time debugging issues caused by conflicting route names and incorrect database collection names. A refactor is highly recommended before adding complex new logic.
+-   **User has approved the tech stack:** The plan to use React Native for the mobile app, OpenRouteService for maps, and Asaas for payments has been confirmed by the user.
 
-**documents and test_reports created in this job**
--   None.
+**documents and test reports created in this job**
+-   : Updated by the testing subagent during the validation of Phase 1.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Requests help with a failing deployment and provides logs.
-2.  **User:** Reports that the edit/delete buttons for suppliers are missing from the transaction creation form.
-3.  **User:** Asks for transactions to be sorted by date.
-4.  **User:** Requests a way to edit and delete suppliers.
-5.  **User:** Reports a bug where dates are displayed incorrectly (off by one day).
-6.  **User:** Provides detailed steps to reproduce a black screen bug on the transactions page.
-7.  **User:** Requests to change the admin password and remove the Made with Emergent branding.
-8.  **User:** Asks to fix the Gateway Not Configured error in the sales system.
-9.  **User:** Details the full desired workflow for automated SaaS sales, billing, and suspension.
-10. **User:** Initiates the request to build a new SaaS sales process.
+10. User provides the **PROMPT DEFINITIVO**, a complete and detailed specification for a new, large-scale system. (Completed)
+9.  Agent asks clarifying questions about the new prompt (modules, tech stack, phasing). (Completed)
+8.  User answers the questions, confirming the plan to build on the current system, use React Native, Asaas, OpenRouteService, and develop in phases. (Completed)
+7.  Agent proposes a detailed plan for **Phase 1**. (Completed)
+6.  User approves the plan for Phase 1. (Completed)
+5.  Agent completes Phase 1, demonstrates the full working flow, and proposes moving to Phase 2. (Completed)
+4.  User responds with fase 2, approving the start of the next phase. (Completed)
+3.  Agent asks for clarification on Phase 2 priorities (Backend vs. App first). (Completed)
+2.  User confirms the plan: start with the equipment backend, then build the React Native app. (Completed)
+1.  Agent has just finished creating the React Native project structure. (In Progress)
 
 **Project Health Check:**
 -   **Broken:**
-    -   Deployment to the production environment is failing.
+    -   The original deployment issue from the previous fork remains unresolved, though it has been deprioritized by the user's new request.
 -   **Mocked:**
-    -   WhatsApp integration is using a non-deployable placeholder (Baileys) while awaiting Meta API keys.
-    -   The recurring billing and automated suspension logic for the SaaS model is designed but not yet implemented.
+    -   The Technician App () is currently just a file structure with no functionality.
 
 **3rd Party Integrations**
--   **Asaas (Payments):** Integrated. Currently using a **sandbox key** provided by the user. Supports one-off sales and initial subscription payments.
--   **Gmail (Email):** Integrated. Uses **User-provided App Password** for sending emails via SMTP.
--   **Meta/Facebook (WhatsApp):** Planned. **Requires User API Keys** (Phone Number ID, Permanent Token, Verify Token), which are pending from the user.
+-   **Asaas (Payments):** Confirmed by the user for continued use.
+-   **OpenRouteService (Maps/Routes):** Planned for a future phase, confirmed by the user.
+-   **Leroy Merlin (RPA):** Planned for a future phase, confirmed by the user.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES, used to validate the new SaaS subscription flow.
--   **Troubleshoot agent used after agent stuck in loop:** NO
+-   **Testing agent used after significant changes:** YES. The agent used the testing subagent to validate the completed Phase 1 flow. It found several bugs which were subsequently fixed.
+-   **Troubleshoot agent used after agent stuck in loop:** NO.
 -   **Test files created:** None.
--   **Known regressions:** None from this session's work. The main unresolved issue is the deployment failure.
+-   **Known regressions:** None.
 
 **Credentials to test flow:**
 -   **Admin User:**  / 
 -   **Asaas Sandbox Key:** 
--   **Gmail App Password:** 
 
 **What agent forgot to execute**
--   The agent has not yet acted on the user's most recent request to fix the deployment failure, which should be the next immediate action.
--   The full automation of recurring SaaS billing and suspension based on user requirements has been designed but is pending implementation.</analysis>
+-   The agent pivoted away from fixing the initial deployment issue based on the user's new, overriding PROMPT DEFINITIVO. This was a conscious prioritization change directed by the user, not an oversight.</analysis>
