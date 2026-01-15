@@ -1,62 +1,200 @@
-// Configuração do App do Técnico
-// Esta configuração é dinâmica baseada no ambiente
+// Configuração do App do Técnico - ECHO SHOP
+// Versão de Produção
 
-// Para desenvolvimento local com Expo:
-// - Android Emulator: use http://10.0.2.2:8001/api
-// - iOS Simulator: use http://localhost:8001/api
-// - Dispositivo físico: use o IP da máquina (ex: http://192.168.1.100:8001/api)
+// ============================================
+// CONFIGURAÇÃO DA API
+// ============================================
 
-// Para produção, defina a URL do servidor:
-// export const API_URL = 'https://seu-dominio.com/api';
+// URL de PRODUÇÃO - Servidor Emergent
+const PRODUCTION_URL = 'https://bizmaster-17.preview.emergentagent.com/api';
 
-// Detecta ambiente e configura URL automaticamente
+// URL de DESENVOLVIMENTO - IP local (alterar conforme necessário)
+const DEVELOPMENT_URL = 'http://192.168.1.100:8001/api';
+
+// Detectar ambiente automaticamente
+const __DEV__ = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development';
+
+// Função para obter URL da API
 const getApiUrl = () => {
-  // Em produção, usar a URL do servidor de produção
-  // IMPORTANTE: Alterar esta URL quando fazer deploy
+  // Para desenvolvimento local, descomente a linha abaixo:
+  // return DEVELOPMENT_URL;
   
-  // URL de preview Emergent (para testes)
-  // return 'https://bizmaster-17.preview.emergentagent.com/api';
-  
-  // Para testes com Expo Go em dispositivo físico,
-  // substitua pelo IP da máquina de desenvolvimento
-  // Exemplo: return 'http://192.168.1.100:8001/api';
-  
-  // URL padrão para desenvolvimento local
-  return 'http://192.168.1.100:8001/api';
+  // URL de produção (padrão)
+  return PRODUCTION_URL;
 };
 
 export const API_URL = getApiUrl();
 
-// Configurações adicionais do app
+// ============================================
+// CONFIGURAÇÕES DO APP
+// ============================================
+
 export const APP_CONFIG = {
-  // Tempo de timeout para requisições (ms)
-  REQUEST_TIMEOUT: 30000,
+  // Informações do App
+  APP_NAME: 'App do Técnico',
+  APP_VERSION: '1.0.0',
+  COMPANY_NAME: 'ECHO SHOP',
   
-  // Intervalo de atualização automática da lista de OS (ms)
+  // Timeouts (em milissegundos)
+  REQUEST_TIMEOUT: 30000,
   AUTO_REFRESH_INTERVAL: 60000,
   
-  // Qualidade das fotos (0.0 - 1.0)
+  // Configurações de Foto
   PHOTO_QUALITY: 0.7,
-  
-  // Tamanho máximo de upload de foto (bytes)
   MAX_PHOTO_SIZE: 5 * 1024 * 1024, // 5MB
   
-  // Nome do app
-  APP_NAME: 'App do Técnico',
+  // Configurações de Cache
+  CACHE_DURATION: 24 * 60 * 60 * 1000, // 24 horas
   
-  // Versão
-  VERSION: '1.0.0'
+  // Tipos de foto permitidos
+  PHOTO_TYPES: ['antes', 'durante', 'depois', 'equipamento', 'documento', 'geral'],
+  
+  // Status de OS
+  OS_STATUS: {
+    ABERTA: 'aberta',
+    AGENDADA: 'agendada',
+    EM_ANDAMENTO: 'em_andamento',
+    AGUARDANDO_ASSINATURA: 'aguardando_assinatura',
+    CONCLUIDA: 'concluida',
+    CANCELADA: 'cancelada'
+  },
+  
+  // Tipos de OS
+  OS_TIPOS: {
+    INSTALACAO: 'instalacao',
+    MANUTENCAO: 'manutencao',
+    TROCA: 'troca',
+    RETIRADA: 'retirada'
+  }
 };
 
-// Cores do tema
+// ============================================
+// TEMA DE CORES
+// ============================================
+
 export const THEME = {
+  // Cores principais
   primary: '#1e40af',
   primaryLight: '#93c5fd',
+  primaryDark: '#1e3a8a',
+  
+  // Cores de status
   success: '#10b981',
+  successLight: '#ecfdf5',
   warning: '#f59e0b',
+  warningLight: '#fef3c7',
   danger: '#ef4444',
+  dangerLight: '#fef2f2',
+  info: '#3b82f6',
+  infoLight: '#eff6ff',
+  
+  // Cores de texto
   text: '#1e293b',
   textLight: '#64748b',
+  textMuted: '#94a3b8',
+  
+  // Cores de fundo
   background: '#f1f5f9',
-  white: '#ffffff'
+  backgroundDark: '#e2e8f0',
+  white: '#ffffff',
+  
+  // Cores de borda
+  border: '#e2e8f0',
+  borderLight: '#f1f5f9',
+  
+  // Status de OS (cores)
+  statusColors: {
+    aberta: '#6b7280',
+    agendada: '#8b5cf6',
+    em_andamento: '#f59e0b',
+    aguardando_assinatura: '#3b82f6',
+    concluida: '#10b981',
+    cancelada: '#ef4444'
+  }
 };
+
+// ============================================
+// LABELS E TEXTOS
+// ============================================
+
+export const LABELS = {
+  status: {
+    aberta: 'Aberta',
+    agendada: 'Agendada',
+    em_andamento: 'Em Andamento',
+    aguardando_assinatura: 'Aguardando Assinatura',
+    concluida: 'Concluída',
+    cancelada: 'Cancelada'
+  },
+  
+  tipo: {
+    instalacao: '📦 Instalação',
+    manutencao: '🔧 Manutenção',
+    troca: '🔄 Troca',
+    retirada: '📤 Retirada'
+  },
+  
+  tipoFoto: {
+    antes: '📷 Foto Antes',
+    durante: '🔧 Foto Durante',
+    depois: '✅ Foto Depois',
+    equipamento: '📦 Foto Equipamento',
+    documento: '📄 Foto Documento',
+    geral: '📸 Foto Geral'
+  }
+};
+
+// ============================================
+// MENSAGENS
+// ============================================
+
+export const MESSAGES = {
+  errors: {
+    network: 'Erro de conexão. Verifique sua internet.',
+    auth: 'Sessão expirada. Faça login novamente.',
+    generic: 'Ocorreu um erro. Tente novamente.',
+    camera: 'Não foi possível acessar a câmera.',
+    location: 'Não foi possível obter sua localização.'
+  },
+  
+  success: {
+    login: 'Login realizado com sucesso!',
+    osUpdated: 'OS atualizada com sucesso!',
+    photoAdded: 'Foto adicionada com sucesso!',
+    signed: 'Contrato assinado com sucesso!'
+  },
+  
+  confirm: {
+    logout: 'Deseja realmente sair?',
+    concluir: 'Deseja concluir esta OS?',
+    cancelar: 'Deseja cancelar esta ação?'
+  }
+};
+
+// ============================================
+// CONFIGURAÇÕES DE BUILD
+// ============================================
+
+export const BUILD_CONFIG = {
+  // Para builds de produção
+  production: {
+    enableLogs: false,
+    enableAnalytics: true,
+    apiUrl: PRODUCTION_URL
+  },
+  
+  // Para builds de desenvolvimento
+  development: {
+    enableLogs: true,
+    enableAnalytics: false,
+    apiUrl: DEVELOPMENT_URL
+  }
+};
+
+// Log da configuração atual (apenas em dev)
+if (__DEV__) {
+  console.log('🔧 App Config:', {
+    apiUrl: API_URL,
+    version: APP_CONFIG.APP_VERSION
+  });
+}
