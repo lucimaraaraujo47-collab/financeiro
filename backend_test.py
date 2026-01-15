@@ -354,7 +354,7 @@ class VendasContratosTestRunner:
         }
         
         try:
-            response = self.session.post(f"{BACKEND_URL}/modelos-contrato/{self.created_modelo_id}/preview", json=preview_data)
+            response = self.session.get(f"{BACKEND_URL}/modelos-contrato/{self.created_modelo_id}/preview", json=preview_data)
             
             if response.status_code == 200:
                 preview = response.json()
