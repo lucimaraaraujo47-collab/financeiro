@@ -696,7 +696,7 @@ class VendasContratosTestRunner:
         }
         
         try:
-            response = self.session.put(f"{BACKEND_URL}/ordens-servico/{os_id_to_test}/checklist", json=checklist_data)
+            response = self.session.patch(f"{BACKEND_URL}/ordens-servico/{os_id_to_test}/checklist", json=checklist_data)
             
             if response.status_code == 200:
                 updated_os = response.json()
