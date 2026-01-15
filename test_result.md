@@ -106,15 +106,18 @@ backend:
 
   - task: "Atualização Status OS"
     implemented: true
-    working: "NA"
+    working: false
     file: "server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "medium"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado sistema de atualização de status das ordens de serviço"
+      - working: false
+        agent: "testing"
+        comment: "❌ Atualização parcialmente funcionando: status 'agendada' e 'em_andamento' funcionam, mas 'concluida' falha com erro 'Contrato precisa ser assinado antes de concluir a OS'"
 
   - task: "Checklist OS"
     implemented: true
