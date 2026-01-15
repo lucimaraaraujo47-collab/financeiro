@@ -6933,6 +6933,750 @@ async def create_or_update_configuracao_cobranca(
 
 # ==================== END VENDAS ENDPOINTS ====================
 
+# ==================== PLANOS DE SERVIÇO (FASE 1) ====================
+
+@api_router.get("/empresas/{empresa_id}/planos-servico")
+async def listar_planos_servico(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    """Lista todos os planos de serviço da empresa"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    planos = await db.planos_servico.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(500)
+    return planos
+
+@api_router.post("/empresas/{empresa_id}/planos-servico")
+async def criar_plano_servico(empresa_id: str, plano: PlanoServicoCreate, current_user: dict = Depends(get_current_user)):
+    """Cria um novo plano de serviço"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    plano_dict = plano.model_dump()
+    plano_dict["id"] = str(uuid.uuid4())
+    plano_dict["empresa_id"] = empresa_id
+    plano_dict["created_at"] = datetime.now(timezone.utc)
+    plano_dict["updated_at"] = datetime.now(timezone.utc)
+    plano_dict["ativo"] = True
+    
+    await db.planos_servico.insert_one(plano_dict)
+    return {**plano_dict, "_id": None}
+
+@api_router.get("/planos-servico/{plano_id}")
+async def obter_plano_servico(plano_id: str, current_user: dict = Depends(get_current_user)):
+    """Obtém um plano de serviço específico"""
+    plano = await db.planos_servico.find_one({"id": plano_id}, {"_id": 0})
+    if not plano:
+        raise HTTPException(status_code=404, detail="Plano não encontrado")
+    if plano["empresa_id"] not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    return plano
+
+@api_router.put("/planos-servico/{plano_id}")
+async def atualizar_plano_servico(plano_id: str, dados: PlanoServicoCreate, current_user: dict = Depends(get_current_user)):
+    """Atualiza um plano de serviço"""
+    plano = await db.planos_servico.find_one({"id": plano_id})
+    if not plano:
+        raise HTTPException(status_code=404, detail="Plano não encontrado")
+    if plano["empresa_id"] not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    update_dict = dados.model_dump()
+    update_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.planos_servico.update_one({"id": plano_id}, {"$set": update_dict})
+    return {"message": "Plano atualizado com sucesso"}
+
+@api_router.delete("/planos-servico/{plano_id}")
+async def deletar_plano_servico(plano_id: str, current_user: dict = Depends(get_current_user)):
+    """Desativa um plano de serviço (soft delete)"""
+    plano = await db.planos_servico.find_one({"id": plano_id})
+    if not plano:
+        raise HTTPException(status_code=404, detail="Plano não encontrado")
+    if plano["empresa_id"] not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    await db.planos_servico.update_one({"id": plano_id}, {"$set": {"ativo": False, "updated_at": datetime.now(timezone.utc)}})
+    return {"message": "Plano desativado com sucesso"}
+
+# ==================== MODELOS DE CONTRATO ====================
+
+@api_router.get("/empresas/{empresa_id}/modelos-contrato")
+async def listar_modelos_contrato(empresa_id: str, current_user: dict = Depends(get_current_user)):
+    """Lista todos os modelos de contrato da empresa"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    modelos = await db.modelos_contrato.find({"empresa_id": empresa_id, "ativo": True}, {"_id": 0}).to_list(500)
+    return modelos
+
+@api_router.post("/empresas/{empresa_id}/modelos-contrato")
+async def criar_modelo_contrato(empresa_id: str, modelo: ModeloContratoCreate, current_user: dict = Depends(get_current_user)):
+    """Cria um novo modelo de contrato"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    modelo_dict = modelo.model_dump()
+    modelo_dict["id"] = str(uuid.uuid4())
+    modelo_dict["empresa_id"] = empresa_id
+    modelo_dict["versao"] = 1
+    modelo_dict["ativo"] = True
+    modelo_dict["variaveis_disponiveis"] = [
+        "nome_cliente", "cpf_cnpj", "endereco_completo", "telefone", "email",
+        "plano_nome", "plano_valor", "periodicidade", "fidelidade_meses", 
+        "valor_multa", "data_inicio", "data_fim", "data_assinatura"
+    ]
+    modelo_dict["created_at"] = datetime.now(timezone.utc)
+    modelo_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.modelos_contrato.insert_one(modelo_dict)
+    return {**modelo_dict, "_id": None}
+
+@api_router.get("/modelos-contrato/{modelo_id}")
+async def obter_modelo_contrato(modelo_id: str, current_user: dict = Depends(get_current_user)):
+    """Obtém um modelo de contrato específico"""
+    modelo = await db.modelos_contrato.find_one({"id": modelo_id}, {"_id": 0})
+    if not modelo:
+        raise HTTPException(status_code=404, detail="Modelo não encontrado")
+    if modelo["empresa_id"] not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    return modelo
+
+@api_router.put("/modelos-contrato/{modelo_id}")
+async def atualizar_modelo_contrato(modelo_id: str, dados: ModeloContratoUpdate, current_user: dict = Depends(get_current_user)):
+    """Atualiza um modelo de contrato (cria nova versão)"""
+    modelo = await db.modelos_contrato.find_one({"id": modelo_id})
+    if not modelo:
+        raise HTTPException(status_code=404, detail="Modelo não encontrado")
+    if modelo["empresa_id"] not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Incrementar versão
+    nova_versao = modelo.get("versao", 1) + 1
+    
+    update_dict = {k: v for k, v in dados.model_dump().items() if v is not None}
+    update_dict["versao"] = nova_versao
+    update_dict["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.modelos_contrato.update_one({"id": modelo_id}, {"$set": update_dict})
+    return {"message": f"Modelo atualizado para versão {nova_versao}"}
+
+@api_router.get("/modelos-contrato/{modelo_id}/preview")
+async def preview_modelo_contrato(modelo_id: str, current_user: dict = Depends(get_current_user)):
+    """Gera preview do contrato com dados de exemplo"""
+    modelo = await db.modelos_contrato.find_one({"id": modelo_id}, {"_id": 0})
+    if not modelo:
+        raise HTTPException(status_code=404, detail="Modelo não encontrado")
+    
+    # Dados de exemplo para preview
+    dados_exemplo = {
+        "nome_cliente": "João da Silva",
+        "cpf_cnpj": "123.456.789-00",
+        "endereco_completo": "Rua das Flores, 123, Centro - São Paulo/SP",
+        "telefone": "(11) 99999-9999",
+        "email": "joao@exemplo.com",
+        "plano_nome": "Internet 300MB",
+        "plano_valor": "R$ 99,90",
+        "periodicidade": "Mensal",
+        "fidelidade_meses": "12",
+        "valor_multa": "R$ 299,70",
+        "data_inicio": datetime.now().strftime("%d/%m/%Y"),
+        "data_fim": (datetime.now() + timedelta(days=365)).strftime("%d/%m/%Y"),
+        "data_assinatura": datetime.now().strftime("%d/%m/%Y")
+    }
+    
+    conteudo = modelo["conteudo_html"]
+    for var, valor in dados_exemplo.items():
+        conteudo = conteudo.replace(f"{{{{{var}}}}}", str(valor))
+    
+    return {"preview_html": conteudo, "dados_exemplo": dados_exemplo}
+
+# ==================== CONTRATOS DE CLIENTES ====================
+
+@api_router.get("/empresas/{empresa_id}/contratos")
+async def listar_contratos(empresa_id: str, status: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    """Lista contratos da empresa, opcionalmente filtrados por status"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    query = {"empresa_id": empresa_id}
+    if status:
+        query["status"] = status
+    
+    contratos = await db.contratos_cliente.find(query, {"_id": 0}).to_list(1000)
+    
+    # Enriquecer com dados do cliente
+    for contrato in contratos:
+        cliente = await db.clientes_venda.find_one({"id": contrato["cliente_id"]}, {"_id": 0, "nome_completo": 1, "cpf": 1})
+        contrato["cliente_nome"] = cliente.get("nome_completo", "N/A") if cliente else "N/A"
+        contrato["cliente_cpf"] = cliente.get("cpf", "N/A") if cliente else "N/A"
+    
+    return contratos
+
+@api_router.get("/contratos/{contrato_id}")
+async def obter_contrato(contrato_id: str, current_user: dict = Depends(get_current_user)):
+    """Obtém um contrato específico"""
+    contrato = await db.contratos_cliente.find_one({"id": contrato_id}, {"_id": 0})
+    if not contrato:
+        raise HTTPException(status_code=404, detail="Contrato não encontrado")
+    if contrato["empresa_id"] not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    return contrato
+
+@api_router.post("/contratos/{contrato_id}/assinar")
+async def assinar_contrato(contrato_id: str, assinatura: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
+    """Registra assinatura digital do contrato"""
+    contrato = await db.contratos_cliente.find_one({"id": contrato_id})
+    if not contrato:
+        raise HTTPException(status_code=404, detail="Contrato não encontrado")
+    
+    if contrato["status"] == "assinado":
+        raise HTTPException(status_code=400, detail="Contrato já foi assinado")
+    
+    update_data = {
+        "status": "assinado",
+        "data_assinatura": datetime.now(timezone.utc).isoformat(),
+        "assinatura_base64": assinatura.get("assinatura_base64"),
+        "assinado_por": assinatura.get("assinado_por"),
+        "ip_assinatura": assinatura.get("ip_assinatura"),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    await db.contratos_cliente.update_one({"id": contrato_id}, {"$set": update_data})
+    
+    # Atualizar venda relacionada
+    if contrato.get("venda_servico_id"):
+        await db.vendas_servico.update_one(
+            {"id": contrato["venda_servico_id"]},
+            {"$set": {"contrato_assinado": True, "status": "aguardando_instalacao", "updated_at": datetime.now(timezone.utc)}}
+        )
+    
+    # Atualizar OS relacionada se houver
+    os_relacionada = await db.ordens_servico.find_one({"contrato_id": contrato_id})
+    if os_relacionada:
+        await db.ordens_servico.update_one(
+            {"id": os_relacionada["id"]},
+            {"$set": {"contrato_assinado": True, "updated_at": datetime.now(timezone.utc)}}
+        )
+    
+    return {"message": "Contrato assinado com sucesso"}
+
+# ==================== VENDAS DE SERVIÇO (NOVA) ====================
+
+@api_router.get("/empresas/{empresa_id}/vendas-servico")
+async def listar_vendas_servico(empresa_id: str, status: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    """Lista vendas de serviço da empresa"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    query = {"empresa_id": empresa_id}
+    if status:
+        query["status"] = status
+    
+    vendas = await db.vendas_servico.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Enriquecer com dados
+    for venda in vendas:
+        cliente = await db.clientes_venda.find_one({"id": venda["cliente_id"]}, {"_id": 0, "nome_completo": 1})
+        plano = await db.planos_servico.find_one({"id": venda["plano_id"]}, {"_id": 0, "nome": 1})
+        venda["cliente_nome"] = cliente.get("nome_completo", "N/A") if cliente else "N/A"
+        venda["plano_nome"] = plano.get("nome", "N/A") if plano else "N/A"
+    
+    return vendas
+
+@api_router.post("/empresas/{empresa_id}/vendas-servico")
+async def criar_venda_servico(empresa_id: str, venda: VendaServicoCreate, current_user: dict = Depends(get_current_user)):
+    """Cria uma nova venda de serviço com geração automática de contrato e OS"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Buscar cliente
+    cliente = await db.clientes_venda.find_one({"id": venda.cliente_id}, {"_id": 0})
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    # Buscar plano
+    plano = await db.planos_servico.find_one({"id": venda.plano_id}, {"_id": 0})
+    if not plano:
+        raise HTTPException(status_code=404, detail="Plano não encontrado")
+    if not plano.get("ativo"):
+        raise HTTPException(status_code=400, detail="Plano inativo")
+    
+    venda_id = str(uuid.uuid4())
+    data_atual = datetime.now(timezone.utc)
+    
+    # Criar documento da venda
+    venda_dict = {
+        "id": venda_id,
+        "empresa_id": empresa_id,
+        "cliente_id": venda.cliente_id,
+        "plano_id": venda.plano_id,
+        "vendedor_id": current_user["id"],
+        "valor_venda": plano["valor"],
+        "forma_pagamento": venda.forma_pagamento,
+        "dia_vencimento": venda.dia_vencimento,
+        "status": "aguardando_contrato" if plano.get("tem_contrato") else "aguardando_instalacao",
+        "tem_contrato": plano.get("tem_contrato", False),
+        "contrato_id": None,
+        "contrato_assinado": False,
+        "os_instalacao_id": None,
+        "data_venda": data_atual.strftime("%Y-%m-%d"),
+        "observacoes": venda.observacoes,
+        "created_at": data_atual,
+        "updated_at": data_atual
+    }
+    
+    # Se o plano tem contrato, gerar automaticamente
+    contrato_id = None
+    if plano.get("tem_contrato") and plano.get("modelo_contrato_id"):
+        modelo = await db.modelos_contrato.find_one({"id": plano["modelo_contrato_id"]}, {"_id": 0})
+        if modelo:
+            # Calcular data fim fidelidade
+            data_fim_fidelidade = None
+            if plano.get("prazo_fidelidade_meses", 0) > 0:
+                data_fim_fidelidade = (data_atual + timedelta(days=30 * plano["prazo_fidelidade_meses"])).strftime("%Y-%m-%d")
+            
+            # Preparar dados para substituição
+            endereco_completo = f"{cliente.get('logradouro', '')}, {cliente.get('numero', '')} {cliente.get('complemento', '')} - {cliente.get('bairro', '')}, {cliente.get('cidade', '')}/{cliente.get('estado', '')} - CEP: {cliente.get('cep', '')}"
+            
+            dados_contrato = {
+                "nome_cliente": cliente.get("nome_completo", ""),
+                "cpf_cnpj": cliente.get("cpf", ""),
+                "endereco_completo": endereco_completo,
+                "telefone": cliente.get("telefone", ""),
+                "email": cliente.get("email", ""),
+                "plano_nome": plano.get("nome", ""),
+                "plano_valor": f"R$ {plano.get('valor', 0):.2f}",
+                "periodicidade": plano.get("periodicidade", "mensal").capitalize(),
+                "fidelidade_meses": str(plano.get("prazo_fidelidade_meses", 0)),
+                "valor_multa": f"R$ {plano.get('valor_multa_cancelamento', 0):.2f}",
+                "data_inicio": data_atual.strftime("%d/%m/%Y"),
+                "data_fim": data_fim_fidelidade or "Indeterminado",
+                "data_assinatura": "___/___/______"
+            }
+            
+            # Preencher variáveis no contrato
+            conteudo_preenchido = modelo["conteudo_html"]
+            for var, valor in dados_contrato.items():
+                conteudo_preenchido = conteudo_preenchido.replace(f"{{{{{var}}}}}", str(valor))
+            
+            contrato_id = str(uuid.uuid4())
+            contrato_dict = {
+                "id": contrato_id,
+                "empresa_id": empresa_id,
+                "cliente_id": venda.cliente_id,
+                "venda_servico_id": venda_id,
+                "plano_id": venda.plano_id,
+                "modelo_contrato_id": modelo["id"],
+                "conteudo_preenchido": conteudo_preenchido,
+                "status": "pendente",
+                "data_inicio": data_atual.strftime("%Y-%m-%d"),
+                "data_fim_fidelidade": data_fim_fidelidade,
+                "versao_modelo": modelo.get("versao", 1),
+                "created_at": data_atual,
+                "updated_at": data_atual
+            }
+            
+            await db.contratos_cliente.insert_one(contrato_dict)
+            venda_dict["contrato_id"] = contrato_id
+    
+    # Gerar OS de instalação
+    # Gerar número sequencial
+    ultimo_numero = await db.ordens_servico.find_one(
+        {"empresa_id": empresa_id}, 
+        sort=[("created_at", -1)]
+    )
+    if ultimo_numero and ultimo_numero.get("numero"):
+        try:
+            num_parts = ultimo_numero["numero"].split("-")
+            seq = int(num_parts[-1]) + 1
+        except:
+            seq = 1
+    else:
+        seq = 1
+    
+    numero_os = f"OS-{data_atual.year}-{seq:04d}"
+    
+    endereco_servico = f"{cliente.get('logradouro', '')}, {cliente.get('numero', '')} - {cliente.get('bairro', '')}, {cliente.get('cidade', '')}/{cliente.get('estado', '')}"
+    
+    os_id = str(uuid.uuid4())
+    os_dict = {
+        "id": os_id,
+        "empresa_id": empresa_id,
+        "numero": numero_os,
+        "cliente_id": venda.cliente_id,
+        "venda_id": venda_id,
+        "tipo": "instalacao",
+        "status": "aberta",
+        "prioridade": "normal",
+        "endereco_servico": endereco_servico,
+        "contrato_id": contrato_id,
+        "contrato_assinado": False,
+        "checklist": [
+            {"item": "Verificar sinal no ponto", "obrigatorio": True, "concluido": False},
+            {"item": "Instalar equipamento", "obrigatorio": True, "concluido": False},
+            {"item": "Testar conexão", "obrigatorio": True, "concluido": False},
+            {"item": "Configurar WiFi", "obrigatorio": True, "concluido": False},
+            {"item": "Orientar cliente", "obrigatorio": True, "concluido": False},
+            {"item": "Coletar assinatura do contrato", "obrigatorio": plano.get("tem_contrato", False), "concluido": False}
+        ],
+        "fotos": [],
+        "equipamentos_instalados": [],
+        "created_at": data_atual,
+        "updated_at": data_atual
+    }
+    
+    await db.ordens_servico.insert_one(os_dict)
+    venda_dict["os_instalacao_id"] = os_id
+    
+    # Salvar venda
+    await db.vendas_servico.insert_one(venda_dict)
+    
+    # Criar primeira cobrança no Asaas (se gateway configurado)
+    gateway = await db.gateways_pagamento.find_one({"empresa_id": empresa_id, "is_active": True})
+    if gateway and gateway.get("api_key"):
+        try:
+            # Criar cliente no Asaas se não existir
+            async with httpx.AsyncClient() as client:
+                api_key = gateway["api_key"]
+                base_url = ASAAS_BASE_URL
+                
+                # Verificar se cliente já existe no Asaas
+                if not cliente.get("asaas_customer_id"):
+                    customer_data = {
+                        "name": cliente["nome_completo"],
+                        "email": cliente.get("email"),
+                        "phone": cliente.get("telefone"),
+                        "cpfCnpj": cliente.get("cpf", "").replace(".", "").replace("-", "").replace("/", ""),
+                        "externalReference": cliente["id"]
+                    }
+                    
+                    resp = await client.post(
+                        f"{base_url}/customers",
+                        json=customer_data,
+                        headers={"access_token": api_key}
+                    )
+                    
+                    if resp.status_code in [200, 201]:
+                        asaas_customer = resp.json()
+                        await db.clientes_venda.update_one(
+                            {"id": cliente["id"]},
+                            {"$set": {"asaas_customer_id": asaas_customer["id"]}}
+                        )
+                        venda_dict["asaas_customer_id"] = asaas_customer["id"]
+                        cliente["asaas_customer_id"] = asaas_customer["id"]
+                
+                # Criar cobrança inicial
+                if cliente.get("asaas_customer_id"):
+                    # Calcular data de vencimento
+                    hoje = datetime.now()
+                    if hoje.day > venda.dia_vencimento:
+                        # Próximo mês
+                        if hoje.month == 12:
+                            data_venc = datetime(hoje.year + 1, 1, venda.dia_vencimento)
+                        else:
+                            data_venc = datetime(hoje.year, hoje.month + 1, venda.dia_vencimento)
+                    else:
+                        data_venc = datetime(hoje.year, hoje.month, venda.dia_vencimento)
+                    
+                    billing_type = "PIX" if venda.forma_pagamento == "pix" else "BOLETO"
+                    
+                    cobranca_data = {
+                        "customer": cliente["asaas_customer_id"],
+                        "billingType": billing_type,
+                        "value": plano["valor"],
+                        "dueDate": data_venc.strftime("%Y-%m-%d"),
+                        "description": f"Primeira mensalidade - {plano['nome']}",
+                        "externalReference": venda_id
+                    }
+                    
+                    resp = await client.post(
+                        f"{base_url}/payments",
+                        json=cobranca_data,
+                        headers={"access_token": api_key}
+                    )
+                    
+                    if resp.status_code in [200, 201]:
+                        pagamento = resp.json()
+                        await db.vendas_servico.update_one(
+                            {"id": venda_id},
+                            {"$set": {
+                                "primeiro_pagamento_id": pagamento["id"],
+                                "asaas_customer_id": cliente["asaas_customer_id"]
+                            }}
+                        )
+        except Exception as e:
+            logging.error(f"Erro ao criar cobrança Asaas: {e}")
+    
+    return {
+        "venda_id": venda_id,
+        "os_id": os_id,
+        "os_numero": numero_os,
+        "contrato_id": contrato_id,
+        "status": venda_dict["status"],
+        "message": "Venda criada com sucesso! OS de instalação gerada."
+    }
+
+@api_router.get("/vendas-servico/{venda_id}")
+async def obter_venda_servico(venda_id: str, current_user: dict = Depends(get_current_user)):
+    """Obtém detalhes completos de uma venda"""
+    venda = await db.vendas_servico.find_one({"id": venda_id}, {"_id": 0})
+    if not venda:
+        raise HTTPException(status_code=404, detail="Venda não encontrada")
+    if venda["empresa_id"] not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Buscar dados relacionados
+    cliente = await db.clientes_venda.find_one({"id": venda["cliente_id"]}, {"_id": 0})
+    plano = await db.planos_servico.find_one({"id": venda["plano_id"]}, {"_id": 0})
+    contrato = None
+    if venda.get("contrato_id"):
+        contrato = await db.contratos_cliente.find_one({"id": venda["contrato_id"]}, {"_id": 0})
+    os_instalacao = None
+    if venda.get("os_instalacao_id"):
+        os_instalacao = await db.ordens_servico.find_one({"id": venda["os_instalacao_id"]}, {"_id": 0})
+    
+    return {
+        **venda,
+        "cliente": cliente,
+        "plano": plano,
+        "contrato": contrato,
+        "os_instalacao": os_instalacao
+    }
+
+# ==================== ORDENS DE SERVIÇO ====================
+
+@api_router.get("/empresas/{empresa_id}/ordens-servico")
+async def listar_ordens_servico(
+    empresa_id: str, 
+    status: Optional[str] = None,
+    tecnico_id: Optional[str] = None,
+    tipo: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Lista ordens de serviço com filtros"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    query = {"empresa_id": empresa_id}
+    if status:
+        query["status"] = status
+    if tecnico_id:
+        query["tecnico_id"] = tecnico_id
+    if tipo:
+        query["tipo"] = tipo
+    
+    ordens = await db.ordens_servico.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Enriquecer com dados
+    for os in ordens:
+        cliente = await db.clientes_venda.find_one({"id": os["cliente_id"]}, {"_id": 0, "nome_completo": 1, "telefone": 1})
+        os["cliente_nome"] = cliente.get("nome_completo", "N/A") if cliente else "N/A"
+        os["cliente_telefone"] = cliente.get("telefone", "N/A") if cliente else "N/A"
+        
+        if os.get("tecnico_id"):
+            tecnico = await db.users.find_one({"id": os["tecnico_id"]}, {"_id": 0, "nome": 1})
+            os["tecnico_nome"] = tecnico.get("nome", "N/A") if tecnico else "Não atribuído"
+        else:
+            os["tecnico_nome"] = "Não atribuído"
+    
+    return ordens
+
+@api_router.post("/empresas/{empresa_id}/ordens-servico")
+async def criar_ordem_servico(empresa_id: str, os_data: OrdemServicoCreate, current_user: dict = Depends(get_current_user)):
+    """Cria uma nova ordem de serviço manualmente"""
+    if empresa_id not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Verificar cliente
+    cliente = await db.clientes_venda.find_one({"id": os_data.cliente_id})
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    
+    data_atual = datetime.now(timezone.utc)
+    
+    # Gerar número
+    ultimo_numero = await db.ordens_servico.find_one(
+        {"empresa_id": empresa_id}, 
+        sort=[("created_at", -1)]
+    )
+    if ultimo_numero and ultimo_numero.get("numero"):
+        try:
+            num_parts = ultimo_numero["numero"].split("-")
+            seq = int(num_parts[-1]) + 1
+        except:
+            seq = 1
+    else:
+        seq = 1
+    
+    numero_os = f"OS-{data_atual.year}-{seq:04d}"
+    
+    # Checklist padrão por tipo
+    checklists = {
+        "instalacao": [
+            {"item": "Verificar infraestrutura", "obrigatorio": True, "concluido": False},
+            {"item": "Instalar equipamento", "obrigatorio": True, "concluido": False},
+            {"item": "Testar serviço", "obrigatorio": True, "concluido": False},
+            {"item": "Orientar cliente", "obrigatorio": True, "concluido": False}
+        ],
+        "manutencao": [
+            {"item": "Diagnosticar problema", "obrigatorio": True, "concluido": False},
+            {"item": "Executar reparo", "obrigatorio": True, "concluido": False},
+            {"item": "Testar funcionamento", "obrigatorio": True, "concluido": False}
+        ],
+        "troca": [
+            {"item": "Retirar equipamento antigo", "obrigatorio": True, "concluido": False},
+            {"item": "Instalar equipamento novo", "obrigatorio": True, "concluido": False},
+            {"item": "Testar funcionamento", "obrigatorio": True, "concluido": False}
+        ],
+        "retirada": [
+            {"item": "Desconectar serviço", "obrigatorio": True, "concluido": False},
+            {"item": "Retirar equipamentos", "obrigatorio": True, "concluido": False},
+            {"item": "Fotografar local", "obrigatorio": True, "concluido": False}
+        ]
+    }
+    
+    os_dict = os_data.model_dump()
+    os_dict["id"] = str(uuid.uuid4())
+    os_dict["empresa_id"] = empresa_id
+    os_dict["numero"] = numero_os
+    os_dict["status"] = "aberta"
+    os_dict["checklist"] = checklists.get(os_data.tipo, [])
+    os_dict["fotos"] = []
+    os_dict["equipamentos_instalados"] = []
+    os_dict["equipamentos_retirados"] = []
+    os_dict["created_at"] = data_atual
+    os_dict["updated_at"] = data_atual
+    
+    await db.ordens_servico.insert_one(os_dict)
+    
+    return {"id": os_dict["id"], "numero": numero_os, "message": "OS criada com sucesso"}
+
+@api_router.get("/ordens-servico/{os_id}")
+async def obter_ordem_servico(os_id: str, current_user: dict = Depends(get_current_user)):
+    """Obtém detalhes de uma OS"""
+    os = await db.ordens_servico.find_one({"id": os_id}, {"_id": 0})
+    if not os:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    if os["empresa_id"] not in current_user.get("empresa_ids", []):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    # Buscar dados relacionados
+    cliente = await db.clientes_venda.find_one({"id": os["cliente_id"]}, {"_id": 0})
+    os["cliente"] = cliente
+    
+    if os.get("contrato_id"):
+        contrato = await db.contratos_cliente.find_one({"id": os["contrato_id"]}, {"_id": 0})
+        os["contrato"] = contrato
+    
+    return os
+
+@api_router.patch("/ordens-servico/{os_id}/atribuir")
+async def atribuir_tecnico_os(os_id: str, data: Dict[str, str] = Body(...), current_user: dict = Depends(get_current_user)):
+    """Atribui um técnico à OS"""
+    os = await db.ordens_servico.find_one({"id": os_id})
+    if not os:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    
+    tecnico_id = data.get("tecnico_id")
+    data_agendamento = data.get("data_agendamento")
+    horario_previsto = data.get("horario_previsto")
+    
+    update = {
+        "tecnico_id": tecnico_id,
+        "status": "agendada",
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    if data_agendamento:
+        update["data_agendamento"] = data_agendamento
+    if horario_previsto:
+        update["horario_previsto"] = horario_previsto
+    
+    await db.ordens_servico.update_one({"id": os_id}, {"$set": update})
+    return {"message": "Técnico atribuído com sucesso"}
+
+@api_router.patch("/ordens-servico/{os_id}/status")
+async def atualizar_status_os(os_id: str, data: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
+    """Atualiza status da OS"""
+    os = await db.ordens_servico.find_one({"id": os_id})
+    if not os:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    
+    novo_status = data.get("status")
+    observacoes = data.get("observacoes_tecnico")
+    
+    update = {
+        "status": novo_status,
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    if novo_status == "em_andamento":
+        update["data_inicio_execucao"] = datetime.now(timezone.utc).isoformat()
+    elif novo_status == "concluida":
+        update["data_fim_execucao"] = datetime.now(timezone.utc).isoformat()
+        
+        # Verificar se contrato precisa estar assinado
+        if os.get("contrato_id") and not os.get("contrato_assinado"):
+            raise HTTPException(status_code=400, detail="Contrato precisa ser assinado antes de concluir a OS")
+        
+        # Verificar checklist obrigatório
+        for item in os.get("checklist", []):
+            if item.get("obrigatorio") and not item.get("concluido"):
+                raise HTTPException(status_code=400, detail=f"Item obrigatório pendente: {item['item']}")
+        
+        # Ativar venda se for instalação
+        if os.get("venda_id"):
+            await db.vendas_servico.update_one(
+                {"id": os["venda_id"]},
+                {"$set": {"status": "ativo", "data_ativacao": datetime.now(timezone.utc).isoformat()}}
+            )
+    
+    if observacoes:
+        update["observacoes_tecnico"] = observacoes
+    
+    await db.ordens_servico.update_one({"id": os_id}, {"$set": update})
+    return {"message": f"Status atualizado para {novo_status}"}
+
+@api_router.patch("/ordens-servico/{os_id}/checklist")
+async def atualizar_checklist_os(os_id: str, data: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
+    """Atualiza item do checklist"""
+    os = await db.ordens_servico.find_one({"id": os_id})
+    if not os:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    
+    item_index = data.get("item_index")
+    concluido = data.get("concluido", False)
+    
+    checklist = os.get("checklist", [])
+    if 0 <= item_index < len(checklist):
+        checklist[item_index]["concluido"] = concluido
+        await db.ordens_servico.update_one(
+            {"id": os_id},
+            {"$set": {"checklist": checklist, "updated_at": datetime.now(timezone.utc)}}
+        )
+    
+    return {"message": "Checklist atualizado"}
+
+@api_router.post("/ordens-servico/{os_id}/fotos")
+async def adicionar_foto_os(os_id: str, data: Dict[str, str] = Body(...), current_user: dict = Depends(get_current_user)):
+    """Adiciona foto à OS"""
+    os = await db.ordens_servico.find_one({"id": os_id})
+    if not os:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    
+    foto = {
+        "url": data.get("url"),
+        "descricao": data.get("descricao", ""),
+        "tipo": data.get("tipo", "geral"),  # antes, durante, depois, equipamento
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.ordens_servico.update_one(
+        {"id": os_id},
+        {"$push": {"fotos": foto}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    return {"message": "Foto adicionada"}
+
+# ==================== END FASE 1 ENDPOINTS ====================
+
 # Include router
 app.include_router(api_router)
 
