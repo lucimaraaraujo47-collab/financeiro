@@ -175,3 +175,11 @@ npx eas build --platform android --profile preview  # APK para testes
 
 ## Data da Última Atualização
 15/01/2026 - Fase 2 App Técnico melhorado com telas de câmera e galeria
+
+## Changelog
+- **15/01/2026:** 
+  - Adicionada página de download do App do Técnico em `/app-tecnico`
+  - Link no menu Configurações → App Técnico
+  - Cards para Android (APK), Expo Go (Teste) e iOS (TestFlight)
+  - Instruções de instalação e funcionalidades do app
+  - App React Native configurado para build de produção
