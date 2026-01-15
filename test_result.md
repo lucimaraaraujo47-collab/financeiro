@@ -16,15 +16,18 @@ backend:
 
   - task: "CRUD Modelos de Contrato"
     implemented: true
-    working: "NA"
+    working: false
     file: "server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implementado sistema de modelos de contrato com variáveis dinâmicas e versionamento"
+      - working: false
+        agent: "testing"
+        comment: "❌ CRUD parcialmente funcionando: CREATE, LIST, GET funcionam. UPDATE não retorna objeto atualizado com versão incrementada"
 
   - task: "Preview de Contrato com Variáveis"
     implemented: true
