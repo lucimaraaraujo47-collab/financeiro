@@ -4572,12 +4572,40 @@ async def get_dashboard(empresa_id: str, current_user: dict = Depends(get_curren
     if empresa_id not in current_user.get("empresa_ids", []):
         raise HTTPException(status_code=403, detail="Acesso negado")
     
-    # Get all transactions
-    transacoes = await db.transacoes.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(1000)
+    # Calcular início e fim do mês atual
+    now = datetime.now(timezone.utc)
+    inicio_mes = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    # Próximo mês - dia 1
+    if now.month == 12:
+        fim_mes = now.replace(year=now.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:
+        fim_mes = now.replace(month=now.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
     
-    # Calculate metrics
-    total_receitas = sum(t["valor_total"] for t in transacoes if t["tipo"] == "receita")
-    total_despesas = sum(t["valor_total"] for t in transacoes if t["tipo"] == "despesa")
+    # Get all transactions for current month only
+    transacoes = await db.transacoes.find({"empresa_id": empresa_id}, {"_id": 0}).to_list(10000)
+    
+    # Filtrar transações do mês atual
+    def get_transaction_date(t):
+        data = t.get("data_vencimento") or t.get("data_competencia") or t.get("created_at", "")
+        if isinstance(data, datetime):
+            if data.tzinfo is None:
+                return data.replace(tzinfo=timezone.utc)
+            return data
+        elif isinstance(data, str):
+            try:
+                # Pegar apenas a parte da data (YYYY-MM-DD)
+                data_str = data.split('T')[0] if 'T' in data else data
+                dt = datetime.strptime(data_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+                return dt
+            except:
+                return datetime.min.replace(tzinfo=timezone.utc)
+        return datetime.min.replace(tzinfo=timezone.utc)
+    
+    transacoes_mes_atual = [t for t in transacoes if inicio_mes <= get_transaction_date(t) < fim_mes]
+    
+    # Calculate metrics for current month only
+    total_receitas = sum(t["valor_total"] for t in transacoes_mes_atual if t["tipo"] == "receita")
+    total_despesas = sum(t["valor_total"] for t in transacoes_mes_atual if t["tipo"] == "despesa")
     saldo = total_receitas - total_despesas
     
     # Get bank accounts balance
