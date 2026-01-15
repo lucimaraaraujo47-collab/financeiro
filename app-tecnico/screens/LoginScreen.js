@@ -11,7 +11,7 @@ import {
   Platform
 } from 'react-native';
 import axios from 'axios';
-import { API_URL } from '../config';
+import { API_URL, THEME, APP_CONFIG } from '../config';
 
 export default function LoginScreen({ onLogin }) {
   const [email, setEmail] = useState('');

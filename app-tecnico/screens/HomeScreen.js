@@ -9,37 +9,16 @@ import {
   Alert
 } from 'react-native';
 import axios from 'axios';
-import { API_URL } from '../config';
+import { API_URL, THEME, LABELS, APP_CONFIG } from '../config';
 
 export default function HomeScreen({ navigation, user, token, onLogout }) {
   const [ordens, setOrdens] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const statusColors = {
-    aberta: '#6b7280',
-    agendada: '#8b5cf6',
-    em_andamento: '#f59e0b',
-    aguardando_assinatura: '#3b82f6',
-    concluida: '#10b981',
-    cancelada: '#ef4444'
-  };
-
-  const statusLabels = {
-    aberta: 'Aberta',
-    agendada: 'Agendada',
-    em_andamento: 'Em Andamento',
-    aguardando_assinatura: 'Aguardando Assinatura',
-    concluida: 'Concluída',
-    cancelada: 'Cancelada'
-  };
-
-  const tipoLabels = {
-    instalacao: '📦 Instalação',
-    manutencao: '🔧 Manutenção',
-    troca: '🔄 Troca',
-    retirada: '📤 Retirada'
-  };
+  const statusColors = THEME.statusColors;
+  const statusLabels = LABELS.status;
+  const tipoLabels = LABELS.tipo;
 
   useEffect(() => {
     loadOrdens();
