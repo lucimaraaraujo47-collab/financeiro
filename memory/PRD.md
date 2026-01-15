@@ -149,11 +149,19 @@ Sistema integrado de gestão empresarial para provedores de serviços (internet,
 2. **Deployment:** Issue de deployment não resolvido (deprioritizado pelo usuário).
 3. **Offline no App:** Funcionalidade offline ainda não implementada.
 
+## Testes Automatizados
+- **Arquivo:** `/app/tests/test_echo_shop_api.py`
+- **Resultados:** 17/17 testes passaram
+- **Cobertura:** Auth, Empresas, Ordens de Serviço, Equipamentos, Contratos, Users, Health
+
+## Bugs Corrigidos (15/01/2026)
+- `Equipamentos.js`: Tratamento de valores null/undefined no toFixed()
+
 ## Próximos Passos Prioritários
 1. Testar app React Native em dispositivo/emulador
 2. Implementar funcionalidade offline no app
-3. Continuar refatoração do server.py
+3. Continuar refatoração do server.py em módulos separados
 4. Implementar histórico vitalício de equipamentos
 
 ## Data da Última Atualização
-15/01/2026
+15/01/2026 - Fase 2 App Técnico melhorado com telas de câmera e galeria
