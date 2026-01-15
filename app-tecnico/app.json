@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "App do Técnico",
+    "slug": "app-tecnico",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1e40af"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.echoshop.apptecnico",
+      "infoPlist": {
+        "NSCameraUsageDescription": "O app precisa de acesso à câmera para tirar fotos das OS",
+        "NSLocationWhenInUseUsageDescription": "O app precisa de acesso à localização para registrar onde a OS foi executada"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1e40af"
+      },
+      "package": "com.echoshop.apptecnico",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
