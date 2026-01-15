@@ -150,10 +150,42 @@ function Layout({ user, onLogout, children }) {
             </Link>
             
             <Link 
+              to="/vendas-servico" 
+              className={`nav-item nav-subitem ${isActive('/vendas-servico') ? 'active' : ''}`}
+            >
+              <span className="nav-icon">🛒</span>
+              <span className="nav-text">Nova Venda</span>
+            </Link>
+            
+            <Link 
+              to="/ordens-servico" 
+              className={`nav-item nav-subitem ${isActive('/ordens-servico') ? 'active' : ''}`}
+            >
+              <span className="nav-icon">🛠️</span>
+              <span className="nav-text">Ordens de Serviço</span>
+            </Link>
+            
+            <Link 
+              to="/planos-servico" 
+              className={`nav-item nav-subitem ${isActive('/planos-servico') ? 'active' : ''}`}
+            >
+              <span className="nav-icon">📋</span>
+              <span className="nav-text">Planos</span>
+            </Link>
+            
+            <Link 
+              to="/modelos-contrato" 
+              className={`nav-item nav-subitem ${isActive('/modelos-contrato') ? 'active' : ''}`}
+            >
+              <span className="nav-icon">📄</span>
+              <span className="nav-text">Contratos</span>
+            </Link>
+            
+            <Link 
               to="/assinaturas" 
               className={`nav-item nav-subitem ${isActive('/assinaturas') ? 'active' : ''}`}
             >
-              <span className="nav-icon">🛒</span>
+              <span className="nav-icon">💼</span>
               <span className="nav-text">Assinaturas SaaS</span>
             </Link>
             
@@ -162,7 +194,7 @@ function Layout({ user, onLogout, children }) {
               className={`nav-item nav-subitem ${isActive('/vendas') ? 'active' : ''}`}
             >
               <span className="nav-icon">📝</span>
-              <span className="nav-text">Emitir Cobranças</span>
+              <span className="nav-text">Cobranças Avulsas</span>
             </Link>
           </div>
 
