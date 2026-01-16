@@ -86,7 +86,9 @@ Sistema integrado de gestão empresarial para provedores de serviços (internet,
   - ✅ Contato direto (telefone, WhatsApp, mapas)
   - ✅ Configuração de produção (URL API)
   - ✅ EAS Build configurado
-  - ⏳ Funcionalidade offline (pendente)
+  - ✅ Push Notifications (implementado 16/01/2026)
+  - ✅ Barra de status de rede (NetworkStatusBar)
+  - 🟡 Modo Offline (estrutura criada, falta testes em dispositivo)
 
 **Build do App:**
 ```bash
