@@ -32,7 +32,7 @@ export const API_URL = getApiUrl();
 export const APP_CONFIG = {
   // Informações do App
   APP_NAME: 'App do Técnico',
-  APP_VERSION: '1.0.0',
+  APP_VERSION: '1.3.0',
   COMPANY_NAME: 'ECHO SHOP',
   
   // Timeouts (em milissegundos)
