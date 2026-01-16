@@ -82,13 +82,20 @@ export default function OSDetailScreen({ route, navigation, user, token }) {
   const updateStatus = async (newStatus) => {
     setUpdating(true);
     try {
-      await axios.patch(
-        `${API_URL}/ordens-servico/${osId}/status`,
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      await loadOS();
-      Alert.alert('Sucesso', `Status atualizado para ${statusLabels[newStatus]}`);
+      const result = await OfflineService.updateOSStatus(osId, newStatus, token);
+      
+      if (result.offline) {
+        // Atualizar UI localmente
+        setOS(prev => ({ ...prev, status: newStatus }));
+        setPendingChanges(true);
+        Alert.alert(
+          '📴 Salvo Offline',
+          `Status será atualizado quando houver conexão`
+        );
+      } else {
+        await loadOS();
+        Alert.alert('Sucesso', `Status atualizado para ${statusLabels[newStatus]}`);
+      }
     } catch (error) {
       Alert.alert('Erro', error.response?.data?.detail || 'Erro ao atualizar status');
     } finally {
@@ -99,12 +106,17 @@ export default function OSDetailScreen({ route, navigation, user, token }) {
   const toggleChecklist = async (index) => {
     try {
       const item = os.checklist[index];
-      await axios.patch(
-        `${API_URL}/ordens-servico/${osId}/checklist`,
-        { item_index: index, concluido: !item.concluido },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      await loadOS();
+      const result = await OfflineService.updateChecklist(osId, index, !item.concluido, token);
+      
+      if (result.offline) {
+        // Atualizar UI localmente
+        const newChecklist = [...os.checklist];
+        newChecklist[index].concluido = !item.concluido;
+        setOS(prev => ({ ...prev, checklist: newChecklist }));
+        setPendingChanges(true);
+      } else {
+        await loadOS();
+      }
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível atualizar o checklist');
     }
