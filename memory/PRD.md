@@ -177,6 +177,11 @@ npx eas build --platform android --profile preview  # APK para testes
 15/01/2026 - Fase 2 App Técnico melhorado com telas de câmera e galeria
 
 ## Changelog
+- **16/01/2026:** 
+  - **APK GERADO E DISPONÍVEL PARA DOWNLOAD!** 🎉
+  - Build via EAS Build (Expo Application Services)
+  - APK v1.0.0 - 79.63 MB
+  - Disponível em: Configurações → App Técnico → Baixar APK
 - **15/01/2026:** 
   - Adicionada página de download do App do Técnico em `/app-tecnico`
   - Link no menu Configurações → App Técnico
