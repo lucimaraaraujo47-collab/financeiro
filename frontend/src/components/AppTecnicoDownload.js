@@ -79,7 +79,7 @@ function AppTecnicoDownload({ user, token }) {
     }
   };
 
-  const isAdmin = user?.perfil === 'admin';
+  const isAdmin = user?.perfil === 'admin' || user?.perfil === 'admin_master';
 
   return (
     <div className="app-download-container">
