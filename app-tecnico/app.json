@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "App do Técnico",
-    "slug": "app-tecnico",
+    "slug": "app-tecnico-echoshop",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,12 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.echoshop.apptecnico",
-      "buildNumber": "1",
-      "infoPlist": {
-        "NSCameraUsageDescription": "O app precisa de acesso à câmera para tirar fotos das ordens de serviço",
-        "NSLocationWhenInUseUsageDescription": "O app precisa de acesso à localização para registrar onde a OS foi executada",
-        "NSPhotoLibraryUsageDescription": "O app precisa de acesso às fotos para anexar imagens às ordens de serviço"
-      }
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
@@ -57,19 +52,6 @@
           "locationWhenInUsePermission": "Permitir que o App do Técnico acesse sua localização"
         }
       ]
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "app-tecnico-echoshop"
-      }
-    },
-    "owner": "echoshop",
-    "updates": {
-      "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/app-tecnico-echoshop"
-    },
-    "runtimeVersion": {
-      "policy": "sdkVersion"
-    }
+    ]
   }
 }
