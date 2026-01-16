@@ -6,15 +6,20 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import axios from 'axios';
 import { API_URL, THEME, LABELS, APP_CONFIG } from '../config';
+import OfflineService from '../services/OfflineService';
+import NetworkStatusBar from '../components/NetworkStatusBar';
 
 export default function HomeScreen({ navigation, user, token, onLogout }) {
   const [ordens, setOrdens] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
 
   const statusColors = THEME.statusColors;
   const statusLabels = LABELS.status;
@@ -22,31 +27,77 @@ export default function HomeScreen({ navigation, user, token, onLogout }) {
 
   useEffect(() => {
     loadOrdens();
+    
+    // Listener de rede
+    const unsubscribe = OfflineService.addNetworkListener(online => {
+      setIsOffline(!online);
+      if (online) {
+        loadOrdens(); // Recarregar quando voltar online
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const loadOrdens = async () => {
     try {
-      // Buscar empresas do usuário
       const empresaId = user.empresa_ids?.[0];
       if (!empresaId) {
         Alert.alert('Erro', 'Usuário sem empresa vinculada');
         return;
       }
 
-      const response = await axios.get(
-        `${API_URL}/empresas/${empresaId}/ordens-servico?tecnico_id=${user.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const isOnline = await OfflineService.checkNetwork();
 
-      // Filtrar apenas OS não concluídas/canceladas
-      const ordensAtivas = response.data.filter(
-        os => !['concluida', 'cancelada'].includes(os.status)
-      );
+      if (isOnline) {
+        // Buscar do servidor
+        const response = await axios.get(
+          `${API_URL}/empresas/${empresaId}/ordens-servico`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-      setOrdens(ordensAtivas);
+        // Filtrar OS do técnico e ativas
+        const todasOS = response.data;
+        const ordensAtivas = todasOS.filter(
+          os => !['concluida', 'cancelada'].includes(os.status)
+        );
+
+        setOrdens(ordensAtivas);
+        setFromCache(false);
+
+        // Salvar no cache
+        await OfflineService.cacheOSList(ordensAtivas, empresaId);
+
+        // Cachear detalhes de cada OS
+        for (const os of ordensAtivas) {
+          await OfflineService.cacheOSDetails(os.id, os);
+        }
+
+      } else {
+        // Buscar do cache
+        const cached = await OfflineService.getCachedOSList();
+        if (cached) {
+          setOrdens(cached.data);
+          setFromCache(true);
+          console.log('📦 Dados carregados do cache');
+        } else {
+          Alert.alert(
+            'Sem Conexão',
+            'Não há dados em cache. Conecte-se à internet para carregar as OS.'
+          );
+        }
+      }
     } catch (error) {
       console.error('Erro ao carregar OS:', error);
-      Alert.alert('Erro', 'Não foi possível carregar as ordens de serviço');
+      
+      // Tentar carregar do cache em caso de erro
+      const cached = await OfflineService.getCachedOSList();
+      if (cached) {
+        setOrdens(cached.data);
+        setFromCache(true);
+      } else {
+        Alert.alert('Erro', 'Não foi possível carregar as ordens de serviço');
+      }
     } finally {
       setLoading(false);
     }
@@ -58,16 +109,60 @@ export default function HomeScreen({ navigation, user, token, onLogout }) {
     setRefreshing(false);
   }, []);
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Sair',
+      'Deseja realmente sair do aplicativo?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Sair', 
+          style: 'destructive',
+          onPress: async () => {
+            // Sincronizar antes de sair se online
+            const isOnline = await OfflineService.checkNetwork();
+            if (isOnline) {
+              const stats = await OfflineService.getSyncStats();
+              if (stats.pendingCount > 0) {
+                Alert.alert(
+                  'Pendências',
+                  `Você tem ${stats.pendingCount} alteração(ões) não sincronizada(s). Deseja sincronizar antes de sair?`,
+                  [
+                    { text: 'Sair sem sincronizar', onPress: onLogout, style: 'destructive' },
+                    { 
+                      text: 'Sincronizar e sair', 
+                      onPress: async () => {
+                        await OfflineService.syncPendingChanges(token);
+                        onLogout();
+                      }
+                    }
+                  ]
+                );
+                return;
+              }
+            }
+            onLogout();
+          }
+        }
+      ]
+    );
+  };
+
+  const getStatusStyle = (status) => ({
+    backgroundColor: statusColors[status] || '#6b7280'
+  });
+
   const renderOS = ({ item }) => (
     <TouchableOpacity
       style={styles.osCard}
       onPress={() => navigation.navigate('OSDetail', { osId: item.id })}
+      data-testid={`os-card-${item.id}`}
     >
       <View style={styles.osHeader}>
         <Text style={styles.osNumero}>{item.numero}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: statusColors[item.status] + '20' }]}>
-          <Text style={[styles.statusText, { color: statusColors[item.status] }]}>
-            {statusLabels[item.status]}
+        <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
+          <Text style={styles.statusText}>
+            {statusLabels[item.status] || item.status}
           </Text>
         </View>
       </View>
@@ -75,70 +170,99 @@ export default function HomeScreen({ navigation, user, token, onLogout }) {
       <Text style={styles.osTipo}>{tipoLabels[item.tipo] || item.tipo}</Text>
 
       <View style={styles.osInfo}>
-        <Text style={styles.osLabel}>👤 Cliente</Text>
-        <Text style={styles.osValue}>{item.cliente_nome || 'N/A'}</Text>
-      </View>
-
-      <View style={styles.osInfo}>
-        <Text style={styles.osLabel}>📍 Endereço</Text>
-        <Text style={styles.osValue} numberOfLines={2}>
-          {item.endereco_servico || 'N/A'}
+        <Text style={styles.osCliente} numberOfLines={1}>
+          👤 {item.cliente_nome || 'Cliente'}
         </Text>
+        {item.data_agendamento && (
+          <Text style={styles.osData}>
+            📅 {new Date(item.data_agendamento).toLocaleDateString('pt-BR')}
+          </Text>
+        )}
       </View>
 
-      {item.data_agendamento && (
-        <View style={styles.osInfo}>
-          <Text style={styles.osLabel}>📅 Agendamento</Text>
-          <Text style={styles.osValue}>
-            {new Date(item.data_agendamento).toLocaleDateString('pt-BR')}
-            {item.horario_previsto ? ` às ${item.horario_previsto}` : ''}
-          </Text>
-        </View>
+      {item.endereco_servico && (
+        <Text style={styles.osEndereco} numberOfLines={1}>
+          📍 {item.endereco_servico}
+        </Text>
       )}
     </TouchableOpacity>
   );
 
+  const getStats = () => {
+    const total = ordens.length;
+    const agendadas = ordens.filter(o => o.status === 'agendada').length;
+    const emAndamento = ordens.filter(o => o.status === 'em_andamento').length;
+    const abertas = ordens.filter(o => o.status === 'aberta').length;
+    return { total, agendadas, emAndamento, abertas };
+  };
+
+  const stats = getStats();
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={THEME.primary} />
+        <Text style={styles.loadingText}>Carregando...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
+      <NetworkStatusBar onSyncPress={loadOrdens} />
+
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerText}>Olá, {user?.nome?.split(' ')[0] || 'Técnico'}</Text>
-        <TouchableOpacity onPress={onLogout} style={styles.logoutBtn}>
+        <View>
+          <Text style={styles.greeting}>Olá, {user?.nome?.split(' ')[0] || 'Técnico'}!</Text>
+          <Text style={styles.subtitle}>
+            {fromCache ? '📦 Dados do cache' : '📶 Online'}
+          </Text>
+        </View>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
           <Text style={styles.logoutText}>Sair</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Stats */}
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{ordens.length}</Text>
-          <Text style={styles.statLabel}>OS Pendentes</Text>
+        <View style={[styles.statCard, { backgroundColor: '#eff6ff' }]}>
+          <Text style={styles.statNumber}>{stats.total}</Text>
+          <Text style={styles.statLabel}>Total</Text>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>
-            {ordens.filter(o => o.status === 'agendada').length}
-          </Text>
+        <View style={[styles.statCard, { backgroundColor: '#fef3c7' }]}>
+          <Text style={styles.statNumber}>{stats.agendadas}</Text>
           <Text style={styles.statLabel}>Agendadas</Text>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>
-            {ordens.filter(o => o.status === 'em_andamento').length}
-          </Text>
+        <View style={[styles.statCard, { backgroundColor: '#ecfdf5' }]}>
+          <Text style={styles.statNumber}>{stats.emAndamento}</Text>
           <Text style={styles.statLabel}>Em Andamento</Text>
         </View>
       </View>
 
+      {/* Lista de OS */}
       <FlatList
         data={ordens}
         renderItem={renderOS}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={[THEME.primary]}
+          />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>✅</Text>
+            <Text style={styles.emptyIcon}>📋</Text>
             <Text style={styles.emptyText}>Nenhuma OS pendente</Text>
-            <Text style={styles.emptySubtext}>Puxe para atualizar</Text>
+            <Text style={styles.emptySubtext}>
+              {isOffline 
+                ? 'Conecte-se para verificar novas OS' 
+                : 'Puxe para atualizar'
+              }
+            </Text>
           </View>
         }
       />
@@ -151,20 +275,36 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f1f5f9'
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9'
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#64748b'
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 15,
+    padding: 20,
+    paddingTop: 25,
     backgroundColor: '#fff'
   },
-  headerText: {
-    fontSize: 18,
-    fontWeight: '600',
+  greeting: {
+    fontSize: 22,
+    fontWeight: 'bold',
     color: '#1e293b'
   },
+  subtitle: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 2
+  },
   logoutBtn: {
-    padding: 8
+    padding: 10
   },
   logoutText: {
     color: '#ef4444',
@@ -177,15 +317,14 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
     padding: 15,
+    borderRadius: 12,
     alignItems: 'center'
   },
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1e40af'
+    color: '#1e293b'
   },
   statLabel: {
     fontSize: 12,
@@ -193,38 +332,40 @@ const styles = StyleSheet.create({
     marginTop: 4
   },
   listContainer: {
-    padding: 15
+    padding: 15,
+    paddingTop: 5
   },
   osCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 15,
+    padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2
   },
   osHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10
+    marginBottom: 8
   },
   osNumero: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#1e293b'
   },
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 20
+    borderRadius: 12
   },
   statusText: {
+    color: '#fff',
     fontSize: 12,
-    fontWeight: '500'
+    fontWeight: '600'
   },
   osTipo: {
     fontSize: 14,
@@ -232,24 +373,30 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
   osInfo: {
-    marginBottom: 8
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6
   },
-  osLabel: {
-    fontSize: 12,
-    color: '#94a3b8',
-    marginBottom: 2
-  },
-  osValue: {
+  osCliente: {
     fontSize: 14,
-    color: '#1e293b'
+    color: '#1e293b',
+    flex: 1
+  },
+  osData: {
+    fontSize: 13,
+    color: '#64748b'
+  },
+  osEndereco: {
+    fontSize: 13,
+    color: '#64748b'
   },
   emptyContainer: {
     alignItems: 'center',
-    marginTop: 50
+    paddingVertical: 50
   },
   emptyIcon: {
     fontSize: 50,
-    marginBottom: 10
+    marginBottom: 15
   },
   emptyText: {
     fontSize: 18,
