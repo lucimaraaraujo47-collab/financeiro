@@ -144,15 +144,17 @@ export default function App() {
   return (
     <>
       <StatusBar style="light" />
-      <NavigationContainer ref={navigationRef}>
-        <Stack.Navigator
-          screenOptions={{
-            headerStyle: { backgroundColor: '#1e40af' },
-            headerTintColor: '#fff',
-            headerTitleStyle: { fontWeight: 'bold' },
-            headerBackTitleVisible: false
-          }}
-        >
+      <View style={styles.appContainer}>
+        {isLoggedIn && <NetworkStatusBar />}
+        <NavigationContainer ref={navigationRef}>
+          <Stack.Navigator
+            screenOptions={{
+              headerStyle: { backgroundColor: '#1e40af' },
+              headerTintColor: '#fff',
+              headerTitleStyle: { fontWeight: 'bold' },
+              headerBackTitleVisible: false
+            }}
+          >
           {!isLoggedIn ? (
             <Stack.Screen name="Login" options={{ headerShown: false }}>
               {props => <LoginScreen {...props} onLogin={handleLogin} />}
