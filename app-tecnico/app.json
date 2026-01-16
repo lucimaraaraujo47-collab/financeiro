@@ -33,7 +33,8 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.INTERNET",
-        "android.permission.ACCESS_NETWORK_STATE"
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -52,6 +53,12 @@
           "locationWhenInUsePermission": "Permitir que o App do Técnico acesse sua localização"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "691bb83b-a36c-4bb2-b555-314ddf890c14"
+      }
+    },
+    "owner": "kannalsat"
   }
 }
