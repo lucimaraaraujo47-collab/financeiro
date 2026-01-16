@@ -8384,7 +8384,7 @@ async def upload_apk(
 ):
     """Upload a new APK file (admin only)"""
     try:
-        if current_user.get("perfil") != "admin":
+        if current_user.get("perfil") not in ["admin", "admin_master"]:
             raise HTTPException(status_code=403, detail="Apenas administradores podem fazer upload do APK")
         
         if not file.filename.endswith('.apk'):
@@ -8437,7 +8437,7 @@ async def upload_apk(
 async def delete_apk(current_user: dict = Depends(get_current_user)):
     """Delete the current APK (admin only)"""
     try:
-        if current_user.get("perfil") != "admin":
+        if current_user.get("perfil") not in ["admin", "admin_master"]:
             raise HTTPException(status_code=403, detail="Apenas administradores podem remover o APK")
         
         for apk_file in APK_UPLOAD_DIR.glob("*.apk"):
