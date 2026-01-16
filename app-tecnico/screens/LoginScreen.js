@@ -34,7 +34,8 @@ export default function LoginScreen({ onLogin }) {
       const { access_token, user } = response.data;
       
       // Verificar se é técnico ou admin
-      if (user.perfil !== 'tecnico' && user.perfil !== 'admin' && user.perfil !== 'ADMIN_MASTER') {
+      const perfil = (user.perfil || '').toLowerCase();
+      if (perfil !== 'tecnico' && perfil !== 'admin' && perfil !== 'admin_master') {
         Alert.alert('Acesso Negado', 'Este app é apenas para técnicos');
         return;
       }
