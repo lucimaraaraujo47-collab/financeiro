@@ -148,6 +148,11 @@ PERFIS_PERMISSOES = {
         "descricao": "Acesso total ao sistema e licenciamento",
         "permissoes": ["*"]  # Todas as permissões
     },
+    "tecnico": {
+        "nome": "Técnico",
+        "descricao": "Acesso ao app técnico, ordens de serviço e equipamentos",
+        "permissoes": ["ordens_servico", "equipamentos", "estoque_tecnico", "fotos", "assinaturas"]
+    },
     "financeiro": {
         "nome": "Financeiro",
         "descricao": "Acesso a transações, relatórios e contas",
