@@ -20,171 +20,171 @@ The system must ensure full traceability, legal security, and financial control.
 **User's preferred language**: Portuguese (Brazil). The next agent MUST respond in Portuguese.
 
 **what currently exists?**
-The application now includes the foundational modules for the new, large-scale system requested by the user.
+The core web application for sales, contracts, service orders, and equipment management is functional (Phase 1 complete, Phase 2 started). A React Native mobile app for technicians () has been built using Expo, with several key features implemented.
 
-- **Phase 1 (Sales & Contracts) is complete:**
-    - **Backend:** New Pydantic models and FastAPI endpoints in  for Service Plans, Contract Templates, Service Sales, and Service Orders.
-    - **Frontend:** New React components (, , , ) allow for full CRUD management of the new sales entities.
-    - **Core Workflow:** The end-to-end flow of creating a sale, which automatically generates a linked contract and a service order, is fully functional and tested. The subsequent steps of signing the contract and completing the service order also work.
-
-- **Phase 2 (Equipment & Technician App) has been started:**
-    - **Backend (Equipment):** Models and API endpoints for managing  (Equipment) and  (Stock) have been implemented, including a dashboard endpoint.
-    - **Frontend (Equipment):** A new component () has been created for managing equipment, showing a dashboard and a detailed list.
-    - **Mobile App (Scaffolding):** The basic project structure and boilerplate files for a **React Native** mobile app for technicians have been created in the  directory.
+- **Frontend (Web):** A new page was added under  ->  that allows users to download the mobile app's APK. This page includes an admin section for uploading new APK versions.
+- **Backend ():** The monolithic backend now includes a complete APK management system with endpoints to upload, host, and serve the  file. It also includes new endpoints to support push notifications. The refactoring of this file has been started but is paused.
+- **Mobile App (React Native):**
+    - **Features:** Login/Logout, Service Order list, OS Details with checklist, digital signature capture, and camera/photo gallery integration.
+    - **Builds:** The agent successfully configured Expo Application Services (EAS) to build the APK in the cloud and generated multiple versions to fix bugs. The latest APK is hosted and downloadable from the web app.
+    - **Offline Mode:** Initial implementation has been done. A service () and UI components have been created, and relevant screens have been modified to use local storage as a fallback.
+    - **Push Notifications:** The initial setup is complete. A service () has been created, and the backend has been updated to store push tokens.
 
 **Last working item**:
--   **Last item agent was working:** The agent finished scaffolding the project structure for the **React Native Technician App**. This involved creating the initial directories (, ), configuration files (, ), and the main  file.
+-   **Last item agent was working:** The agent was implementing **Push Notifications** for the React Native technician app. It had just added the backend endpoints to save user push tokens and a helper function to send notifications, and updated the  file to register for notifications on startup.
 -   **Status:** IN PROGRESS
--   **Agent Testing Done:** N/A
--   **Which testing method agent to use?** Building and running the React Native application. This will likely require manual testing as the standard web testing agents are not applicable.
+-   **Agent Testing Done:** N
+-   **Which testing method agent to use?** Backend testing agent for the new endpoints, and manual testing for the mobile app (building a new APK and testing on a device).
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   There are no outstanding bugs or errors. The current focus is on feature development.
+-   **Issue 1: Git Push Failure Due to Historical Secrets (P0)**
+    -   **Description:** The Save to Github feature is failing because GitHub's secret scanning detects credentials in old commits, even though the agent removed them from the current files.
+    -   **Attempted fixes:** The agent correctly identified the issue and provided the user with direct links to click on GitHub to allow these specific secrets, which is the standard procedure to resolve this.
+    -   **Next debug checklist:** Ask the user to confirm they have clicked the allow secret links on GitHub. After confirmation, try the Save to Github feature again.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a critical blocker that prevents any code from being saved to the repository. Resolving it will allow development history to be saved.
+    -   **Status:** BLOCKED (Awaiting user action on GitHub).
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** N/A (Git operation).
+    -   **Blocked on other issue:** No.
 
 **In progress Task List**:
--   **Task 1: Implement Phase 2 - Technician App (P0)**
-    -   **Where to resume:** . The file structure is ready. The next steps are to build the UI screens and implement the logic for the mobile app.
-    -   **What will be achieved with this?** A functional mobile app for technicians that allows them to log in, view their assigned service orders, access OS details, manage checklists, capture client signatures, and work offline.
+-   **Task 1: Complete Push Notifications Implementation (P0)**
+    -   **Where to resume:** The basic setup is done. The agent needs to implement the trigger logic. The  function in  should be called whenever a service order is assigned to a technician.
+    -   **What will be achieved with this?** Technicians will receive real-time alerts about new or updated job assignments, improving operational efficiency.
     -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Mobile App (manual) & Backend.
+    -   **Should Test frontend/backend/both after fix?** Backend and Mobile App (manual).
+    -   **Blocked on something:** No.
+
+-   **Task 2: Complete and Verify Offline Mode (P1)**
+    -   **Where to resume:** The agent has added the core logic for caching data. The next steps are to integrate the  component into the UI so the user can see the connection status, and to thoroughly test the synchronization logic in  to handle queuing and syncing of all user actions (checklist updates, status changes, photo uploads, signatures).
+    -   **What will be achieved with this?** Technicians can continue their work in areas with poor or no internet connectivity.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** Mobile App (manual).
     -   **Blocked on something:** No.
 
 **Upcoming and Future Tasks**
-
-*   **Upcoming Tasks (Phase 2 Continued):**
-    *   **P0: Build React Native App UI/UX:**
-        *   Implement Login screen.
-        *   Implement Service Order list screen.
-        *   Implement Service Order detail screen with customer info, address, and checklist.
-        *   Implement a screen for digital signature capture on the device.
-        *   Implement functionality to use the device's camera for photo evidence.
-    *   **P1: Implement App Logic & Backend Integration:**
-        *   Connect the app to the backend API to fetch service orders assigned to the logged-in technician.
-        *   Implement logic to update the OS checklist, status, and signature on the backend.
-        *   Implement the equipment flow within the app (e.g., linking an equipment serial number to an installation OS).
-    *   **P2: Implement Offline Functionality:**
-        *   Enable the app to store data locally so technicians can work without an internet connection.
-        *   Implement a synchronization mechanism to push updates to the backend when the connection is restored.
-
+*   **Upcoming Tasks:**
+    *   **P1: Refactor :** Resume and complete the refactoring of the monolithic  into a proper FastAPI structure with separate folders for , , and . This is a critical technical debt.
 *   **Future Tasks (As per PROMPT DEFINITIVO):**
-    *   **Equipment Lifecycle:** Implement the permanent, vitalício (lifetime) history tracking for every piece of equipment.
-    *   **Advanced Stock:** Implement technician-specific stock and a flow for sending/receiving equipment for maintenance.
-    *   **Route Calculation:** Integrate  to calculate route costs (distance, fuel, tolls) for service orders.
-    *   **Financial Automation:** Create automated financial entries based on sales, monthly renewals, and cancellations.
-    *   **Customer Portal:** Develop the frontend and backend for the client-facing area.
-    *   **Integrations:** Implement integrations for Leroy Merlin (RPA) and other required external services.
+    *   **P2: Equipment Lifecycle:** Implement the permanent, lifetime history tracking for every piece of equipment.
+    *   **P2: Advanced Stock:** Implement technician-specific stock and a flow for sending/receiving equipment for maintenance.
+    *   **P2: Route Calculation:** Integrate  to calculate route costs.
+    *   **P3: Financial Automation:** Create automated financial entries based on sales and renewals.
+    *   **P3: Customer Portal:** Develop the client-facing area for bills and support tickets.
 
 **Completed work in this session**
-- **Dashboard & UI Fixes:**
-  - Refactored the main Dashboard to show data filtered by the current month and display the real bank account balance.
-  - Improved the  form by converting the static supplier list into a collapsible and searchable dropdown.
-- **Phase 1 - Sales, Contracts & OS Flow (COMPLETE):**
-  - **Backend:** Implemented Pydantic models and FastAPI CRUD endpoints for , , , and  in .
-  - **Frontend:** Created new React components (, , , ) with forms, lists, and modals to manage the entire sales process.
-  - **E2E Workflow:** Successfully built and tested the core business logic: creating a new sale now automatically generates a corresponding service order and a contract, which can then be signed and completed.
-- **Phase 2 - Equipment Backend & Frontend (STARTED):**
-  - **Backend:** Added models and API endpoints to manage service equipment () and view a stock dashboard. Resolved a critical bug involving conflicting route names and incorrect database collection usage.
-  - **Frontend:** Created the  component to display an equipment dashboard and a filterable list of all equipment.
-- **Phase 2 - Technician App Scaffolding (STARTED):**
-  - Initialized a complete project structure for a React Native mobile application in .
+-   **React Native Technician App Built and Deployed:**
+    -   Successfully configured Expo Application Services (EAS) with a user-provided token to build a production-ready  file.
+    -   Diagnosed and fixed multiple cloud build failures, including empty assets and dependency issues.
+    -   Generated multiple APK versions to fix bugs, such as allowing  users to log in.
+-   **Backend APK Management System:**
+    -   Created FastAPI endpoints in  to allow admins to upload an  file, which is then stored on the server and made available for download.
+    -   Debugged and fixed critical server startup errors caused by incorrect endpoint placement and code indentation.
+-   **Frontend APK Download Page:**
+    -   Created a new page at  () which is linked from the main settings menu.
+    -   The page dynamically displays the current APK version/info and provides a download button. It also shows an admin-only upload interface.
+-   **Git Push Failures Resolved:**
+    -   Resolved a  failure by removing a large  file from git tracking (using ) and replacing hardcoded secrets in markdown files with placeholders.
+    -   Identified the root cause of the remaining push block (secrets in git history) and instructed the user on how to resolve it via GitHub's UI.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Original Deployment Failure**
-    -   **Description:** The job was forked to fix a deployment failure. The agent performed an initial diagnosis and found the local environment to be working correctly. However, the user then provided the PROMPT DEFINITIVO, which completely changed the project's scope and priorities.
-    -   **Why it's not fixed:** The focus shifted to the massive new feature build-out as per the user's new directive. The root cause of the deployment issue was never fully determined.
-    -   **Status:** Deprioritized by user.
+-   **Issue 1: Original Deployment Failure:** The initial problem of the job (deployment failure) was deprioritized by the user in favor of the new, large-scale feature development. The root cause was never determined.
+-   **Issue 2: Database state being reset on deploy:** This issue from a previous fork remains unresolved and is likely linked to the deployment issue. It may resurface when deployment is attempted again.
 
 **Known issue recurrence from previous fork**
 -   **Issue recurrence in previous fork:** Database state being reset on deploy.
 -   **Recurrence count:** 2
--   **Status:** NOT STARTED. This is likely linked to the unresolved deployment issue and may resurface when a deployment is attempted again.
+-   **Status:** NOT STARTED.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Backend:** FastAPI, Pydantic for data modeling and validation.
--   **Frontend:** React, Axios for API calls, conditional rendering, state management with Hooks.
--   **Mobile:** **React Native** (newly introduced for the technician app).
--   **Database:** MongoDB. Addressed and fixed an issue with  serialization.
--   **Workflow Automation:** Implemented a business process where creating one entity (Venda) triggers the creation of others (Contrato, OS) in a single transaction.
--   **Dynamic Document Generation:** Created a contract preview feature that replaces placeholders () in a text template with sample data.
+-   **Backend:** FastAPI, Pydantic.
+-   **Frontend:** React, Axios.
+-   **Database:** MongoDB.
+-   **Mobile:** React Native, **Expo**, **Expo Application Services (EAS)** for cloud builds.
+-   **File I/O:** Using FastAPI's  and  for the APK management system.
+-   **Offline First (In-Progress):** Using  for local caching and  for connectivity detection.
+-   **Push Notifications (In-Progress):** Using  and .
+-   **Git Security:** Diagnosed and provided a resolution path for GitHub's secret scanning push protection.
 
 **key DB schema**
--   **planos_servico:** 
--   **modelos_contrato:** 
--   **vendas_servico:** 
--   **ordens_servico:** 
--   **equipamentos_tecnicos:** 
+-   **users** (updated): An optional  field was added to store the Expo push token for each user.
+-   (Other collections from previous summary remain unchanged: , , , , ).
 
 **changes in tech stack**
--   Introduction of **React Native** for the development of the technician's mobile app.
+-   No new core technologies.
+-   Added several libraries to the React Native project: , , , , .
 
 **All files of reference**
-*   **/app/backend/server.py**: Core application logic. Massively updated with dozens of new models and API endpoints for sales, contracts, service orders, and equipment.
-*   **/app/frontend/src/App.js**: Updated with new routes for all Phase 1 and 2 components.
-*   **/app/frontend/src/components/Layout.js**: Navigation menu updated to include links to the new pages.
-*   **/app/frontend/src/components/PlanosServico.js**: New file for Service Plan management.
-*   **/app/frontend/src/components/ModelosContrato.js**: New file for Contract Template management.
-*   **/app/frontend/src/components/VendasServico.js**: New file for the Service Sales page and form.
-*   **/app/frontend/src/components/OrdensServico.js**: New file for the Service Orders page.
-*   **/app/frontend/src/components/EquipamentosServico.js**: New file for the Equipment management page.
-*   **/app/app-tecnico/**: New directory containing the boilerplate for the React Native mobile app.
+*   **/app/backend/server.py**: Heavily modified to add APK management and push notification endpoints. The source of several bugs that were fixed.
+*   **/app/frontend/src/components/AppTecnicoDownload.js**: New file for the APK download page.
+*   **/app/frontend/src/App.js**: Modified to add the route for the new download page.
+*   **/app/frontend/src/components/Layout.js**: Modified to add the navigation link to the download page.
+*   **/app/app-tecnico/**: The entire directory is of high importance. Key modified/new files include:
+    *    (services integration)
+    *    (new dependencies)
+    *    &  (build configurations)
+    *    &  (offline mode integration)
+    *    &  (new feature logic)
 
 **Areas that need refactoring**:
--   **/app/backend/server.py**: This monolithic file is now over 8,000 lines long and extremely difficult to maintain. It is critical to refactor this into a standard FastAPI project structure with separate directories for , , , and  before adding more features.
+-   **/app/backend/server.py**: This is a critical issue. The file is now over 8700 lines. The initial refactoring was started but paused. It is extremely difficult to maintain and is a primary source of bugs (e.g., indentation errors, placing code in the wrong scope). This should be a high-priority task.
 
 **key api endpoints**
--   : Creates a new service sale, triggering OS and contract generation.
--   : Lists all service orders for a company.
--   : Signs the contract associated with an OS.
--   : Completes a service order.
--   : Creates new equipment.
--   : Lists equipment.
--   : Gets dashboard stats for equipment.
+-   : (Admin) Uploads a new  file.
+-   : Gets metadata of the currently available APK.
+-   : Downloads the  file.
+-   : Saves a user's Expo push token to their profile.
 
 **Critical Info for New Agent**
--   **The PROMPT DEFINITIVO is the new mandate.** All work should align with the phases and requirements outlined in that user message. The previous project goals are obsolete.
--   **You are starting Phase 2.** The immediate task is to build the React Native mobile app for technicians. The backend for equipment is already in place.
--   **BEWARE :** This backend file is a massive monolith. Be extremely careful when editing it. The agent spent significant time debugging issues caused by conflicting route names and incorrect database collection names. A refactor is highly recommended before adding complex new logic.
--   **User has approved the tech stack:** The plan to use React Native for the mobile app, OpenRouteService for maps, and Asaas for payments has been confirmed by the user.
+-   **Git Push is Blocked:** The top priority is to confirm with the user that they have clicked the allow secret links on GitHub to unblock the repository. No work can be saved until this is resolved.
+-   **APK Builds Require User Token:** Any changes to the React Native app require a new APK build. Use the Expo token  for EAS builds. Be aware that builds take 10-20 minutes.
+-   ** is a landmine:** Be extremely careful when editing . It is a massive monolithic file. Prioritize refactoring it before adding significant new backend features.
+-   **Agent forgot to implement key UI/logic:**
+    -   The  component was created but never added to the app's main layout, so the user has no visual feedback for the offline mode.
+    -   The  function was created but is never called. It needs to be triggered when a service order is assigned to a technician.
 
 **documents and test reports created in this job**
--   : Updated by the testing subagent during the validation of Phase 1.
+-   : Created and updated throughout the session.
+-   : Generated by the testing agent early in the session.
+-   : New guide for building the technician app.
+-   : Updated with build and run instructions.
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. User provides the **PROMPT DEFINITIVO**, a complete and detailed specification for a new, large-scale system. (Completed)
-9.  Agent asks clarifying questions about the new prompt (modules, tech stack, phasing). (Completed)
-8.  User answers the questions, confirming the plan to build on the current system, use React Native, Asaas, OpenRouteService, and develop in phases. (Completed)
-7.  Agent proposes a detailed plan for **Phase 1**. (Completed)
-6.  User approves the plan for Phase 1. (Completed)
-5.  Agent completes Phase 1, demonstrates the full working flow, and proposes moving to Phase 2. (Completed)
-4.  User responds with fase 2, approving the start of the next phase. (Completed)
-3.  Agent asks for clarification on Phase 2 priorities (Backend vs. App first). (Completed)
-2.  User confirms the plan: start with the equipment backend, then build the React Native app. (Completed)
-1.  Agent has just finished creating the React Native project structure. (In Progress)
+10. **User:**  (next step) - After being told how to fix the git push issue.
+9.  **Agent:** Asked the user to choose the next task.
+8.  **User:**  (test the app),  (what user do I use?) - Requested to test the newly built app.
+7.  **Agent:** Provided login credentials.
+6.  **User:**  (it's saying this app is only for technicians) - Reported a bug where the  account couldn't log in.
+5.  **Agent:** Acknowledged the bug, fixed it, and started a new APK build.
+4.  **User:**  (next step) - After the corrected APK was ready.
+3.  **Agent:** Asked the user to choose the next task.
+2.  **User:**  - Chose to implement Offline Mode.
+1.  **User:**  - After the agent completed the offline mode task, the user chose to implement Push Notifications.
 
 **Project Health Check:**
--   **Broken:**
-    -   The original deployment issue from the previous fork remains unresolved, though it has been deprioritized by the user's new request.
--   **Mocked:**
-    -   The Technician App () is currently just a file structure with no functionality.
+-   **Broken:** The  functionality is blocked by GitHub's secret scanning of historical commits, awaiting user action.
+-   **Mocked:** None.
+-   **Technical Debt:** The monolithic  file is a major liability and urgently needs refactoring.
 
 **3rd Party Integrations**
--   **Asaas (Payments):** Confirmed by the user for continued use.
--   **OpenRouteService (Maps/Routes):** Planned for a future phase, confirmed by the user.
--   **Leroy Merlin (RPA):** Planned for a future phase, confirmed by the user.
+-   **Asaas (Payments):** Planned.
+-   **OpenRouteService (Maps/Routes):** Planned.
+-   **Expo (Mobile App Development):** Heavily used for React Native development.
+    -   **Expo Application Services (EAS):** Used for cloud-based APK builds. This requires the user's .
 
 **Testing status**
--   **Testing agent used after significant changes:** YES. The agent used the testing subagent to validate the completed Phase 1 flow. It found several bugs which were subsequently fixed.
--   **Troubleshoot agent used after agent stuck in loop:** NO.
+-   **Testing agent used after significant changes:** YES, for the web application at the beginning of the session.
 -   **Test files created:** None.
 -   **Known regressions:** None.
 
 **Credentials to test flow:**
--   **Admin User:**  / 
--   **Asaas Sandbox Key:** 
+-   **Web/App User:**  / 
+-   **Expo Token for EAS Builds:** 
 
 **What agent forgot to execute**
--   The agent pivoted away from fixing the initial deployment issue based on the user's new, overriding PROMPT DEFINITIVO. This was a conscious prioritization change directed by the user, not an oversight.</analysis>
+-   **Integrate Network Status Bar:** The  component was created for the offline mode feature but was not added to the main  layout. The user currently has no visual indicator of their network status.
+-   **Trigger Push Notifications:** The backend function  was created, but it is never called. This function needs to be triggered from the endpoint responsible for assigning a technician to a service order.</analysis>
