@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { API_URL, THEME, LABELS } from '../config';
+import OfflineService from '../services/OfflineService';
+import NetworkStatusBar from '../components/NetworkStatusBar';
 
 export default function OSDetailScreen({ route, navigation, user, token }) {
   const { osId } = route.params;
@@ -19,6 +21,8 @@ export default function OSDetailScreen({ route, navigation, user, token }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState(false);
 
   const statusColors = THEME.statusColors;
   const statusLabels = LABELS.status;
@@ -30,14 +34,40 @@ export default function OSDetailScreen({ route, navigation, user, token }) {
 
   const loadOS = async () => {
     try {
-      const response = await axios.get(
-        `${API_URL}/ordens-servico/${osId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setOS(response.data);
+      const isOnline = await OfflineService.checkNetwork();
+      
+      if (isOnline) {
+        const response = await axios.get(
+          `${API_URL}/ordens-servico/${osId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setOS(response.data);
+        setFromCache(false);
+        
+        // Salvar no cache
+        await OfflineService.cacheOSDetails(osId, response.data);
+      } else {
+        // Carregar do cache
+        const cached = await OfflineService.getCachedOSDetails(osId);
+        if (cached) {
+          setOS(cached.data);
+          setFromCache(true);
+        } else {
+          Alert.alert('Erro', 'Dados não disponíveis offline');
+          navigation.goBack();
+        }
+      }
     } catch (error) {
       console.error('Erro ao carregar OS:', error);
-      Alert.alert('Erro', 'Não foi possível carregar a OS');
+      
+      // Tentar cache em caso de erro
+      const cached = await OfflineService.getCachedOSDetails(osId);
+      if (cached) {
+        setOS(cached.data);
+        setFromCache(true);
+      } else {
+        Alert.alert('Erro', 'Não foi possível carregar a OS');
+      }
     } finally {
       setLoading(false);
     }
