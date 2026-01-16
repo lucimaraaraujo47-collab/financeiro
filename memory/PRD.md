@@ -170,13 +170,14 @@ npx eas build --platform android --profile preview  # APK para testes
 - `Equipamentos.js`: Tratamento de valores null/undefined no toFixed()
 
 ## Próximos Passos Prioritários
-1. Testar app React Native em dispositivo/emulador
-2. Implementar funcionalidade offline no app
-3. Continuar refatoração do server.py em módulos separados
-4. Implementar histórico vitalício de equipamentos
+1. **Gerar novo APK** com Push Notifications e NetworkStatusBar
+2. Testar push notifications em dispositivo físico
+3. Testar funcionalidade offline completa (OfflineService.js)
+4. Continuar refatoração do server.py em módulos separados
+5. Implementar histórico vitalício de equipamentos
 
 ## Data da Última Atualização
-15/01/2026 - Fase 2 App Técnico melhorado com telas de câmera e galeria
+16/01/2026 - Push Notifications implementado + NetworkStatusBar integrado
 
 ## Changelog
 - **16/01/2026 (sessão atual):**
