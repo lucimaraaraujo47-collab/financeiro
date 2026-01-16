@@ -8558,6 +8558,9 @@ async def delete_apk(current_user: dict = Depends(get_current_user)):
 
 # ==================== END APK MANAGEMENT ====================
 
+@app.on_event("startup")
+async def startup_backup_scheduler():
+    """Initialize scheduled backup on startup"""
     # Initialize scheduler in background to avoid blocking startup
     service_account_path = os.environ.get("GOOGLE_SERVICE_ACCOUNT_PATH", "/app/backend/service_account.json")
     
