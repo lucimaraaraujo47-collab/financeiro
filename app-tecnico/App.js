@@ -224,6 +224,9 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  appContainer: {
+    flex: 1
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
