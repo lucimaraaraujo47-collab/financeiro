@@ -179,6 +179,15 @@ npx eas build --platform android --profile preview  # APK para testes
 15/01/2026 - Fase 2 App Técnico melhorado com telas de câmera e galeria
 
 ## Changelog
+- **16/01/2026 (sessão atual):**
+  - ✅ **Push Notifications implementado!**
+    - Função `_enviar_push_nova_os()` adicionada ao backend
+    - Disparo automático quando técnico é atribuído a uma OS
+    - Endpoint `/api/users/{id}/push-token` para registro de tokens
+    - Integração com Expo Push API
+  - ✅ **Perfil "tecnico" adicionado** ao sistema de perfis (`PERFIS_PERMISSOES`)
+  - ✅ **NetworkStatusBar integrado** ao App.js do app móvel
+  - ✅ Testado fluxo completo: criar OS → atribuir técnico → push enviado
 - **16/01/2026:** 
   - **APK GERADO E DISPONÍVEL PARA DOWNLOAD!** 🎉
   - Build via EAS Build (Expo Application Services)
