@@ -2,7 +2,7 @@
   "expo": {
     "name": "App do Técnico",
     "slug": "app-tecnico-echoshop",
-    "version": "1.0.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.echoshop.apptecnico",
-      "buildNumber": "1"
+      "buildNumber": "3"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,7 +25,9 @@
         "backgroundColor": "#1e40af"
       },
       "package": "com.echoshop.apptecnico",
-      "versionCode": 1
+      "versionCode": 3,
+      "googleServicesFile": "./google-services.json",
+      "useNextNotificationsApi": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -36,8 +38,22 @@
         {
           "cameraPermission": "Permitir acesso a camera"
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#1e40af",
+          "sounds": []
+        }
       ]
     ],
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#1e40af",
+      "androidMode": "default",
+      "androidCollapsedTitle": "App do Técnico"
+    },
     "extra": {
       "eas": {
         "projectId": "691bb83b-a36c-4bb2-b555-314ddf890c14"
