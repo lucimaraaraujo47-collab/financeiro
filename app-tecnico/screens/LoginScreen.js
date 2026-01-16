@@ -8,7 +8,8 @@ import {
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Image
 } from 'react-native';
 import axios from 'axios';
 import { API_URL, THEME, APP_CONFIG } from '../config';
@@ -26,27 +27,39 @@ export default function LoginScreen({ onLogin }) {
 
     setLoading(true);
     try {
+      console.log('🔄 Tentando login em:', API_URL);
       const response = await axios.post(`${API_URL}/auth/login`, {
         email,
         senha
+      }, {
+        timeout: 15000 // 15 segundos timeout
       });
 
       const { access_token, user } = response.data;
       
       // Verificar se é técnico ou admin
       const perfil = (user.perfil || '').toLowerCase();
-      if (perfil !== 'tecnico' && perfil !== 'admin' && perfil !== 'admin_master') {
-        Alert.alert('Acesso Negado', 'Este app é apenas para técnicos');
+      if (perfil !== 'tecnico' && perfil !== 'admin' && perfil !== 'admin_master' && perfil !== 'operacional') {
+        Alert.alert('Acesso Negado', 'Este app é apenas para técnicos e operacionais');
         return;
       }
 
+      console.log('✅ Login bem sucedido:', user.nome);
       onLogin(user, access_token);
     } catch (error) {
-      console.error('Erro login:', error);
-      Alert.alert(
-        'Erro',
-        error.response?.data?.detail || 'Erro ao fazer login'
-      );
+      console.error('❌ Erro login:', error.message);
+      console.error('URL:', API_URL);
+      
+      let mensagem = 'Erro ao fazer login';
+      if (error.code === 'ECONNABORTED') {
+        mensagem = 'Tempo de conexão esgotado. Verifique sua internet.';
+      } else if (error.message === 'Network Error') {
+        mensagem = 'Erro de conexão. Verifique sua internet e tente novamente.';
+      } else if (error.response?.data?.detail) {
+        mensagem = error.response.data.detail;
+      }
+      
+      Alert.alert('Erro', mensagem);
     } finally {
       setLoading(false);
     }
@@ -58,9 +71,13 @@ export default function LoginScreen({ onLogin }) {
       style={styles.container}
     >
       <View style={styles.logoContainer}>
-        <Text style={styles.logoText}>🛠️</Text>
+        <Image 
+          source={require('../assets/icon.png')} 
+          style={styles.logo}
+          resizeMode="contain"
+        />
         <Text style={styles.title}>App do Técnico</Text>
-        <Text style={styles.subtitle}>ECHO SHOP</Text>
+        <Text style={styles.subtitle}>{APP_CONFIG.COMPANY_NAME}</Text>
       </View>
 
       <View style={styles.formContainer}>
@@ -94,6 +111,8 @@ export default function LoginScreen({ onLogin }) {
             <Text style={styles.buttonText}>Entrar</Text>
           )}
         </TouchableOpacity>
+        
+        <Text style={styles.versionText}>v{APP_CONFIG.APP_VERSION}</Text>
       </View>
     </KeyboardAvoidingView>
   );
@@ -110,9 +129,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40
   },
-  logoText: {
-    fontSize: 60,
-    marginBottom: 10
+  logo: {
+    width: 120,
+    height: 120,
+    borderRadius: 20,
+    marginBottom: 15
   },
   title: {
     fontSize: 28,
@@ -150,5 +171,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold'
+  },
+  versionText: {
+    textAlign: 'center',
+    marginTop: 15,
+    color: '#94a3b8',
+    fontSize: 12
   }
 });
