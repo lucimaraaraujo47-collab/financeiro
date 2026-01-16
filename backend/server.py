@@ -7687,11 +7687,58 @@ async def obter_ordem_servico(os_id: str, current_user: dict = Depends(get_curre
     
     return os
 
+async def _enviar_push_nova_os(os_id: str, tecnico_id: str, os_data: dict):
+    """Função interna para enviar push notification quando uma OS é atribuída"""
+    try:
+        # Buscar técnico
+        tecnico = await db.users.find_one({"id": tecnico_id})
+        if not tecnico or not tecnico.get("push_token"):
+            logging.info(f"Técnico {tecnico_id} não tem push token registrado")
+            return False
+        
+        # Preparar mensagem
+        cliente_nome = os_data.get("cliente_nome", "Cliente")
+        tipo_os = os_data.get("tipo", "serviço")
+        numero_os = os_data.get("numero", "N/A")
+        data_agendamento = os_data.get("data_agendamento", "")
+        
+        message = {
+            "to": tecnico["push_token"],
+            "title": f"🔔 Nova OS #{numero_os}",
+            "body": f"OS de {tipo_os} atribuída para você. Cliente: {cliente_nome}" + (f" - {data_agendamento}" if data_agendamento else ""),
+            "data": {
+                "osId": os_id,
+                "osNumero": numero_os,
+                "tipo": "nova_os",
+                "screen": "OSDetail"
+            },
+            "sound": "default",
+            "priority": "high",
+            "channelId": "os-nova"
+        }
+        
+        response = requests.post(
+            "https://exp.host/--/api/v2/push/send",
+            json=message,
+            headers={"Content-Type": "application/json"}
+        )
+        
+        if response.status_code == 200:
+            logging.info(f"✅ Push enviado para técnico {tecnico_id} sobre OS {os_id}")
+            return True
+        else:
+            logging.error(f"❌ Erro ao enviar push: {response.text}")
+            return False
+            
+    except Exception as e:
+        logging.error(f"Erro ao enviar push notification: {e}")
+        return False
+
 @api_router.patch("/ordens-servico/{os_id}/atribuir")
 async def atribuir_tecnico_os(os_id: str, data: Dict[str, str] = Body(...), current_user: dict = Depends(get_current_user)):
     """Atribui um técnico à OS"""
-    os = await db.ordens_servico.find_one({"id": os_id})
-    if not os:
+    os_doc = await db.ordens_servico.find_one({"id": os_id})
+    if not os_doc:
         raise HTTPException(status_code=404, detail="OS não encontrada")
     
     tecnico_id = data.get("tecnico_id")
@@ -7710,6 +7757,13 @@ async def atribuir_tecnico_os(os_id: str, data: Dict[str, str] = Body(...), curr
         update["horario_previsto"] = horario_previsto
     
     await db.ordens_servico.update_one({"id": os_id}, {"$set": update})
+    
+    # Enviar push notification para o técnico (assíncrono, não bloqueia a resposta)
+    if tecnico_id:
+        # Atualizar os_doc com os novos dados para a notificação
+        os_doc.update(update)
+        asyncio.create_task(_enviar_push_nova_os(os_id, tecnico_id, os_doc))
+    
     return {"message": "Técnico atribuído com sucesso"}
 
 @api_router.patch("/ordens-servico/{os_id}/status")
