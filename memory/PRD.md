@@ -181,6 +181,12 @@ npx eas build --platform android --profile preview  # APK para testes
 
 ## Changelog
 - **16/01/2026 (sessão atual):**
+  - ✅ **APK v1.3.0 gerado e disponível para download!**
+    - Logotipo ECHO SHOP integrado na tela de login e splash screen
+    - Push Notifications habilitados
+    - NetworkStatusBar para indicar status de rede
+    - Perfil "operacional" agora pode fazer login
+    - Melhor tratamento de erros de conexão
   - ✅ **Push Notifications implementado!**
     - Função `_enviar_push_nova_os()` adicionada ao backend
     - Disparo automático quando técnico é atribuído a uma OS
