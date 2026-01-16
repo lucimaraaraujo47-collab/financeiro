@@ -8585,8 +8585,6 @@ async def startup_backup_scheduler():
     else:
         logging.warning("⚠ Google Drive not configured - Automated backups disabled")
         logging.info("See /app/BACKUP_SETUP_INSTRUCTIONS.md for setup instructions")
-
-async def run_scheduled_backup():
     """Function to run scheduled backup"""
     try:
         logging.info("=" * 60)
