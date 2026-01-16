@@ -13,6 +13,7 @@ import CameraScreen from './screens/CameraScreen';
 import PhotoGalleryScreen from './screens/PhotoGalleryScreen';
 
 import PushNotificationService from './services/PushNotificationService';
+import NetworkStatusBar from './components/NetworkStatusBar';
 
 const Stack = createNativeStackNavigator();
 
