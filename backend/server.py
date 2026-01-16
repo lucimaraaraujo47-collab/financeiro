@@ -8306,6 +8306,182 @@ async def dashboard_equipamentos_tecnicos(empresa_id: str, current_user: dict = 
 
 # ==================== END EQUIPAMENTOS ENDPOINTS ====================
 
+# ==================== PUSH NOTIFICATIONS ENDPOINTS ====================
+
+class PushTokenCreate(BaseModel):
+    push_token: str
+    platform: str = "android"
+    device_name: Optional[str] = None
+
+class PushNotificationRequest(BaseModel):
+    user_ids: Optional[List[str]] = None  # Se None, envia para todos os técnicos
+    title: str
+    body: str
+    data: Optional[Dict[str, Any]] = None
+
+@api_router.post("/users/{user_id}/push-token")
+async def register_push_token(
+    user_id: str,
+    token_data: PushTokenCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Registrar token de push notification para um usuário"""
+    try:
+        # Verificar se o usuário existe
+        user = await db.users.find_one({"id": user_id})
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        
+        # Atualizar ou criar registro de push token
+        await db.users.update_one(
+            {"id": user_id},
+            {
+                "$set": {
+                    "push_token": token_data.push_token,
+                    "push_platform": token_data.platform,
+                    "push_device_name": token_data.device_name,
+                    "push_token_updated_at": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        )
+        
+        logging.info(f"Push token registrado para usuário {user_id}: {token_data.push_token[:20]}...")
+        return {"success": True, "message": "Token registrado com sucesso"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Erro ao registrar push token: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao registrar token")
+
+@api_router.post("/notifications/send")
+async def send_push_notification(
+    notification: PushNotificationRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Enviar push notification para usuários (admin only)"""
+    try:
+        # Verificar permissão
+        if current_user.get("perfil") not in ["admin", "admin_master"]:
+            raise HTTPException(status_code=403, detail="Sem permissão para enviar notificações")
+        
+        # Buscar tokens dos usuários
+        query = {"push_token": {"$exists": True, "$ne": None}}
+        if notification.user_ids:
+            query["id"] = {"$in": notification.user_ids}
+        
+        users = await db.users.find(query, {"push_token": 1, "nome": 1}).to_list(length=1000)
+        
+        if not users:
+            return {"success": False, "message": "Nenhum usuário com push token encontrado", "sent": 0}
+        
+        # Preparar mensagens para Expo Push API
+        messages = []
+        for user in users:
+            if user.get("push_token"):
+                messages.append({
+                    "to": user["push_token"],
+                    "title": notification.title,
+                    "body": notification.body,
+                    "data": notification.data or {},
+                    "sound": "default",
+                    "priority": "high"
+                })
+        
+        # Enviar via Expo Push API
+        sent_count = 0
+        failed_count = 0
+        
+        # Enviar em lotes de 100
+        for i in range(0, len(messages), 100):
+            batch = messages[i:i+100]
+            try:
+                response = requests.post(
+                    "https://exp.host/--/api/v2/push/send",
+                    json=batch,
+                    headers={"Content-Type": "application/json"}
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    sent_count += len(batch)
+                    logging.info(f"Notificações enviadas: {len(batch)}")
+                else:
+                    failed_count += len(batch)
+                    logging.error(f"Erro ao enviar notificações: {response.text}")
+            except Exception as e:
+                failed_count += len(batch)
+                logging.error(f"Erro ao enviar batch: {e}")
+        
+        return {
+            "success": True,
+            "message": f"Notificações enviadas",
+            "sent": sent_count,
+            "failed": failed_count,
+            "total_users": len(users)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Erro ao enviar notificações: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao enviar notificações")
+
+@api_router.post("/ordens-servico/{os_id}/notificar-tecnico")
+async def notify_technician_new_os(
+    os_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Enviar notificação para o técnico atribuído à OS"""
+    try:
+        # Buscar OS
+        os = await db.ordens_servico.find_one({"id": os_id})
+        if not os:
+            raise HTTPException(status_code=404, detail="OS não encontrada")
+        
+        tecnico_id = os.get("tecnico_id")
+        if not tecnico_id:
+            return {"success": False, "message": "OS não tem técnico atribuído"}
+        
+        # Buscar técnico
+        tecnico = await db.users.find_one({"id": tecnico_id})
+        if not tecnico or not tecnico.get("push_token"):
+            return {"success": False, "message": "Técnico não tem push token registrado"}
+        
+        # Enviar notificação
+        message = {
+            "to": tecnico["push_token"],
+            "title": f"🔔 Nova OS: {os.get('numero', 'N/A')}",
+            "body": f"Você recebeu uma nova OS de {os.get('tipo', 'serviço')}",
+            "data": {
+                "osId": os_id,
+                "osNumero": os.get("numero"),
+                "tipo": "nova_os"
+            },
+            "sound": "default",
+            "priority": "high",
+            "channelId": "os-nova"
+        }
+        
+        response = requests.post(
+            "https://exp.host/--/api/v2/push/send",
+            json=message,
+            headers={"Content-Type": "application/json"}
+        )
+        
+        if response.status_code == 200:
+            logging.info(f"Notificação enviada para técnico {tecnico_id} sobre OS {os_id}")
+            return {"success": True, "message": "Notificação enviada"}
+        else:
+            logging.error(f"Erro ao enviar notificação: {response.text}")
+            return {"success": False, "message": "Erro ao enviar notificação"}
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Erro ao notificar técnico: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao enviar notificação")
+
+# ==================== END PUSH NOTIFICATIONS ====================
+
 # ==================== APK MANAGEMENT ENDPOINTS ====================
 
 APK_UPLOAD_DIR = Path("/app/backend/uploads/apk")
