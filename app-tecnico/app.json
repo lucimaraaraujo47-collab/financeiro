@@ -26,7 +26,6 @@
       },
       "package": "com.echoshop.apptecnico",
       "versionCode": 4,
-      "googleServicesFile": "./google-services.json",
       "useNextNotificationsApi": true
     },
     "web": {
