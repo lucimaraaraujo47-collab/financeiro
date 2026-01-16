@@ -8306,6 +8306,156 @@ async def dashboard_equipamentos_tecnicos(empresa_id: str, current_user: dict = 
 
 # ==================== END EQUIPAMENTOS ENDPOINTS ====================
 
+# ==================== APK MANAGEMENT ENDPOINTS ====================
+
+APK_UPLOAD_DIR = Path("/app/backend/uploads/apk")
+APK_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+class APKInfo(BaseModel):
+    version: str
+    filename: str
+    size_mb: float
+    upload_date: str
+    download_url: str
+    uploaded_by: Optional[str] = None
+
+@api_router.get("/app-tecnico/apk/info")
+async def get_apk_info():
+    """Get information about the latest APK available for download"""
+    try:
+        metadata_file = APK_UPLOAD_DIR / "metadata.json"
+        
+        if not metadata_file.exists():
+            return {"available": False, "message": "Nenhum APK disponível para download"}
+        
+        with open(metadata_file, "r") as f:
+            metadata = json.load(f)
+        
+        apk_path = APK_UPLOAD_DIR / metadata.get("filename", "")
+        if not apk_path.exists():
+            return {"available": False, "message": "APK não encontrado"}
+        
+        return {
+            "available": True,
+            "version": metadata.get("version", "1.0.0"),
+            "filename": metadata.get("filename"),
+            "size_mb": metadata.get("size_mb", 0),
+            "upload_date": metadata.get("upload_date"),
+            "download_url": f"/api/app-tecnico/apk/download",
+            "uploaded_by": metadata.get("uploaded_by")
+        }
+    except Exception as e:
+        logging.error(f"Error getting APK info: {e}")
+        return {"available": False, "message": "Erro ao verificar APK"}
+
+@api_router.get("/app-tecnico/apk/download")
+async def download_apk():
+    """Download the latest APK file"""
+    try:
+        metadata_file = APK_UPLOAD_DIR / "metadata.json"
+        
+        if not metadata_file.exists():
+            raise HTTPException(status_code=404, detail="Nenhum APK disponível para download")
+        
+        with open(metadata_file, "r") as f:
+            metadata = json.load(f)
+        
+        apk_path = APK_UPLOAD_DIR / metadata.get("filename", "")
+        
+        if not apk_path.exists():
+            raise HTTPException(status_code=404, detail="Arquivo APK não encontrado")
+        
+        return FileResponse(
+            path=str(apk_path),
+            filename=metadata.get("filename", "app-tecnico.apk"),
+            media_type="application/vnd.android.package-archive"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error downloading APK: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao baixar APK")
+
+@api_router.post("/app-tecnico/apk/upload")
+async def upload_apk(
+    file: UploadFile = File(...),
+    version: str = Form(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a new APK file (admin only)"""
+    try:
+        if current_user.get("perfil") != "admin":
+            raise HTTPException(status_code=403, detail="Apenas administradores podem fazer upload do APK")
+        
+        if not file.filename.endswith('.apk'):
+            raise HTTPException(status_code=400, detail="Arquivo deve ser um APK (.apk)")
+        
+        content = await file.read()
+        file_size_mb = len(content) / (1024 * 1024)
+        
+        if file_size_mb > 100:
+            raise HTTPException(status_code=400, detail="Arquivo muito grande (máximo 100MB)")
+        
+        safe_version = version.replace(".", "_")
+        filename = f"app-tecnico-v{safe_version}.apk"
+        apk_path = APK_UPLOAD_DIR / filename
+        
+        for old_file in APK_UPLOAD_DIR.glob("*.apk"):
+            old_file.unlink()
+        
+        with open(apk_path, "wb") as f:
+            f.write(content)
+        
+        metadata = {
+            "version": version,
+            "filename": filename,
+            "size_mb": round(file_size_mb, 2),
+            "upload_date": datetime.now(timezone.utc).isoformat(),
+            "uploaded_by": current_user.get("nome", current_user.get("email"))
+        }
+        
+        with open(APK_UPLOAD_DIR / "metadata.json", "w") as f:
+            json.dump(metadata, f, indent=2)
+        
+        logging.info(f"APK uploaded: {filename} ({file_size_mb:.2f} MB) by {current_user.get('email')}")
+        
+        return {
+            "success": True,
+            "message": "APK enviado com sucesso",
+            "version": version,
+            "filename": filename,
+            "size_mb": round(file_size_mb, 2),
+            "download_url": "/api/app-tecnico/apk/download"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error uploading APK: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao enviar APK: {str(e)}")
+
+@api_router.delete("/app-tecnico/apk")
+async def delete_apk(current_user: dict = Depends(get_current_user)):
+    """Delete the current APK (admin only)"""
+    try:
+        if current_user.get("perfil") != "admin":
+            raise HTTPException(status_code=403, detail="Apenas administradores podem remover o APK")
+        
+        for apk_file in APK_UPLOAD_DIR.glob("*.apk"):
+            apk_file.unlink()
+        
+        metadata_file = APK_UPLOAD_DIR / "metadata.json"
+        if metadata_file.exists():
+            metadata_file.unlink()
+        
+        return {"success": True, "message": "APK removido com sucesso"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error deleting APK: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao remover APK")
+
+# ==================== END APK MANAGEMENT ====================
+
 # Include router
 app.include_router(api_router)
 
