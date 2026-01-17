@@ -2,7 +2,7 @@
   "expo": {
     "name": "App do Técnico - ECHO SHOP",
     "slug": "app-tecnico-echoshop",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.echoshop.apptecnico",
-      "buildNumber": "4"
+      "buildNumber": "5"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,7 +25,7 @@
         "backgroundColor": "#1e40af"
       },
       "package": "com.echoshop.apptecnico",
-      "versionCode": 4,
+      "versionCode": 5,
       "useNextNotificationsApi": true
     },
     "web": {
