@@ -780,7 +780,36 @@ const styles = StyleSheet.create({
   observacoesText: {
     fontSize: 14,
     color: '#64748b',
-    lineHeight: 22
+    lineHeight: 22,
+    marginTop: 10
+  },
+  observacaoBtn: {
+    backgroundColor: '#f1f5f9',
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderStyle: 'dashed'
+  },
+  observacaoBtnText: {
+    color: '#64748b',
+    fontSize: 14,
+    fontWeight: '500'
+  },
+  pendingBanner: {
+    backgroundColor: '#fef3c7',
+    padding: 12,
+    marginHorizontal: 15,
+    marginBottom: 10,
+    borderRadius: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#f59e0b'
+  },
+  pendingText: {
+    color: '#92400e',
+    fontSize: 13,
+    fontWeight: '500'
   },
   actionsContainer: {
     padding: 15,
