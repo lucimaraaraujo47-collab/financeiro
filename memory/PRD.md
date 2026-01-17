@@ -170,13 +170,31 @@ npx eas build --platform android --profile preview  # APK para testes
 - `Equipamentos.js`: Tratamento de valores null/undefined no toFixed()
 
 ## Próximos Passos Prioritários
-1. **Testar APK v1.4.0** - Instalar e verificar modo offline
-2. Testar push notifications com novo APK
-3. Continuar refatoração do server.py em módulos separados
-4. Implementar histórico vitalício de equipamentos
+1. **Testar APK v1.4.0** - Validar modo offline e push notifications
+2. **Continuar refatoração** - Migrar endpoints restantes para routers
+3. Implementar histórico vitalício de equipamentos
+
+## Estrutura do Backend (Refatoração em Progresso)
+```
+/app/backend/
+├── server.py          # Principal (8700+ linhas - sendo reduzido)
+├── server_backup.py   # Backup completo
+├── database.py        # Conexão MongoDB
+├── config.py          # Configurações centralizadas
+├── security_utils.py  # Utilitários de segurança
+├── models/
+│   ├── user.py        # ✅ Modelos de usuário
+│   └── empresa.py     # ✅ Modelos de empresa
+├── routers/
+│   ├── auth.py        # ✅ Autenticação
+│   ├── ordens_servico.py  # ✅ Ordens de Serviço
+│   └── app_tecnico.py # ✅ App Técnico/APK
+├── services/          # (Próxima fase)
+└── utils/             # (Próxima fase)
+```
 
 ## Data da Última Atualização
-17/01/2026 - Modo Offline Completo implementado + APK v1.4.0
+17/01/2026 - Refatoração backend iniciada + Modo Offline
 
 ## Changelog
 - **17/01/2026 (sessão atual):**
