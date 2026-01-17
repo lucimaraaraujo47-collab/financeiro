@@ -227,6 +227,13 @@ export default function App() {
               >
                 {props => <PhotoGalleryScreen {...props} token={token} />}
               </Stack.Screen>
+
+              <Stack.Screen 
+                name="AddObservation" 
+                options={{ title: 'Observação do Técnico' }}
+              >
+                {props => <AddObservationScreen {...props} token={token} />}
+              </Stack.Screen>
             </>
           )}
         </Stack.Navigator>
