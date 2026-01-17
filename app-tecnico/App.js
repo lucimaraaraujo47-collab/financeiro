@@ -111,6 +111,18 @@ export default function App() {
       setUser(userData);
       setToken(userToken);
       setIsLoggedIn(true);
+      
+      // Registrar push token imediatamente após login
+      try {
+        const pushToken = await PushNotificationService.registerForPushNotifications();
+        if (pushToken && userData?.id) {
+          console.log('📱 Registrando push token após login...');
+          await PushNotificationService.registerTokenOnBackend(userData.id, userToken);
+          console.log('✅ Push token registrado com sucesso!');
+        }
+      } catch (pushError) {
+        console.error('⚠️ Erro ao registrar push token:', pushError);
+      }
     } catch (error) {
       console.error('Erro ao salvar login:', error);
     }
