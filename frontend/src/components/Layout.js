@@ -345,7 +345,7 @@ function Layout({ user, onLogout, children }) {
                   <span className="nav-text">WhatsApp</span>
                 </Link>
 
-                {user.perfil === 'admin' && (
+                {(user.perfil === 'admin' || user.perfil === 'admin_master') && (
                   <Link 
                     to="/usuarios" 
                     className={`nav-item nav-subitem ${isActive('/usuarios') ? 'active' : ''}`}
