@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import OfflineService from '../services/OfflineService';
 
 export default function NetworkStatusBar({ onSyncPress }) {
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
-  const [slideAnim] = useState(new Animated.Value(-50));
 
   useEffect(() => {
     // Verificar status inicial
