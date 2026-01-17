@@ -400,9 +400,20 @@ function OrdensServico({ user, token }) {
 
               {/* Agendamento */}
               <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
-                <h4 style={{ marginTop: 0, color: '#1e40af' }}>📅 Agendamento</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h4 style={{ marginTop: 0, color: '#1e40af' }}>📅 Agendamento</h4>
+                  {['agendada', 'em_andamento'].includes(showDetalhes.status) && (
+                    <button 
+                      className="btn-secondary" 
+                      style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                      onClick={() => { openReagendar(showDetalhes); setShowDetalhes(null); }}
+                    >
+                      🔄 Alterar
+                    </button>
+                  )}
+                </div>
                 <p><strong>Técnico:</strong> {showDetalhes.tecnico_nome || 'Não atribuído'}</p>
-                <p><strong>Data:</strong> {showDetalhes.data_agendamento || 'Não agendado'}</p>
+                <p><strong>Data:</strong> {showDetalhes.data_agendamento ? new Date(showDetalhes.data_agendamento).toLocaleDateString('pt-BR') : 'Não agendado'}</p>
                 <p><strong>Horário:</strong> {showDetalhes.horario_previsto || '-'}</p>
               </div>
 
