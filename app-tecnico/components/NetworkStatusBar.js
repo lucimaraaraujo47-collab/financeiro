@@ -63,10 +63,9 @@ export default function NetworkStatusBar({ onSyncPress }) {
   }
 
   return (
-    <Animated.View 
+    <View 
       style={[
         styles.container,
-        { transform: [{ translateY: slideAnim }] },
         isOnline ? styles.pendingBar : styles.offlineBar
       ]}
     >
@@ -77,7 +76,7 @@ export default function NetworkStatusBar({ onSyncPress }) {
         <Text style={styles.text}>
           {isOnline 
             ? `${pendingCount} alteração(ões) pendente(s)`
-            : 'Modo Offline - Alterações serão sincronizadas'
+            : 'Modo Offline - Dados salvos localmente'
           }
         </Text>
       </View>
@@ -89,11 +88,11 @@ export default function NetworkStatusBar({ onSyncPress }) {
           disabled={syncing}
         >
           <Text style={styles.syncButtonText}>
-            {syncing ? '⏳' : '🔄 Sincronizar'}
+            {syncing ? '⏳ Sincronizando...' : '🔄 Sincronizar'}
           </Text>
         </TouchableOpacity>
       )}
-    </Animated.View>
+    </View>
   );
 }
 
