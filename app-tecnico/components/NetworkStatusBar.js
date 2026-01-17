@@ -14,11 +14,10 @@ export default function NetworkStatusBar({ onSyncPress }) {
     // Adicionar listener de rede
     const unsubscribe = OfflineService.addNetworkListener(online => {
       setIsOnline(online);
-      animateBar(!online || pendingCount > 0);
     });
 
     // Verificar pendências periodicamente
-    const interval = setInterval(checkStatus, 30000);
+    const interval = setInterval(checkStatus, 10000);
 
     return () => {
       unsubscribe();
@@ -32,16 +31,6 @@ export default function NetworkStatusBar({ onSyncPress }) {
     
     const stats = await OfflineService.getSyncStats();
     setPendingCount(stats.pendingCount);
-    
-    animateBar(!online || stats.pendingCount > 0);
-  };
-
-  const animateBar = (show) => {
-    Animated.timing(slideAnim, {
-      toValue: show ? 0 : -50,
-      duration: 300,
-      useNativeDriver: true
-    }).start();
   };
 
   const handleSync = async () => {
