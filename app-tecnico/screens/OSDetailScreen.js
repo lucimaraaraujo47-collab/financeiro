@@ -423,8 +423,35 @@ export default function OSDetailScreen({ route, navigation, user, token }) {
       {/* Observações */}
       {os.observacoes && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📝 Observações</Text>
+          <Text style={styles.sectionTitle}>📝 Observações da OS</Text>
           <Text style={styles.observacoesText}>{os.observacoes}</Text>
+        </View>
+      )}
+
+      {/* Observações do Técnico */}
+      {os.status !== 'concluida' && os.status !== 'cancelada' && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>📋 Observações do Técnico</Text>
+          <TouchableOpacity
+            style={styles.observacaoBtn}
+            onPress={() => navigation.navigate('AddObservation', { osId: os.id, currentObs: os.observacoes_tecnico })}
+          >
+            <Text style={styles.observacaoBtnText}>
+              {os.observacoes_tecnico ? '✏️ Editar Observação' : '➕ Adicionar Observação'}
+            </Text>
+          </TouchableOpacity>
+          {os.observacoes_tecnico && (
+            <Text style={styles.observacoesText}>{os.observacoes_tecnico}</Text>
+          )}
+        </View>
+      )}
+
+      {/* Indicador de pendências offline */}
+      {pendingChanges && (
+        <View style={styles.pendingBanner}>
+          <Text style={styles.pendingText}>
+            ⚠️ Há alterações pendentes de sincronização
+          </Text>
         </View>
       )}
 
