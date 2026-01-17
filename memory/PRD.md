@@ -215,26 +215,22 @@ npx eas build --platform android --profile preview  # APK para testes
 
 ## Changelog
 - **17/01/2026 (sessão atual):**
-  - ✅ **Refatoração do Backend iniciada!**
-    - Estrutura de pastas criada: `models/`, `routers/`, `services/`, `utils/`
-    - `config.py` - Configurações centralizadas
-    - `models/user.py` - Modelos de usuário e autenticação
-    - `models/empresa.py` - Modelos de empresa e licenciamento
-    - `routers/auth.py` - Router de autenticação (login, register, me)
-    - `routers/ordens_servico.py` - Router de OS (CRUD, atribuição, checklist)
-    - `routers/app_tecnico.py` - Router do app móvel (APK, push notifications)
-    - Backup do server.py original: `server_backup.py`
+  - ✅ **Refatoração do Backend VALIDADA!**
+    - server_new.py testado com sucesso na porta 8003
+    - Todos os endpoints principais funcionando
+    - 73 endpoints migrados para routers modulares
+    - Guia de migração criado: `MIGRATION_GUIDE.md`
+  - ✅ **Routers completos:**
+    - auth.py (5 endpoints)
+    - usuarios.py (6 endpoints)
+    - empresas.py (8 endpoints)
+    - financeiro.py (15 endpoints)
+    - estoque.py (12 endpoints)
+    - vendas.py (14 endpoints)
+    - ordens_servico.py (8 endpoints)
+    - app_tecnico.py (5 endpoints)
   - ✅ **Modo Offline Completo implementado!**
-    - NetworkStatusBar integrado e funcional
-    - Fila de sincronização para ações offline
-    - Cache local de OS e detalhes
-    - Sincronização automática ao reconectar
-  - ✅ **Tela de Observações do Técnico**
-    - Nova tela AddObservationScreen
-    - Sugestões rápidas de texto
-    - Funciona offline (sincroniza depois)
   - ✅ **APK v1.4.0 gerado e disponível**
-  - ✅ Endpoint `/api/ordens-servico/{id}/observacoes` criado
 - **16/01/2026:**
   - ✅ **APK v1.3.0 gerado**
     - Logotipo ECHO SHOP integrado
