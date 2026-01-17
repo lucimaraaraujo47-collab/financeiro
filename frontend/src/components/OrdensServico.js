@@ -11,11 +11,18 @@ function OrdensServico({ user, token }) {
   const [filtroTipo, setFiltroTipo] = useState('');
   const [showDetalhes, setShowDetalhes] = useState(null);
   const [showAtribuir, setShowAtribuir] = useState(null);
+  const [showReagendar, setShowReagendar] = useState(null);
   const [message, setMessage] = useState('');
   const [atribuirForm, setAtribuirForm] = useState({
     tecnico_id: '',
     data_agendamento: '',
     horario_previsto: ''
+  });
+  const [reagendarForm, setReagendarForm] = useState({
+    tecnico_id: '',
+    data_agendamento: '',
+    horario_previsto: '',
+    motivo: ''
   });
 
   const statusLabels = {
