@@ -180,6 +180,15 @@ npx eas build --platform android --profile preview  # APK para testes
 
 ## Changelog
 - **17/01/2026 (sessão atual):**
+  - ✅ **Refatoração do Backend iniciada!**
+    - Estrutura de pastas criada: `models/`, `routers/`, `services/`, `utils/`
+    - `config.py` - Configurações centralizadas
+    - `models/user.py` - Modelos de usuário e autenticação
+    - `models/empresa.py` - Modelos de empresa e licenciamento
+    - `routers/auth.py` - Router de autenticação (login, register, me)
+    - `routers/ordens_servico.py` - Router de OS (CRUD, atribuição, checklist)
+    - `routers/app_tecnico.py` - Router do app móvel (APK, push notifications)
+    - Backup do server.py original: `server_backup.py`
   - ✅ **Modo Offline Completo implementado!**
     - NetworkStatusBar integrado e funcional
     - Fila de sincronização para ações offline
