@@ -109,6 +109,41 @@ function OrdensServico({ user, token }) {
     }
   };
 
+  const handleReagendar = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.patch(`${API}/ordens-servico/${showReagendar.id}/atribuir`, {
+        tecnico_id: reagendarForm.tecnico_id || showReagendar.tecnico_id,
+        data_agendamento: reagendarForm.data_agendamento,
+        horario_previsto: reagendarForm.horario_previsto
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessage('✅ OS reagendada com sucesso!');
+      setShowReagendar(null);
+      setReagendarForm({ tecnico_id: '', data_agendamento: '', horario_previsto: '', motivo: '' });
+      loadData();
+      if (showDetalhes?.id === showReagendar.id) {
+        loadDetalhes(showReagendar.id);
+      }
+    } catch (error) {
+      setMessage('❌ ' + (error.response?.data?.detail || 'Erro ao reagendar'));
+    }
+  };
+
+  const openReagendar = (os) => {
+    setReagendarForm({
+      tecnico_id: os.tecnico_id || '',
+      data_agendamento: os.data_agendamento || '',
+      horario_previsto: os.horario_previsto || '',
+      motivo: ''
+    });
+    setShowReagendar(os);
+  };
+      setMessage('❌ ' + (error.response?.data?.detail || 'Erro ao atribuir'));
+    }
+  };
+
   const handleStatusChange = async (osId, novoStatus) => {
     try {
       await axios.patch(`${API}/ordens-servico/${osId}/status`, { status: novoStatus }, {
