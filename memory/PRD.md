@@ -180,21 +180,29 @@ npx eas build --platform android --profile preview  # APK para testes
 16/01/2026 - Push Notifications implementado + NetworkStatusBar integrado
 
 ## Changelog
-- **16/01/2026 (sessão atual):**
-  - ✅ **APK v1.3.0 gerado e disponível para download!**
-    - Logotipo ECHO SHOP integrado na tela de login e splash screen
+- **17/01/2026 (sessão atual):**
+  - ✅ **Modo Offline Completo implementado!**
+    - NetworkStatusBar integrado e funcional
+    - Fila de sincronização para ações offline
+    - Cache local de OS e detalhes
+    - Sincronização automática ao reconectar
+  - ✅ **Tela de Observações do Técnico**
+    - Nova tela AddObservationScreen
+    - Sugestões rápidas de texto
+    - Funciona offline (sincroniza depois)
+  - ✅ **APK v1.4.0 gerado e disponível**
+  - ✅ Endpoint `/api/ordens-servico/{id}/observacoes` criado
+- **16/01/2026:**
+  - ✅ **APK v1.3.0 gerado**
+    - Logotipo ECHO SHOP integrado
     - Push Notifications habilitados
     - NetworkStatusBar para indicar status de rede
-    - Perfil "operacional" agora pode fazer login
-    - Melhor tratamento de erros de conexão
   - ✅ **Push Notifications implementado!**
-    - Função `_enviar_push_nova_os()` adicionada ao backend
-    - Disparo automático quando técnico é atribuído a uma OS
-    - Endpoint `/api/users/{id}/push-token` para registro de tokens
-    - Integração com Expo Push API
-  - ✅ **Perfil "tecnico" adicionado** ao sistema de perfis (`PERFIS_PERMISSOES`)
-  - ✅ **NetworkStatusBar integrado** ao App.js do app móvel
-  - ✅ Testado fluxo completo: criar OS → atribuir técnico → push enviado
+    - Função `_enviar_push_nova_os()` no backend
+    - Disparo automático quando técnico é atribuído
+  - ✅ **Perfil "tecnico" adicionado** ao sistema
+  - ✅ **Funcionalidade de Reagendar/Trocar Técnico** nas OS
+  - ✅ **Tela de Usuários** corrigida para admin_master
 - **16/01/2026:** 
   - **APK GERADO E DISPONÍVEL PARA DOWNLOAD!** 🎉
   - Build via EAS Build (Expo Application Services)
