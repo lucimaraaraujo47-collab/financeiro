@@ -73,8 +73,10 @@ function OrdensServico({ user, token }) {
         ]);
         
         setOrdens(ordensRes.data || []);
-        // Filtrar apenas técnicos
-        setTecnicos(tecnicosRes.data?.filter(u => u.perfil === 'tecnico' || u.perfil === 'admin') || []);
+        // Filtrar técnicos e operacionais que podem executar OS
+        setTecnicos(tecnicosRes.data?.filter(u => 
+          ['tecnico', 'operacional', 'admin', 'admin_master'].includes(u.perfil)
+        ) || []);
       }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
