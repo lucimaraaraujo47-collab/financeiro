@@ -1,15 +1,16 @@
 {
-    "version": "1.3.0",
-    "filename": "app-tecnico-v1.3.0.apk",
+    "version": "1.4.0",
+    "filename": "app-tecnico-v1.4.0.apk",
     "size_mb": 80.5,
-    "upload_date": "2026-01-16T23:43:00Z",
+    "upload_date": "2026-01-17T00:53:00Z",
     "download_url": "/api/app-tecnico/apk/download",
     "uploaded_by": "Sistema EAS Build",
     "changelog": [
+        "✅ Modo Offline completo - trabalhe sem internet",
+        "✅ Sincronização automática quando reconectar",
+        "✅ Observações do técnico editáveis",
+        "✅ Indicador visual de status de conexão",
         "✅ Push Notifications para novas OS",
-        "✅ Logotipo ECHO SHOP na tela de login",
-        "✅ Barra de status de rede (online/offline)",
-        "✅ Melhorias no tratamento de erros de conexão",
-        "✅ Perfil operacional agora pode fazer login"
+        "✅ Sugestões rápidas de observações"
     ]
 }
