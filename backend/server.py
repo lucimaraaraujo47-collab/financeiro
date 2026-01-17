@@ -7815,6 +7815,25 @@ async def atualizar_status_os(os_id: str, data: Dict[str, Any] = Body(...), curr
     await db.ordens_servico.update_one({"id": os_id}, {"$set": update})
     return {"message": f"Status atualizado para {novo_status}"}
 
+@api_router.patch("/ordens-servico/{os_id}/observacoes")
+async def atualizar_observacoes_os(os_id: str, data: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
+    """Atualiza observações do técnico na OS"""
+    os = await db.ordens_servico.find_one({"id": os_id})
+    if not os:
+        raise HTTPException(status_code=404, detail="OS não encontrada")
+    
+    observacoes = data.get("observacoes_tecnico", "")
+    
+    await db.ordens_servico.update_one(
+        {"id": os_id}, 
+        {"$set": {
+            "observacoes_tecnico": observacoes,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    return {"message": "Observações atualizadas com sucesso", "observacoes_tecnico": observacoes}
+
 @api_router.patch("/ordens-servico/{os_id}/checklist")
 async def atualizar_checklist_os(os_id: str, data: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
     """Atualiza item do checklist"""
