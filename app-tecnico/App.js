@@ -11,6 +11,7 @@ import OSDetailScreen from './screens/OSDetailScreen';
 import SignatureScreen from './screens/SignatureScreen';
 import CameraScreen from './screens/CameraScreen';
 import PhotoGalleryScreen from './screens/PhotoGalleryScreen';
+import AddObservationScreen from './screens/AddObservationScreen';
 
 import PushNotificationService from './services/PushNotificationService';
 import NetworkStatusBar from './components/NetworkStatusBar';
