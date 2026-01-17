@@ -472,6 +472,11 @@ function OrdensServico({ user, token }) {
                   👷 Atribuir Técnico
                 </button>
               )}
+              {['agendada', 'em_andamento'].includes(showDetalhes.status) && (
+                <button className="btn-primary" onClick={() => { openReagendar(showDetalhes); setShowDetalhes(null); }}>
+                  🔄 Reagendar / Trocar Técnico
+                </button>
+              )}
               {showDetalhes.status === 'agendada' && (
                 <button className="btn-success" onClick={() => handleStatusChange(showDetalhes.id, 'em_andamento')}>
                   ▶️ Iniciar Execução
