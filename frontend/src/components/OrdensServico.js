@@ -595,7 +595,7 @@ function OrdensServico({ user, token }) {
                   )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <button
                     className="btn-primary"
                     style={{ flex: 1, fontSize: '0.85rem' }}
@@ -610,6 +610,15 @@ function OrdensServico({ user, token }) {
                       onClick={() => setShowAtribuir(os.id)}
                     >
                       👷 Atribuir
+                    </button>
+                  )}
+                  {['agendada', 'em_andamento'].includes(os.status) && (
+                    <button
+                      className="btn-secondary"
+                      style={{ fontSize: '0.85rem' }}
+                      onClick={() => openReagendar(os)}
+                    >
+                      🔄 Reagendar
                     </button>
                   )}
                 </div>
