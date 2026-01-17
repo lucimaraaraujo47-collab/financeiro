@@ -48,7 +48,8 @@ async def criar_empresa(
         {"$addToSet": {"empresa_ids": empresa_id}}
     )
     
-    del empresa["_id"] if "_id" in empresa else None
+    # Remover _id do retorno
+    empresa.pop("_id", None)
     return empresa
 
 @router.get("")
