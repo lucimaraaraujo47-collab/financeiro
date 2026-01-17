@@ -142,9 +142,6 @@ function OrdensServico({ user, token }) {
     });
     setShowReagendar(os);
   };
-      setMessage('❌ ' + (error.response?.data?.detail || 'Erro ao atribuir'));
-    }
-  };
 
   const handleStatusChange = async (osId, novoStatus) => {
     try {
