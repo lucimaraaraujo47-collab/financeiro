@@ -99,15 +99,11 @@ export default function NetworkStatusBar({ onSyncPress }) {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingVertical: 12,
     zIndex: 1000
   },
   offlineBar: {
@@ -131,7 +127,7 @@ const styles = StyleSheet.create({
     fontWeight: '500'
   },
   syncButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.25)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 15
