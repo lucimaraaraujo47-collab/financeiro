@@ -254,6 +254,86 @@ function OrdensServico({ user, token }) {
         </div>
       )}
 
+      {/* Modal de Reagendar / Trocar Técnico */}
+      {showReagendar && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            width: '90%',
+            maxWidth: '500px',
+            padding: '2rem'
+          }}>
+            <h3 style={{ marginTop: 0 }}>🔄 Reagendar / Trocar Técnico</h3>
+            <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
+              OS: <strong>{showReagendar.numero}</strong> - {showReagendar.cliente_nome}
+            </p>
+            <form onSubmit={handleReagendar}>
+              <div className="form-group">
+                <label className="form-label">Técnico</label>
+                <select
+                  className="form-select"
+                  value={reagendarForm.tecnico_id}
+                  onChange={(e) => setReagendarForm({ ...reagendarForm, tecnico_id: e.target.value })}
+                >
+                  <option value="">Manter técnico atual</option>
+                  {tecnicos.map(t => (
+                    <option key={t.id} value={t.id}>
+                      {t.nome} {t.id === showReagendar.tecnico_id ? '(atual)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Nova Data *</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={reagendarForm.data_agendamento}
+                  onChange={(e) => setReagendarForm({ ...reagendarForm, data_agendamento: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Novo Horário</label>
+                <input
+                  type="time"
+                  className="form-input"
+                  value={reagendarForm.horario_previsto}
+                  onChange={(e) => setReagendarForm({ ...reagendarForm, horario_previsto: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Motivo do Reagendamento</label>
+                <textarea
+                  className="form-input"
+                  rows="2"
+                  placeholder="Ex: Cliente solicitou mudança de data..."
+                  value={reagendarForm.motivo}
+                  onChange={(e) => setReagendarForm({ ...reagendarForm, motivo: e.target.value })}
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                <button type="submit" className="btn-success">💾 Salvar Alterações</button>
+                <button type="button" className="btn-secondary" onClick={() => setShowReagendar(null)}>Cancelar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Modal de Detalhes */}
       {showDetalhes && (
         <div style={{
