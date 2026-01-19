@@ -8386,6 +8386,256 @@ async def dashboard_equipamentos_tecnicos(empresa_id: str, current_user: dict = 
 
 # ==================== END EQUIPAMENTOS ENDPOINTS ====================
 
+# ==================== HISTÓRICO VITALÍCIO DE EQUIPAMENTOS ====================
+
+@api_router.get("/equipamentos/{equip_id}/historico-completo")
+async def obter_historico_completo(equip_id: str, current_user: dict = Depends(get_current_user)):
+    """Obtém histórico vitalício completo do equipamento"""
+    equip = await db.equipamentos_tecnicos.find_one({"id": equip_id}, {"_id": 0})
+    if not equip:
+        raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+    
+    # Buscar todas as OS onde o equipamento foi usado
+    os_historico = await db.ordens_servico.find(
+        {"$or": [
+            {"equipamentos_instalados": equip_id},
+            {"equipamentos_retirados": equip_id}
+        ]},
+        {"_id": 0, "id": 1, "numero": 1, "tipo": 1, "cliente_nome": 1, "data_agendamento": 1, "status": 1, "concluida_em": 1}
+    ).sort("created_at", -1).to_list(100)
+    
+    # Buscar histórico de manutenções
+    manutencoes = await db.manutencoes_equipamentos.find(
+        {"equipamento_id": equip_id},
+        {"_id": 0}
+    ).sort("data_entrada", -1).to_list(50)
+    
+    # Histórico interno do equipamento
+    historico_interno = equip.get("historico", [])
+    
+    # Timeline unificada
+    timeline = []
+    
+    # Adicionar criação
+    timeline.append({
+        "data": equip.get("created_at"),
+        "tipo": "CADASTRO",
+        "icone": "📦",
+        "titulo": "Equipamento cadastrado",
+        "descricao": f"Número de série: {equip.get('numero_serie', 'N/A')}"
+    })
+    
+    # Adicionar histórico interno
+    for h in historico_interno:
+        icone = "📝"
+        if "status" in h.get("observacao", "").lower():
+            icone = "🔄"
+        elif "transfer" in h.get("tipo", "").lower():
+            icone = "🚚"
+        elif "manutenção" in h.get("observacao", "").lower():
+            icone = "🔧"
+        
+        timeline.append({
+            "data": h.get("data"),
+            "tipo": h.get("tipo", "EVENTO"),
+            "icone": icone,
+            "titulo": h.get("tipo", "Evento").replace("_", " ").title(),
+            "descricao": h.get("observacao", "")
+        })
+    
+    # Adicionar OS
+    for os in os_historico:
+        acao = "instalado" if equip_id in (os.get("equipamentos_instalados") or []) else "retirado"
+        timeline.append({
+            "data": os.get("concluida_em") or os.get("data_agendamento"),
+            "tipo": f"OS_{acao.upper()}",
+            "icone": "📋" if acao == "instalado" else "📤",
+            "titulo": f"Equipamento {acao} - OS {os.get('numero')}",
+            "descricao": f"Cliente: {os.get('cliente_nome', 'N/A')} | Tipo: {os.get('tipo', 'N/A')}",
+            "os_id": os.get("id"),
+            "os_numero": os.get("numero")
+        })
+    
+    # Adicionar manutenções
+    for m in manutencoes:
+        timeline.append({
+            "data": m.get("data_entrada"),
+            "tipo": "MANUTENCAO_ENTRADA",
+            "icone": "🔧",
+            "titulo": f"Entrada para manutenção",
+            "descricao": m.get("defeito_relatado", ""),
+            "manutencao_id": m.get("id")
+        })
+        if m.get("data_saida"):
+            timeline.append({
+                "data": m.get("data_saida"),
+                "tipo": "MANUTENCAO_SAIDA",
+                "icone": "✅",
+                "titulo": "Saída de manutenção",
+                "descricao": m.get("servico_realizado", ""),
+                "manutencao_id": m.get("id")
+            })
+    
+    # Ordenar timeline por data
+    timeline.sort(key=lambda x: x.get("data") or "", reverse=True)
+    
+    return {
+        "equipamento": equip,
+        "timeline": timeline,
+        "total_os": len(os_historico),
+        "total_manutencoes": len(manutencoes),
+        "total_eventos": len(timeline)
+    }
+
+@api_router.post("/equipamentos/{equip_id}/manutencao")
+async def registrar_manutencao(equip_id: str, data: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
+    """Registra entrada do equipamento para manutenção"""
+    equip = await db.equipamentos_tecnicos.find_one({"id": equip_id})
+    if not equip:
+        raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+    
+    manutencao_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    
+    manutencao = {
+        "id": manutencao_id,
+        "equipamento_id": equip_id,
+        "numero_serie": equip.get("numero_serie"),
+        "empresa_id": equip.get("empresa_id"),
+        "defeito_relatado": data.get("defeito_relatado", ""),
+        "diagnostico": data.get("diagnostico", ""),
+        "servico_realizado": None,
+        "pecas_substituidas": data.get("pecas_substituidas", []),
+        "custo_estimado": data.get("custo_estimado", 0),
+        "custo_final": None,
+        "tecnico_responsavel": data.get("tecnico_responsavel") or current_user.get("nome"),
+        "fornecedor_manutencao": data.get("fornecedor_manutencao"),
+        "data_entrada": now,
+        "data_previsao_saida": data.get("data_previsao_saida"),
+        "data_saida": None,
+        "status": "em_andamento",
+        "observacoes": data.get("observacoes", ""),
+        "created_by": current_user.get("id"),
+        "created_at": now
+    }
+    
+    await db.manutencoes_equipamentos.insert_one(manutencao)
+    
+    # Atualizar status do equipamento
+    historico_item = {
+        "data": now,
+        "tipo": "MANUTENCAO_ENTRADA",
+        "observacao": f"Entrada para manutenção. Defeito: {data.get('defeito_relatado', 'N/A')}"
+    }
+    
+    await db.equipamentos_tecnicos.update_one(
+        {"id": equip_id},
+        {
+            "$set": {
+                "status": "em_manutencao",
+                "localizacao": "manutencao",
+                "updated_at": datetime.now(timezone.utc)
+            },
+            "$push": {"historico": historico_item}
+        }
+    )
+    
+    return {"id": manutencao_id, "message": "Manutenção registrada com sucesso"}
+
+@api_router.patch("/manutencoes/{manutencao_id}/concluir")
+async def concluir_manutencao(manutencao_id: str, data: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
+    """Conclui uma manutenção"""
+    manutencao = await db.manutencoes_equipamentos.find_one({"id": manutencao_id})
+    if not manutencao:
+        raise HTTPException(status_code=404, detail="Manutenção não encontrada")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Atualizar manutenção
+    await db.manutencoes_equipamentos.update_one(
+        {"id": manutencao_id},
+        {"$set": {
+            "servico_realizado": data.get("servico_realizado", ""),
+            "pecas_substituidas": data.get("pecas_substituidas", manutencao.get("pecas_substituidas", [])),
+            "custo_final": data.get("custo_final", manutencao.get("custo_estimado", 0)),
+            "data_saida": now,
+            "status": "concluida",
+            "observacoes_conclusao": data.get("observacoes", "")
+        }}
+    )
+    
+    # Atualizar equipamento
+    equip_id = manutencao.get("equipamento_id")
+    novo_status = data.get("novo_status_equipamento", "disponivel")
+    
+    historico_item = {
+        "data": now,
+        "tipo": "MANUTENCAO_CONCLUIDA",
+        "observacao": f"Manutenção concluída. Serviço: {data.get('servico_realizado', 'N/A')}"
+    }
+    
+    await db.equipamentos_tecnicos.update_one(
+        {"id": equip_id},
+        {
+            "$set": {
+                "status": novo_status,
+                "localizacao": "deposito",
+                "updated_at": datetime.now(timezone.utc)
+            },
+            "$push": {"historico": historico_item}
+        }
+    )
+    
+    return {"message": "Manutenção concluída com sucesso"}
+
+@api_router.get("/empresas/{empresa_id}/manutencoes")
+async def listar_manutencoes(
+    empresa_id: str, 
+    status: Optional[str] = None,
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """Lista todas as manutenções da empresa"""
+    query = {"empresa_id": empresa_id}
+    if status:
+        query["status"] = status
+    
+    manutencoes = await db.manutencoes_equipamentos.find(query, {"_id": 0})\
+        .sort("data_entrada", -1)\
+        .limit(limit)\
+        .to_list(limit)
+    
+    return manutencoes
+
+@api_router.post("/equipamentos/{equip_id}/evento")
+async def registrar_evento_equipamento(equip_id: str, data: Dict[str, Any] = Body(...), current_user: dict = Depends(get_current_user)):
+    """Registra um evento genérico no histórico do equipamento"""
+    equip = await db.equipamentos_tecnicos.find_one({"id": equip_id})
+    if not equip:
+        raise HTTPException(status_code=404, detail="Equipamento não encontrado")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    historico_item = {
+        "data": now,
+        "tipo": data.get("tipo", "EVENTO"),
+        "observacao": data.get("descricao", ""),
+        "usuario": current_user.get("nome"),
+        "usuario_id": current_user.get("id")
+    }
+    
+    await db.equipamentos_tecnicos.update_one(
+        {"id": equip_id},
+        {
+            "$push": {"historico": historico_item},
+            "$set": {"updated_at": datetime.now(timezone.utc)}
+        }
+    )
+    
+    return {"message": "Evento registrado com sucesso"}
+
+# ==================== END HISTÓRICO VITALÍCIO ====================
+
 # ==================== PUSH NOTIFICATIONS ENDPOINTS ====================
 
 class PushTokenCreate(BaseModel):
