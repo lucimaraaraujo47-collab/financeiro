@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { API } from '../App';
 
 function HistoricoEquipamento({ user, token }) {
+  const location = useLocation();
   const [empresa, setEmpresa] = useState(null);
   const [equipamentos, setEquipamentos] = useState([]);
   const [selectedEquip, setSelectedEquip] = useState(null);
@@ -24,6 +26,9 @@ function HistoricoEquipamento({ user, token }) {
     descricao: ''
   });
 
+  // Get equipamentoId from navigation state
+  const initialEquipamentoId = location.state?.equipamentoId;
+
   useEffect(() => {
     loadEmpresa();
   }, []);
@@ -31,6 +36,13 @@ function HistoricoEquipamento({ user, token }) {
   useEffect(() => {
     if (empresa) loadEquipamentos();
   }, [empresa]);
+
+  // Auto-load historico if equipamentoId was passed from navigation
+  useEffect(() => {
+    if (initialEquipamentoId && equipamentos.length > 0) {
+      loadHistorico(initialEquipamentoId);
+    }
+  }, [initialEquipamentoId, equipamentos]);
 
   const loadEmpresa = async () => {
     try {
