@@ -477,12 +477,22 @@ function EquipamentosServico({ user, token }) {
                     <td style={{ padding: '1rem', textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                         <button className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem' }}
-                          onClick={() => loadDetalhes(equip.id)}>
+                          onClick={() => loadDetalhes(equip.id)}
+                          title="Ver detalhes"
+                          data-testid={`btn-detalhes-${equip.id}`}>
                           👁️
+                        </button>
+                        <button className="btn-info" style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                          onClick={() => navigate('/historico-equipamentos', { state: { equipamentoId: equip.id } })}
+                          title="Ver histórico vitalício"
+                          data-testid={`btn-historico-${equip.id}`}>
+                          📜
                         </button>
                         {equip.status !== 'baixado' && (
                           <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem' }}
-                            onClick={() => setShowTransferir(equip)}>
+                            onClick={() => setShowTransferir(equip)}
+                            title="Transferir"
+                            data-testid={`btn-transferir-${equip.id}`}>
                             🔄
                           </button>
                         )}
