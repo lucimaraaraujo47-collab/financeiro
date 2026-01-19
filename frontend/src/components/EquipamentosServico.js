@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API } from '../App';
 
 function EquipamentosServico({ user, token }) {
+  const navigate = useNavigate();
   const [empresa, setEmpresa] = useState(null);
   const [equipamentos, setEquipamentos] = useState([]);
   const [tipos, setTipos] = useState([]);

@@ -287,6 +287,15 @@ function Layout({ user, onLogout, children }) {
                   <span className="nav-icon">📦</span>
                   <span className="nav-text">Equip. Técnicos</span>
                 </Link>
+
+                <Link 
+                  to="/historico-equipamentos" 
+                  className={`nav-item nav-subitem ${isActive('/historico-equipamentos') ? 'active' : ''}`}
+                  data-testid="nav-historico-equipamentos"
+                >
+                  <span className="nav-icon">📜</span>
+                  <span className="nav-text">Histórico Equip.</span>
+                </Link>
               </div>
             )}
           </div>
