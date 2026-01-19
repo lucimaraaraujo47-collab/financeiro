@@ -6,7 +6,7 @@
 // ============================================
 
 // URL de PRODUÇÃO - Servidor Emergent
-const PRODUCTION_URL = 'https://techflow-16.preview.emergentagent.com/api';
+const PRODUCTION_URL = 'https://opservice-1.preview.emergentagent.com/api';
 
 // URL de DESENVOLVIMENTO - IP local (alterar conforme necessário)
 const DEVELOPMENT_URL = 'http://192.168.1.100:8001/api';

@@ -52,7 +52,7 @@ Edite `config.js`:
 
 ```javascript
 // Para produção (atual)
-const PRODUCTION_URL = 'https://techflow-16.preview.emergentagent.com/api';
+const PRODUCTION_URL = 'https://opservice-1.preview.emergentagent.com/api';
 
 // Para desenvolvimento local
 const DEVELOPMENT_URL = 'http://SEU_IP:8001/api';

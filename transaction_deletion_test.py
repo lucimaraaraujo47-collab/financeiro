@@ -11,7 +11,7 @@ from datetime import datetime
 import uuid
 
 # Configuration
-BACKEND_URL = "https://techflow-16.preview.emergentagent.com/api"
+BACKEND_URL = "https://opservice-1.preview.emergentagent.com/api"
 ADMIN_EMAIL = "admin@echoshop.com"
 ADMIN_PASSWORD = "admin123"
 
