@@ -38,6 +38,7 @@ import VendasServico from './components/VendasServico';
 import OrdensServico from './components/OrdensServico';
 // Fase 2 - Equipamentos e Estoque
 import EquipamentosServico from './components/EquipamentosServico';
+import HistoricoEquipamento from './components/HistoricoEquipamento';
 // App do Técnico - Download
 import AppTecnicoDownload from './components/AppTecnicoDownload';
 
@@ -178,6 +179,7 @@ function App() {
             
             {/* Fase 2 - Equipamentos e Estoque */}
             <Route path="/equipamentos-servico" element={<EquipamentosServico user={user} token={token} />} />
+            <Route path="/historico-equipamentos" element={<HistoricoEquipamento user={user} token={token} />} />
             
             {/* App do Técnico - Download */}
             <Route path="/app-tecnico" element={<AppTecnicoDownload user={user} token={token} />} />
