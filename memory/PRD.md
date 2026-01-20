@@ -97,10 +97,32 @@ npm install
 npx eas build --platform android --profile preview  # APK para testes
 ```
 
-### ⏳ Fase 3 - Histórico Vitalício de Equipamentos (PENDENTE)
-- Rastreamento permanente de cada equipamento
-- Timeline completa de movimentações
-- Relatórios de ciclo de vida
+### ✅ Fase 3 - Histórico Vitalício de Equipamentos (COMPLETA)
+**Status:** 100% Implementado e Testado (20/01/2026)
+
+**Funcionalidades:**
+- **Página de Histórico** (`/historico-equipamentos`)
+  - Timeline completa de cada equipamento
+  - Visualização de eventos, OS e manutenções
+  - Busca por número de série, tipo ou marca
+  - Cards com estatísticas (total eventos, OS, manutenções)
+
+- **Eventos e Manutenções:**
+  - Registro de eventos genéricos (observação, inspeção, ajuste, troca de peças, limpeza, garantia)
+  - Fluxo completo de manutenção (entrada → em andamento → concluída)
+  - Rastreamento de custos e peças substituídas
+
+- **Integração com Equipamentos Técnicos:**
+  - Botão de histórico (📜) na tabela de equipamentos
+  - Navegação direta para histórico do equipamento selecionado
+  - Link no menu Estoque > Histórico Equip.
+
+**Endpoints da API:**
+- `GET /api/equipamentos/{id}/historico-completo` - Timeline completa
+- `POST /api/equipamentos/{id}/manutencao` - Registrar manutenção
+- `POST /api/equipamentos/{id}/evento` - Registrar evento
+- `PATCH /api/manutencoes/{id}/concluir` - Concluir manutenção
+- `GET /api/empresas/{id}/manutencoes` - Listar manutenções
 
 ### ⏳ Fase 4 - Gestão de Rotas (PENDENTE)
 - Integração OpenRouteService
