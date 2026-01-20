@@ -149,14 +149,19 @@ npx eas build --platform android --profile preview  # APK para testes
 ```
 /app/
 ├── backend/
-│   ├── server.py           # API principal (8459 linhas - REFATORAÇÃO RECOMENDADA)
-│   ├── database.py         # Conexão MongoDB (NOVO)
-│   ├── schemas/            # Schemas Pydantic (NOVO)
-│   │   ├── __init__.py
-│   │   └── service_schemas.py
-│   ├── routers/            # Routers separados (estrutura preparada)
-│   ├── models/             # Modelos (estrutura preparada)
-│   └── services/           # Serviços (estrutura preparada)
+│   ├── server.py           # API principal (8868 linhas - REFATORAÇÃO RECOMENDADA)
+│   ├── server_new.py       # NOVO - Versão refatorada
+│   ├── database.py         # Conexão MongoDB
+│   ├── routers/            # Routers separados
+│   │   ├── auth.py
+│   │   ├── usuarios.py
+│   │   ├── empresas.py
+│   │   ├── financeiro.py
+│   │   ├── estoque.py
+│   │   ├── vendas.py
+│   │   ├── ordens_servico.py
+│   │   └── app_tecnico.py
+│   └── models/             # Modelos Pydantic
 ├── frontend/
 │   └── src/
 │       ├── components/
@@ -164,18 +169,17 @@ npx eas build --platform android --profile preview  # APK para testes
 │       │   ├── ModelosContrato.js
 │       │   ├── VendasServico.js
 │       │   ├── OrdensServico.js
-│       │   └── EquipamentosServico.js
+│       │   ├── EquipamentosServico.js
+│       │   ├── HistoricoEquipamento.js  # NOVO - Histórico Vitalício
+│       │   └── Layout.js
 │       └── App.js
+├── tests/
+│   ├── test_echo_shop_api.py
+│   └── test_historico_equipamentos.py   # NOVO - 20 testes
 └── app-tecnico/           # App React Native
     ├── App.js
     ├── config.js
     └── screens/
-        ├── LoginScreen.js
-        ├── HomeScreen.js
-        ├── OSDetailScreen.js
-        ├── SignatureScreen.js
-        ├── CameraScreen.js     (NOVO)
-        └── PhotoGalleryScreen.js (NOVO)
 ```
 
 ## Problemas Conhecidos
