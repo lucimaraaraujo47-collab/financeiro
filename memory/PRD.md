@@ -233,10 +233,24 @@ npx eas build --platform android --profile preview  # APK para testes
 ```
 
 ## Data da Última Atualização
-17/01/2026 - Refatoração backend iniciada + Modo Offline
+20/01/2026 - Histórico Vitalício de Equipamentos COMPLETO
 
 ## Changelog
-- **17/01/2026 (sessão atual):**
+- **20/01/2026 (sessão atual):**
+  - ✅ **Histórico Vitalício de Equipamentos COMPLETO!**
+    - Nova página `/historico-equipamentos`
+    - Timeline completa com eventos, OS e manutenções
+    - 20/20 testes passaram (100%)
+    - Bug corrigido: ordenação de datas na timeline
+  - ✅ **Novos endpoints:**
+    - GET /api/equipamentos/{id}/historico-completo
+    - POST /api/equipamentos/{id}/manutencao
+    - POST /api/equipamentos/{id}/evento
+    - PATCH /api/manutencoes/{id}/concluir
+  - ✅ **UI atualizada:**
+    - Menu Estoque > Histórico Equip. adicionado
+    - Botão de histórico na tabela de Equip. Técnicos
+- **17/01/2026:**
   - ✅ **Refatoração do Backend VALIDADA!**
     - server_new.py testado com sucesso na porta 8003
     - Todos os endpoints principais funcionando
