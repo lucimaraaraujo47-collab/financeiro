@@ -192,10 +192,10 @@ npx eas build --platform android --profile preview  # APK para testes
 - `Equipamentos.js`: Tratamento de valores null/undefined no toFixed()
 
 ## Próximos Passos Prioritários
-1. **Testar APK v1.4.0** - Validar modo offline e push notifications no celular
-2. **Migrar routers restantes** - CRM, contratos, assinaturas, backup
-3. **Substituir server.py** - Quando migração estiver 100%
-4. Implementar histórico vitalício de equipamentos
+1. **Finalizar Refatoração do Backend** - Substituir server.py por server_new.py
+2. **Testar APK v1.4.0** - Validar modo offline e push notifications no celular
+3. **Estoque Avançado** - Estoque por técnico, fluxo de manutenção
+4. **Cálculo de Rotas** - Integração OpenRouteService
 
 ## Data da Última Atualização
 17/01/2026 - Refatoração backend VALIDADA (73 endpoints testados)
