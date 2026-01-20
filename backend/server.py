@@ -8476,8 +8476,15 @@ async def obter_historico_completo(equip_id: str, current_user: dict = Depends(g
                 "manutencao_id": m.get("id")
             })
     
-    # Ordenar timeline por data
-    timeline.sort(key=lambda x: x.get("data") or "", reverse=True)
+    # Ordenar timeline por data (normalizar para string para comparação)
+    def normalize_date(d):
+        if d is None:
+            return ""
+        if isinstance(d, datetime):
+            return d.isoformat()
+        return str(d)
+    
+    timeline.sort(key=lambda x: normalize_date(x.get("data")), reverse=True)
     
     return {
         "equipamento": equip,
