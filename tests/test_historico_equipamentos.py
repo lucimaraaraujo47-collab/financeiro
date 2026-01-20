@@ -416,7 +416,7 @@ class TestHistoricoEquipamentos:
             print(f"⚠️ Transfer returned {response.status_code}: {response.text[:100]}")
     
     def test_17_get_single_equipment(self):
-        """Test getting single equipment details"""
+        """Test getting single equipment details via historico-completo endpoint"""
         # Get equipment list
         response = requests.get(
             f"{BASE_URL}/empresas/{self.empresa_id}/equipamentos-tecnicos",
@@ -429,16 +429,19 @@ class TestHistoricoEquipamentos:
         
         equip_id = equipamentos[0].get("id")
         
+        # Note: /equipamentos/{id} endpoint is for general inventory equipment
+        # For technical equipment, use historico-completo which returns equipment details
         response = requests.get(
-            f"{BASE_URL}/equipamentos/{equip_id}",
+            f"{BASE_URL}/equipamentos/{equip_id}/historico-completo",
             headers=self.headers
         )
         
         assert response.status_code == 200
-        equip = response.json()
+        data = response.json()
+        equip = data.get("equipamento", {})
         assert "id" in equip
         assert "numero_serie" in equip
-        print(f"✅ Got equipment details: {equip.get('numero_serie')}")
+        print(f"✅ Got equipment details via historico-completo: {equip.get('numero_serie')}")
 
 
 class TestHistoricoEquipamentosEdgeCases:
